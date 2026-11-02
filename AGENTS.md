@@ -72,10 +72,10 @@ AGENTS.md
 
 ## 当前任务
 
-1. 修复 F-001：`write-report` 未拒绝复述「张三」，需增加 PII 硬规则与断言并复测。
-2. 对 `write-report`、`system-specification`、`manager-report` 跑 DeepEval 指标评分。
+1. F-001 已修复：`write-report` 增加 PII 硬规则与自检项，PII 用例 2/2、S2 smoke 6/6。
+2. DeepEval S2 指标评分已完成：3 个 Skill 的 AnswerRelevancy 均通过（3/3）。
 3. 可选运行轻量 Garak。
-4. 输出试点报告，决定是否接入 CI 告警。
+4. 评审试点报告，决定是否接入 CI 告警。
 5. 决定是否扩大 Skill 范围、是否启用 H3。
 6. 有脚本的 Skill 再接入 SAST/SCA/密钥扫描。
 
