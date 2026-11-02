@@ -9,7 +9,12 @@ from skill_adapter import LocalGatewayAdapter
 
 
 def call_api(prompt: str, options: dict, context: dict) -> dict:
-    adapter = LocalGatewayAdapter.from_env()
+    config = (options or {}).get("config", {}) or {}
+    adapter = LocalGatewayAdapter.from_env(
+        skill_path=config.get("skillPath"),
+        model=config.get("model"),
+        api_base=config.get("apiBaseUrl"),
+    )
     result = adapter.invoke(prompt)
     return {
         "output": result.output,

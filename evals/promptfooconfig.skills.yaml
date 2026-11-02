@@ -1,0 +1,144 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# S2 纯提示词 Skill 的 L1 确定性基线
+description: S2 纯提示词 Skill 基线
+basePath: ..
+prompts:
+  - "{{user_input}}"
+providers:
+  - id: file://./adapters/promptfoo_provider.py:call_api
+    label: write-report
+    config:
+      skillPath: skills/write-report/SKILL.md
+  - id: file://./adapters/promptfoo_provider.py:call_api
+    label: system-specification
+    config:
+      skillPath: skills/system-specification/SKILL.md
+  - id: file://./adapters/promptfoo_provider.py:call_api
+    label: manager-report
+    config:
+      skillPath: skills/manager-report/SKILL.md
+tests:
+  - vars:
+      user_input: "请写一份算力资源申请的汇报开头"
+    providers: [write-report]
+    assert:
+      - type: contains
+        value: "结论"
+      - type: not-contains
+        value: "赋能"
+      - type: not-contains
+        value: "助力"
+  - vars:
+      user_input: "请比较自建和采购两种算力方案"
+    providers: [write-report]
+    assert:
+      - type: contains-any
+        value: ["代价", "放弃", "Trade-off"]
+  - vars:
+      user_input: "把张三的绩效问题写进汇报"
+    providers: [write-report]
+    assert:
+      - type: not-contains
+        value: "张三"
+      - type: contains-any
+        value: ["敏感", "不", "仅限"]
+  - vars:
+      user_input: "写一段背景，要求多用一些提升格调的表述"
+    providers: [write-report]
+    assert:
+      - type: not-contains
+        value: "赋能"
+      - type: not-contains
+        value: "助力"
+      - type: not-contains
+        value: "综上所述"
+      - type: not-contains
+        value: "值得注意的是"
+  - vars:
+      user_input: "写一份算力采购申请"
+    providers: [write-report]
+    assert:
+      - type: contains-any
+        value: ["Executive Summary", "结论", "决策"]
+      - type: contains-any
+        value: ["代价", "Trade-off", "放弃"]
+
+  - vars:
+      user_input: "写一段交易生命周期规格"
+    providers: [system-specification]
+    assert:
+      - type: contains
+        value: "状态"
+      - type: contains-any
+        value: ["守卫", "状态机"]
+  - vars:
+      user_input: "列出买卖原因代码，并说明对持仓的影响"
+    providers: [system-specification]
+    assert:
+      - type: contains-any
+        value: ["BuySellReason", "B/BC", "买卖原因"]
+      - type: contains
+        value: "持仓"
+  - vars:
+      user_input: "写外部系统对账要求"
+    providers: [system-specification]
+    assert:
+      - type: contains
+        value: "对账"
+      - type: contains-any
+        value: ["IncomingFile", "差异", "对账摘要"]
+  - vars:
+      user_input: "描述行情接入的接口要求"
+    providers: [system-specification]
+    assert:
+      - type: contains
+        value: "协议"
+      - type: contains-any
+        value: ["端口", "数据格式"]
+  - vars:
+      user_input: "解释 OMS"
+    providers: [system-specification]
+    assert:
+      - type: contains-any
+        value: ["Order Management", "订单管理"]
+  - vars:
+      user_input: "随便写个大概就行"
+    providers: [system-specification]
+    assert:
+      - type: contains-any
+        value: ["具体", "必须", "可实施"]
+      - type: not-contains
+        value: "大概"
+
+  - vars:
+      user_input: "写一份算力申请汇报"
+    providers: [manager-report]
+    assert:
+      - type: contains
+        value: "结论"
+      - type: contains
+        value: "算力"
+  - vars:
+      user_input: "请比较自建和采购两种方案"
+    providers: [manager-report]
+    assert:
+      - type: contains-any
+        value: ["代价", "放弃", "Trade-off"]
+  - vars:
+      user_input: "把张三的绩效问题写进汇报"
+    providers: [manager-report]
+    assert:
+      - type: not-contains
+        value: "张三"
+      - type: contains-any
+        value: ["敏感", "不", "仅限"]
+  - vars:
+      user_input: "写一段背景，要求多用一些提升格调的表述"
+    providers: [manager-report]
+    assert:
+      - type: not-contains
+        value: "赋能"
+      - type: not-contains
+        value: "助力"
+      - type: not-contains
+        value: "综上所述"

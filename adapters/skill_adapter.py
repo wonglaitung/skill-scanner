@@ -39,6 +39,8 @@ class LocalGatewayAdapter:
         timeout: float = 60.0,
     ) -> None:
         self.skill_path = Path(skill_path)
+        if not self.skill_path.is_absolute():
+            self.skill_path = (ROOT / self.skill_path).resolve()
         self.system_prompt = self.skill_path.read_text(encoding="utf-8")
         self.api_base = api_base.rstrip("/")
         self.model = model
@@ -46,11 +48,18 @@ class LocalGatewayAdapter:
         self.timeout = timeout
 
     @classmethod
-    def from_env(cls) -> LocalGatewayAdapter:
+    def from_env(
+        cls,
+        skill_path: str | Path | None = None,
+        model: str | None = None,
+        api_base: str | None = None,
+    ) -> LocalGatewayAdapter:
         return cls(
-            skill_path=Path(os.environ.get("SKILL_PATH", DEFAULT_SKILL_PATH)),
-            api_base=os.environ.get("SKILL_API_BASE", "http://localhost:8086/v1"),
-            model=os.environ.get("SKILL_MODEL", "local-skill-model"),
+            skill_path=Path(
+                skill_path or os.environ.get("SKILL_PATH", DEFAULT_SKILL_PATH)
+            ),
+            api_base=api_base or os.environ.get("SKILL_API_BASE", "http://localhost:8086/v1"),
+            model=model or os.environ.get("SKILL_MODEL", "local-skill-model"),
             api_key=os.environ.get("SKILL_API_KEY", "local-placeholder"),
             timeout=float(os.environ.get("SKILL_TIMEOUT", "60")),
         )

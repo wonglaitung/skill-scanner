@@ -16,12 +16,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 ## 当前阶段
 
-2 周试点准备：
+2 周试点实施：
 
-- 2-3 个 S2/S3 Skill，纯提示词为主。
+- 已导入 3 个 S2 纯提示词 Skill：`write-report`、`system-specification`、`manager-report`。
+- 另有示例 Skill `expense-policy-qa`。
 - 安全团队主导。
 - 先告警，不阻断 PR。
-- 使用本地 OpenAI-compatible 模型网关。
+- 使用本地 OpenAI-compatible 模型网关（`http://localhost:8086/v1`，模型 `qwen3`）。
 - 暂不启用 H3、CI 阻断、独立合规审计。
 
 ## 目录约定
@@ -30,18 +31,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 ```text
 docs/
-progress.md
-AGENTS.md
-```
-
-计划创建（尚未实现）：
-
-```text
 skills/                 # 试点 Skill
 adapters/               # Promptfoo/Garak/DeepEval 适配层
 evals/                  # 用例、配置、基线
 ci/                     # 校验与门禁脚本
-reports/                # 测试报告与证据
+reports/                # 测试报告与证据（产物不入库）
+progress.md
+AGENTS.md
 ```
 
 适配层统一叫 `adapters/`，不要改回 `harness/`，避免与 `wonglaitung/harness` Agent SDK 重名。
@@ -76,28 +72,34 @@ reports/                # 测试报告与证据
 
 ## 当前任务
 
-1. 选定 2-3 个 S2/S3 纯提示词 Skill。
-2. 创建 `adapters/`、`evals/`、`reports/` 最小骨架。
-3. 编写 10-20 条 Promptfoo 确定性用例。
-4. 运行 Promptfoo 与 DeepEval，记录第一版基线。
-5. 可选运行轻量 Garak。
-6. 输出试点报告，决定是否接入 CI 告警。
+1. 修复 F-001：`write-report` 未拒绝复述「张三」，需增加 PII 硬规则与断言并复测。
+2. 对 `write-report`、`system-specification`、`manager-report` 跑 DeepEval 指标评分。
+3. 可选运行轻量 Garak。
+4. 输出试点报告，决定是否接入 CI 告警。
+5. 决定是否扩大 Skill 范围、是否启用 H3。
+6. 有脚本的 Skill 再接入 SAST/SCA/密钥扫描。
 
-## 计划命令（尚未实现）
-
-以下命令来自方案，当前不可直接运行，实现后再写入自动化：
+## 命令（部分已可用）
 
 ```bash
+# 已可用
 python ci/validate_skill.py
-ruff check skills/
+ruff check adapters ci evals skills
+pytest -q
+
+# Promptfoo（需本地 qwen3 网关）
+SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
+  npx promptfoo eval -c evals/promptfooconfig.smoke.yaml --max-concurrency 1
+
+# DeepEval（需本地 qwen3 网关）
+RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 \
+  deepeval test run evals/deepeval/test_skill.py
+
+# 尚未安装/接入
 semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
 shellcheck skills/**/*.sh
 gitleaks detect --source . --no-git
 trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
-
-npx promptfoo@latest eval -c evals/promptfooconfig.yaml -o reports/promptfoo.json
-npx promptfoo@latest redteam run -c evals/redteam.yaml -o reports/redteam.json
-deepeval test run evals/deepeval/test_skill.py
 ./evals/garak/scan.sh
 ```
 
