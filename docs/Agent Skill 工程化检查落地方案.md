@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.2 |
+| 文档版本 | v2.3 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -184,6 +184,8 @@ flowchart TD
 本地大模型接入：所有需要模型的能力统一走内部 OpenAI-compatible（兼容 OpenAI 接口协议）API（下称「本地模型网关」），不访问外部模型。Promptfoo 通过 `apiBaseUrl` 接入；DeepEval 通过 `LocalModel` 接入；Garak 通过 `rest` generator 接入；judge 与 redteam 均使用本地模型。
 
 注意：若本地 API 不是 OpenAI-compatible，需要在前面加一层协议适配网关；judge 建议使用本地较强模型，并在上线前完成人工一致性校准。
+
+执行层可选复用：若已有 Agent 运行时 SDK（如 `wonglaitung/harness`），可复用其 Mock/录制、确定性 Gate、沙箱与护栏能力，详见 §7.2.1；评测编排仍由 Promptfoo、DeepEval、Garak 负责。
 
 ---
 
@@ -383,7 +385,7 @@ description: account-balance-query 回归 smoke
 prompts:
   - "{{user_input}}"
 providers:
-  - id: file://./harness/provider.py:call_api
+  - id: file://./adapters/promptfoo_provider.py:call_api
 tests:
   - vars:
       user_input: "帮我查询张三的账户余额"
@@ -432,7 +434,7 @@ defaultTest:
         temperature: 0
 ```
 
-说明：`prompts` 中被测目标由 `harness/provider.py` 包装并调用本地网关；`defaultTest.options.provider` 只配置 `llm-rubric` 等模型断言的裁判模型。若直接测裸模型而非 Skill 包装，也可用 `openai:chat:<model>` 加 `apiBaseUrl` 作为 provider。
+说明：`prompts` 中被测目标由 `adapters/promptfoo_provider.py` 包装并调用本地网关；`defaultTest.options.provider` 只配置 `llm-rubric` 等模型断言的裁判模型。若直接测裸模型而非 Skill 包装，也可用 `openai:chat:<model>` 加 `apiBaseUrl` 作为 provider。
 
 ### 6.3 指标化语义评分（L2）
 
@@ -566,7 +568,7 @@ deepeval test run evals/deepeval/test_skill.py
 
 ### 7.2 可测性改造（Harness）
 
-Harness（测试适配层）是让 Skill 能被测试工具统一调用的包装层。对抗工具需要「可调用的目标」，Skill 必须能被包装成统一接口，否则测试无法落地。
+Harness（测试适配层）是让 Skill 能被测试工具统一调用的包装层。对抗工具需要「可调用的目标」，Skill 必须能被包装成统一接口，否则测试无法落地。本节 Harness 指测试适配层，不是 Agent 运行时 SDK；后者的复用见 §7.2.1。
 
 | 方式 | 适用 | 实现 |
 |---|---|---|
@@ -583,6 +585,81 @@ Harness 统一要求：
 - 捕获完整轨迹：输入、模型输出、工具名、工具参数、返回、耗时；
 - 运行在隔离沙箱：只读根文件系统、无外网或域名白名单、CPU/内存/超时限制；
 - 禁止把真实凭证带入测试环境，统一使用短期测试凭证。
+
+#### 7.2.1 复用现有 Agent harness SDK
+
+如果团队已有 Agent 运行时 SDK（例如 `wonglaitung/harness`，其设计理念是 `Agent = Model + Harness`），不需要从零重写执行层。按职责复用：
+
+| 方案需求 | 可复用组件 | 用途 |
+|---|---|---|
+| H3 执行器 | `harness.AgentHarness` | 执行 prompt + 工具 + 多步编排 |
+| 确定性 Mock | `harness.testing.MockHarness`、`MockResponse` | 固定 LLM 回复与工具返回 |
+| 轨迹录制/回放 | `harness.testing.RecordingHarness` | 生产录制、CI 回放 |
+| 确定性 Gate | `harness.gate` | 格式、事实溯源、逻辑一致性校验 |
+| 沙箱与审计 | `harness.security` | 命令校验、沙箱、审计日志 |
+| PII 护栏 | `harness.guardrails.chinese_guardrail` | 中文手机号、身份证、银行卡等检测 |
+| 轨迹导出 | `harness.service.tracing`（OpenTelemetry） | 导出给 Promptfoo/DeepEval 断言 |
+
+```python
+from harness import AgentHarness
+from harness.testing import RecordingHarness
+
+
+async def run_skill(user_input: str):
+    agent = AgentHarness(
+        model="local-skill-model",
+        base_url="http://llm-gateway.local/v1",
+        tools=[...],
+    )
+    recorder = RecordingHarness(agent)
+    return await recorder.run(user_input)
+```
+
+边界与注意事项：
+
+- 复用范围是「执行 + 确定性校验 + 运行时防护」，不包括评测编排与打分。
+- Promptfoo 仍负责回归、断言与 redteam；DeepEval 仍负责指标评分；Garak 仍负责发布前独立扫描。
+- Skill 是通用包装格式，不绑定开发语言或 SDK；若 Skill 不是由该 SDK 执行，只复用其中的库能力，不要求迁移 Skill。
+- 该 SDK 目前为 Alpha，需锁定版本、隔离依赖；License 为 MIT，需保留声明。
+- 本项目把适配层目录命名为 `adapters/`，避免与 `wonglaitung/harness` 这个 Agent SDK 重名。
+
+#### 7.2.2 Adapter 契约
+
+为了让执行层与评测层解耦，所有 Skill 统一暴露一个适配接口：
+
+```python
+from dataclasses import dataclass, field
+from typing import Any, Protocol
+
+
+@dataclass
+class ToolCallRecord:
+    name: str
+    arguments: dict[str, Any]
+    result: str | None = None
+    error: str | None = None
+    latency_ms: float | None = None
+
+
+@dataclass
+class SkillRunResult:
+    output: str
+    tool_calls: list[ToolCallRecord] = field(default_factory=list)
+    trace_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+class SkillAdapter(Protocol):
+    async def invoke(self, user_input: str, context: dict[str, Any]) -> SkillRunResult:
+        ...
+```
+
+Adapter 的职责：
+
+- 读取 `SKILL.md` 作为 system prompt；
+- 调用本地模型网关或 Skill 服务；
+- 记录工具调用轨迹；
+- 返回统一结果，供 Promptfoo、Garak、DeepEval 使用。
 
 ### 7.3 对抗用例设计
 
@@ -869,9 +946,10 @@ skill-scanner/
 │       ├── SKILL.md
 │       ├── scripts/
 │       └── references/
-├── harness/
-│   ├── provider.py          # Promptfoo / Garak 接入
-│   ├── mock_tools.py        # 确定性工具返回
+├── adapters/
+│   ├── promptfoo_provider.py # Promptfoo 适配
+│   ├── skill_adapter.py      # SkillAdapter 契约实现
+│   ├── mock_tools.py         # 确定性工具返回
 │   └── sandbox/
 │       └── Dockerfile
 ├── evals/
@@ -895,10 +973,10 @@ skill-scanner/
     └── skill-check.yml
 ```
 
-### 11.2 Harness 示例
+### 11.2 Adapter 示例（Promptfoo provider）
 
 ```python
-# harness/provider.py
+# adapters/promptfoo_provider.py
 import os
 import pathlib
 
@@ -1237,6 +1315,7 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 
 - Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、DeepEval、Garak 均需在依赖文件中锁定版本；
 - 本地模型网关的模型版本、推理参数与 Promptfoo/Garak 配置一并纳入基线；
+- 若复用 `wonglaitung/harness` SDK，需锁定 `harness-sdk` 版本（Alpha）、隔离依赖并保留 MIT 许可声明；其 Mock/录制、gate、security、guardrails 能力通过 `adapters/` 接入；
 - 每月检查一次官方变更与废弃参数；
 - 升级前在独立分支跑全量 L2，通过后再更新基线；
 - 命令示例以锁定版本为准，文档中标注「最后验证日期」。
@@ -1271,3 +1350,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v2.0 | 2026-11-02 | 重构为工程化检查总方案：新增结构与元数据、工具契约、代码与依赖安全、提示词质量章节；对抗性测试收为单一子域；统一三横一纵框架与 L0-L3 执行档位 |
 | v2.1 | 2026-11-02 | 锁定主工具组合（Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、Garak）；Garak 定位为发布前独立扫描器；所有模型能力接入本地模型网关；更新 CI、示例与成本评估 |
 | v2.2 | 2026-11-02 | 引入 DeepEval 作为 L2 指标化评分主工具；新增指标选择表、LocalModel 本地接入、ToolCorrectness 校验与分数基线门禁；CI 与本地命令同步更新 |
+| v2.3 | 2026-11-02 | 补充复用现有 Agent harness SDK 的边界与组件映射；新增 Adapter 契约；适配层目录统一为 `adapters/`，避免与 Agent SDK 重名 |
