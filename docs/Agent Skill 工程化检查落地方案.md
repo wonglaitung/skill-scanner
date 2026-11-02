@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.1 |
+| 文档版本 | v2.2 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -174,13 +174,14 @@ flowchart TD
 | Shell 检查 | ShellCheck | Shell 脚本静态检查 | - |
 | 密钥扫描 | gitleaks | 硬编码密钥检测 | 替代 trufflehog |
 | 依赖/IaC/容器/SBOM | Trivy | SCA + IaC（Infrastructure as Code，基础设施即代码）+ 镜像 + SBOM（Software Bill of Materials，软件物料清单） | 替代 pip-audit、npm audit |
-| Prompt/Agent 评测与红队 | Promptfoo | 回归、语义断言、redteam | 主评测工具 |
+| Prompt/Agent 回归与红队 | Promptfoo | 回归、语义断言、redteam | 主回归与红队工具 |
+| 指标化语义评分 | DeepEval | 相关性、忠实度、幻觉、工具调用正确性 | L2 主评分工具 |
 | 发布前独立扫描 | Garak | 已知攻击库扫描 | 仅 L3 发布前执行 |
 | 运行时兜底 | Docker/gVisor + OPA | 沙箱、权限、策略 | OPA（Open Policy Agent，策略引擎）可按需引入 |
 
-不纳入主组合：Bandit、pip-audit、npm audit、trufflehog、SonarQube、DeepEval、Dependabot。DeepEval 仅在需要指标化语义评分时作为扩展；Dependabot/Renovate 仅作为依赖升级工具，不承担扫描职责。
+不纳入主组合：Bandit、pip-audit、npm audit、trufflehog、SonarQube、Dependabot。Dependabot/Renovate 仅作为依赖升级工具，不承担扫描职责。
 
-本地大模型接入：所有需要模型的能力统一走内部 OpenAI-compatible（兼容 OpenAI 接口协议）API（下称「本地模型网关」），不访问外部模型。Promptfoo 通过 `apiBaseUrl` 接入；Garak 通过 `rest` generator 接入；judge 与 redteam 均使用本地模型。
+本地大模型接入：所有需要模型的能力统一走内部 OpenAI-compatible（兼容 OpenAI 接口协议）API（下称「本地模型网关」），不访问外部模型。Promptfoo 通过 `apiBaseUrl` 接入；DeepEval 通过 `LocalModel` 接入；Garak 通过 `rest` generator 接入；judge 与 redteam 均使用本地模型。
 
 注意：若本地 API 不是 OpenAI-compatible，需要在前面加一层协议适配网关；judge 建议使用本地较强模型，并在上线前完成人工一致性校准。
 
@@ -433,14 +434,59 @@ defaultTest:
 
 说明：`prompts` 中被测目标由 `harness/provider.py` 包装并调用本地网关；`defaultTest.options.provider` 只配置 `llm-rubric` 等模型断言的裁判模型。若直接测裸模型而非 Skill 包装，也可用 `openai:chat:<model>` 加 `apiBaseUrl` 作为 provider。
 
-### 6.3 可选：语义质量评测（L2）
+### 6.3 指标化语义评分（L2）
 
-主组合使用 Promptfoo 的 `llm-rubric` 完成语义评测；仅在需要指标化评分（如幻觉率、相关性分数）时引入 DeepEval（LLM 评测框架）。
+使用 DeepEval（LLM 评测框架）对 Skill 输出做 0-1 分的指标化评分，并将分数纳入基线。Promptfoo 负责回归与红队，DeepEval 负责可量化、可对比的质量指标。
+
+#### 6.3.1 指标选择
+
+| 维度 | 指标 | 所需字段 | 建议阈值 |
+|---|---|---|---|
+| 相关性 | AnswerRelevancyMetric | `input`、`actual_output` | ≥ 0.7 |
+| 忠实度 | FaithfulnessMetric | `input`、`actual_output`、`retrieval_context` | ≥ 0.7 |
+| 幻觉 | HallucinationMetric | `input`、`actual_output`、`context` | ≤ 0.5（越低越好） |
+| 上下文相关性 | ContextualRelevancyMetric | `input`、`retrieval_context` | ≥ 0.7 |
+| 工具调用正确性 | ToolCorrectnessMetric | `input`、`expected_tools`、`tools_called` | ≥ 0.8 |
+| 自定义业务标准 | GEval | 按 rubric 定义 | 按业务定义 |
+
+建议首批只选 2-3 个与业务最相关的指标，稳定后再扩展；工具调用类 Skill 必须包含 `ToolCorrectnessMetric`。
+
+#### 6.3.2 本地模型配置
+
+DeepEval 通过 `LocalModel` 接入本地模型网关：
+
+```python
+from deepeval.models import LocalModel
+
+judge = LocalModel(
+    model="local-judge",
+    base_url="http://llm-gateway.local/v1",
+    api_key="local-placeholder",
+    temperature=0,
+)
+```
+
+若指标依赖 embedding，需同时配置本地 embedding 模型（`deepeval set-local-embeddings`）。
+
+#### 6.3.3 用例与断言
 
 ```python
 from deepeval import assert_test
-from deepeval.metrics import AnswerRelevancyMetric, HallucinationMetric
-from deepeval.test_case import LLMTestCase
+from deepeval.metrics import (
+    AnswerRelevancyMetric,
+    FaithfulnessMetric,
+    HallucinationMetric,
+    ToolCorrectnessMetric,
+)
+from deepeval.models import LocalModel
+from deepeval.test_case import LLMTestCase, ToolCall
+
+judge = LocalModel(
+    model="local-judge",
+    base_url="http://llm-gateway.local/v1",
+    api_key="local-placeholder",
+    temperature=0,
+)
 
 
 def test_skill_output():
@@ -452,12 +498,20 @@ def test_skill_output():
         actual_output="该公司 2025 年净利润为 1.2 亿元人民币。",
         context=context,
         retrieval_context=context,
+        expected_tools=[
+            ToolCall(name="query_finance_db", input_parameters={"year": 2025})
+        ],
+        tools_called=[
+            ToolCall(name="query_finance_db", input_parameters={"year": 2025})
+        ],
     )
     assert_test(
         test_case,
         [
-            HallucinationMetric(threshold=0.5),
-            AnswerRelevancyMetric(threshold=0.7),
+            AnswerRelevancyMetric(threshold=0.7, model=judge),
+            FaithfulnessMetric(threshold=0.7, model=judge),
+            HallucinationMetric(threshold=0.5, model=judge),
+            ToolCorrectnessMetric(threshold=0.8),
         ],
     )
 ```
@@ -467,20 +521,25 @@ def test_skill_output():
 - 指标名是 `AnswerRelevancyMetric`，不是 `AnswerRelevanceMetric`；
 - `HallucinationMetric` 依赖 `context`（ground truth，标准答案），`retrieval_context` 用于 RAG（Retrieval-Augmented Generation，检索增强生成）类指标，两者语义不同；
 - 各指标阈值方向不同，以官方文档为准（幻觉率越低越好）；
+- `ToolCorrectnessMetric` 需要提供 `expected_tools` 与 `tools_called`，用于校验工具选择是否正确；
 - judge 模型需固定版本；安全团队每月人工抽检不少于 50 条，一致率低于 80% 时暂停 L2 门禁；
 - 关键用例可采用双 judge 投票，结果需缓存，相同输入输出不重复打分；
-- DeepEval 通过 OpenAI-compatible 环境变量或自定义模型类接入本地模型网关，禁止访问外部模型。
+- DeepEval 通过 `LocalModel` 接入本地模型网关，禁止访问外部模型。
 
-运行：
+#### 6.3.4 运行与报告
 
 ```bash
 deepeval test run evals/deepeval/test_skill.py
 ```
 
+在测试 fixture 中将每个指标的 `score`、`reason`、用例 id、模型版本写入 `reports/deepeval.json`，用于趋势看板与 Delta Gate。不要只依赖 pass/fail，必须保留分数。
+
 ### 6.4 质量门禁
 
 - L1：确定性断言失败即阻断，语义断言只告警；
-- L2：全量 golden set 通过率不低于基线 - 2 分；
+- L2：各指标平均分不得低于基线；统一归一化到 0-100 后，下降超过 2 分即阻断（DeepEval 原始 0-1 分对应 0.02）；
+- L2：任一指标低于 §6.3.1 的阈值即阻断；
+- L2：工具调用类 Skill 必须通过 `ToolCorrectnessMetric`；
 - L3：关键业务场景人工评审，输出质量报告；
 - 模型升级视为基线变更，需要重新建立基线并评审。
 
@@ -820,7 +879,7 @@ skill-scanner/
 │   ├── redteam.yaml
 │   ├── cases/
 │   │   └── ADV-INJ-001.yaml
-│   ├── deepeval/            # 可选扩展
+│   ├── deepeval/
 │   │   ├── test_skill.py
 │   │   └── golden_set.jsonl
 │   └── garak/
@@ -933,7 +992,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install deepeval
       - run: npx promptfoo@latest redteam run -c evals/redteam.yaml -o reports/redteam.json
+      - run: deepeval test run evals/deepeval/test_skill.py
       - run: python ci/gate.py --report reports/redteam.json --level nightly
 
   release-scan:
@@ -946,7 +1010,7 @@ jobs:
       - run: python ci/gate.py --report reports/garak.report.jsonl --level release
 ```
 
-说明：`ci/gate.py` 需同时支持 Promptfoo JSON 与 Garak JSONL 两种格式；Garak 报告的实际文件名以 `--report_prefix` 与当前版本为准。
+说明：`ci/gate.py` 需同时支持 Promptfoo JSON 与 Garak JSONL 两种格式；Garak 报告的实际文件名以 `--report_prefix` 与当前版本为准。DeepEval 通过 pytest 断言直接失败，指标分数由测试 fixture 导出到 `reports/deepeval.json`。
 
 ### 11.4 本地复现
 
@@ -973,14 +1037,11 @@ npx promptfoo@latest eval -c evals/promptfooconfig.yaml
 # 5. Promptfoo redteam（L2）
 npx promptfoo@latest redteam run -c evals/redteam.yaml
 
-# 6. Garak 发布前独立扫描（L3）
-./evals/garak/scan.sh
-```
-
-需要指标化语义评分时，再额外执行可选扩展：
-
-```bash
+# 6. DeepEval 指标化评分（L2）
 deepeval test run evals/deepeval/test_skill.py
+
+# 7. Garak 发布前独立扫描（L3）
+./evals/garak/scan.sh
 ```
 
 ---
@@ -990,7 +1051,7 @@ deepeval test run evals/deepeval/test_skill.py
 ### Phase 0：准备期（第 1-2 周）
 
 - 确定 Skill 分级标准与首批试点范围；
-- 选定并锁定工具版本（Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、Garak）；
+- 选定并锁定工具版本（Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、DeepEval、Garak）；
 - 定义 SKILL.md Schema 与工具契约模板；
 - 搭建 Harness 与沙箱原型，接入本地模型网关。
 
@@ -1009,7 +1070,7 @@ deepeval test run evals/deepeval/test_skill.py
 
 - 落地 Prompt Lint 规则；
 - 接入 Promptfoo L1 回归，PR 仅使用确定性断言；
-- 接入 Promptfoo L2 语义断言；按需评估是否引入 DeepEval 做指标化评分；
+- 接入 Promptfoo L2 语义断言与 DeepEval 指标化评分；
 - 建立基线、Delta Gate、Quarantine 流程；
 - 完成 judge 与人工标注的一致性校准。
 
@@ -1122,6 +1183,7 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | Skill 覆盖率（L0） | 100% |
 | 代码 SAST 覆盖率 | 100% |
 | 高风险 Skill 用例数 | ≥ 30 条/个 |
+| 指标化评分覆盖率（S2/S3） | 100% |
 | PR 门禁 p95 时长 | < 5 分钟 |
 | Flaky Rate | < 5% |
 | 发布前 Critical 发现 | 0 |
@@ -1173,7 +1235,7 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 
 ## 附录 B：工具与版本管理
 
-- Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、Garak 均需在依赖文件中锁定版本；DeepEval 为可选扩展，仅在引入时锁定；
+- Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、DeepEval、Garak 均需在依赖文件中锁定版本；
 - 本地模型网关的模型版本、推理参数与 Promptfoo/Garak 配置一并纳入基线；
 - 每月检查一次官方变更与废弃参数；
 - 升级前在独立分支跑全量 L2，通过后再更新基线；
@@ -1208,3 +1270,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v1.1 | 2026-11-02 | 吸收评审意见：公共用例底座、Harness 渐进式、PR 确定性断言、Judge 月度校准、首月只告警 |
 | v2.0 | 2026-11-02 | 重构为工程化检查总方案：新增结构与元数据、工具契约、代码与依赖安全、提示词质量章节；对抗性测试收为单一子域；统一三横一纵框架与 L0-L3 执行档位 |
 | v2.1 | 2026-11-02 | 锁定主工具组合（Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、Garak）；Garak 定位为发布前独立扫描器；所有模型能力接入本地模型网关；更新 CI、示例与成本评估 |
+| v2.2 | 2026-11-02 | 引入 DeepEval 作为 L2 指标化评分主工具；新增指标选择表、LocalModel 本地接入、ToolCorrectness 校验与分数基线门禁；CI 与本地命令同步更新 |
