@@ -2,21 +2,23 @@
 
 ## 项目定位
 
-Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行、准备试点」阶段，代码尚未开始。
+Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，最小骨架已建立。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
 - 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`
-- 当前版本：v2.4
+- 当前版本：v2.5
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.4，已推送 GitHub |
-| 代码实现 | 未开始 |
+| 方案文档 | 已完成 v2.5，已推送 GitHub |
+| 代码实现 | 最小骨架已建立（示例 Skill、Adapter、校验脚本、评测配置） |
 | CI 流水线 | 未接入 |
-| 试点 Skill | 未选定 |
-| 本地模型网关 | 已具备 |
+| 试点 Skill | 示例 `expense-policy-qa` 已建；真实 S2/S3 Skill 待选 |
+| 自动化验证 | 校验脚本、Ruff、pytest、Promptfoo 配置校验通过；Promptfoo 6/6、DeepEval 1/1（qwen3） |
+| 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
+| Garak | 未安装，发布前扫描待跑 |
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 
@@ -32,6 +34,22 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 | 2026-11-02 | v2.3 | 补充复用 Agent harness SDK；新增 Adapter 契约；适配层目录统一为 `adapters/` |
 | 2026-11-02 | v2.4 | 补充对抗审核要求：独立性、覆盖、证据、定级与修复时限、审核门禁与指标 |
 | 2026-11-02 | `8e5938c` | 最新提交：对抗审核要求与门禁指标 |
+| 2026-11-02 | 试点骨架 | 建立示例 Skill、Adapter、校验脚本、Promptfoo/DeepEval/Garak 配置；Ruff/pytest 通过；对本地 `qwen3` 跑 Promptfoo 6/6、DeepEval 1/1 |
+
+## 最近验证（2026-11-02）
+
+| 检查 | 命令 | 结果 |
+|---|---|---|
+| SKILL.md 校验 | `python3 ci/validate_skill.py` | OK |
+| Ruff | `ruff check adapters ci evals skills` | All checks passed |
+| pytest | `pytest -q` | 2 passed, 1 skipped |
+| Promptfoo 配置 | `npx promptfoo validate config -c evals/promptfooconfig.yaml` | valid |
+| Promptfoo redteam 配置 | `npx promptfoo validate config -c evals/redteam.yaml` | valid |
+| Promptfoo 实跑 | `SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 npx promptfoo eval -c evals/promptfooconfig.yaml` | 6/6 passed |
+| DeepEval | `RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 deepeval test run evals/deepeval/test_skill.py` | 1/1 passed |
+| Garak | `./evals/garak/scan.sh` | 未执行（未安装） |
+
+说明：真实评测使用本地 `qwen3`，网关 `http://localhost:8086/v1`；`reports/` 下的产物未提交。
 
 ## 关键决策
 
@@ -108,11 +126,12 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 ## 待办清单
 
-- [ ] 选定 2-3 个 S2/S3 纯提示词 Skill
-- [ ] 建立 `adapters/`、`evals/`、`reports/`
-- [ ] 编写 Promptfoo 确定性用例
-- [ ] 运行 Promptfoo 并记录基线
-- [ ] 运行 DeepEval 指标评分
+- [x] 建立示例 Skill `expense-policy-qa`
+- [ ] 选定 2-3 个真实 S2/S3 纯提示词 Skill
+- [x] 建立 `adapters/`、`evals/`、`reports/`
+- [x] 编写 Promptfoo 确定性用例
+- [x] 运行 Promptfoo 并记录基线（qwen3，6/6）
+- [x] 运行 DeepEval 指标评分（qwen3，1/1）
 - [ ] 可选运行轻量 Garak
 - [ ] 输出试点报告
 - [ ] 决定是否接入 CI 告警
@@ -126,7 +145,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 |---|---|---|
 | 试点 Skill 未选定 | 无法估算工作量 | 安全团队本周内确定 2-3 个 |
 | 本地模型 judge 能力未知 | 指标分数可能不稳定 | 先跑 20-50 条人工校准 |
-| 无历史基线 | 首轮分数无参考 | 第一轮只记录，不阻断 |
+| 仅有单轮基线 | 还不能判断趋势 | 先积累 2-4 周数据再设阈值 |
 | 无 CI 平台信息 | 暂不能自动化 | 首期本地/定时运行 |
 | 合规要求未明确 | 证据链要求不确定 | 先按工程基线保留 JSON 报告 |
 

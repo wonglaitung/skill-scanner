@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.4 |
+| 文档版本 | v2.5 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -429,7 +429,7 @@ defaultTest:
     provider:
       id: openai:chat:local-judge
       config:
-        apiBaseUrl: http://llm-gateway.local/v1
+        apiBaseUrl: http://localhost:8086/v1
         apiKeyEnvar: LOCAL_LLM_API_KEY
         temperature: 0
 ```
@@ -462,7 +462,7 @@ from deepeval.models import LocalModel
 
 judge = LocalModel(
     model="local-judge",
-    base_url="http://llm-gateway.local/v1",
+    base_url="http://localhost:8086/v1",
     api_key="local-placeholder",
     temperature=0,
 )
@@ -485,7 +485,7 @@ from deepeval.test_case import LLMTestCase, ToolCall
 
 judge = LocalModel(
     model="local-judge",
-    base_url="http://llm-gateway.local/v1",
+    base_url="http://localhost:8086/v1",
     api_key="local-placeholder",
     temperature=0,
 )
@@ -608,7 +608,7 @@ from harness.testing import RecordingHarness
 async def run_skill(user_input: str):
     agent = AgentHarness(
         model="local-skill-model",
-        base_url="http://llm-gateway.local/v1",
+        base_url="http://localhost:8086/v1",
         tools=[...],
     )
     recorder = RecordingHarness(agent)
@@ -707,7 +707,7 @@ Garak 是发布前的独立扫描器，不作为 PR 门禁。它使用固定的�
 # evals/garak/rest_config.yaml
 rest:
   RestGenerator:
-    uri: http://llm-gateway.local/v1/chat/completions
+    uri: http://localhost:8086/v1/chat/completions
     method: post
     headers:
       Content-Type: application/json
@@ -1047,7 +1047,7 @@ BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 SYSTEM_PROMPT = (BASE_DIR / "skills" / "my_skill" / "SKILL.md").read_text(
     encoding="utf-8"
 )
-API_BASE = os.environ.get("SKILL_API_BASE", "http://llm-gateway.local/v1")
+API_BASE = os.environ.get("SKILL_API_BASE", "http://localhost:8086/v1")
 MODEL = os.environ.get("SKILL_MODEL", "local-skill-model")
 API_KEY = os.environ.get("SKILL_API_KEY", "local-placeholder")
 
@@ -1166,7 +1166,7 @@ trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
 trivy fs --format cyclonedx --output reports/sbom.cdx.json .
 
 # 3. 配置本地模型网关
-export SKILL_API_BASE=http://llm-gateway.local/v1
+export SKILL_API_BASE=http://localhost:8086/v1
 export SKILL_MODEL=local-skill-model
 export SKILL_API_KEY=local-placeholder
 
@@ -1420,3 +1420,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v2.2 | 2026-11-02 | 引入 DeepEval 作为 L2 指标化评分主工具；新增指标选择表、LocalModel 本地接入、ToolCorrectness 校验与分数基线门禁；CI 与本地命令同步更新 |
 | v2.3 | 2026-11-02 | 补充复用现有 Agent harness SDK 的边界与组件映射；新增 Adapter 契约；适配层目录统一为 `adapters/`，避免与 Agent SDK 重名 |
 | v2.4 | 2026-11-02 | 补充对抗审核要求：独立性、覆盖范围、方法与证据、定级与修复时限、审核门禁与指标；发布门禁与风险/KPI 同步更新 |
+| v2.5 | 2026-11-02 | 本地模型网关示例端口统一为 `http://localhost:8086/v1` |

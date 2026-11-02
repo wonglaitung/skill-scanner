@@ -1,0 +1,7 @@
+{
+  "name": "skill-scanner-evals",
+  "private": true,
+  "devDependencies": {
+    "promptfoo": "0.125.1"
+  }
+}

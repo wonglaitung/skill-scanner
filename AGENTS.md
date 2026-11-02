@@ -67,6 +67,7 @@ reports/                # 测试报告与证据
 - Skill 是通用包装格式，不绑定开发语言或 SDK。
 - `wonglaitung/harness` 只作为可选执行层复用（Mock/录制、gate、security、guardrails、tracing），不要求 Skill 迁移。
 - 所有模型调用走本地 OpenAI-compatible 网关，禁止访问外部模型。
+- 本地模型网关默认 `http://localhost:8086/v1`，可用 `SKILL_API_BASE` 覆盖。
 - Garak 只做发布前独立扫描，不进入 PR 门禁。
 - DeepEval 用于 L2 指标化评分，分数纳入基线。
 - 测试数据默认使用合成数据，禁止真实 PII、密钥、生产凭证。

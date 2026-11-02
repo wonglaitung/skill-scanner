@@ -27,7 +27,7 @@ pip install garak
 * **运行全量/指定扫描**：
 ```bash
 # 针对特定模型或 API 接口运行所有扫描模块
-python -m garak --model_type rest --model_name http://localhost:8000/v1/chat/completions --probes promptinject,jailbreak
+python -m garak --model_type rest --model_name http://localhost:8086/v1/chat/completions --probes promptinject,jailbreak
 
 ```
 
