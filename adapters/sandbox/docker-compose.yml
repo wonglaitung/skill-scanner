@@ -1,0 +1,22 @@
+services:
+  sandbox:
+    build:
+      context: ../..
+      dockerfile: adapters/sandbox/Dockerfile
+    image: skill-sandbox:local
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    volumes:
+      - ../..:/workspace:ro
+    working_dir: /workspace
+    entrypoint:
+      - python

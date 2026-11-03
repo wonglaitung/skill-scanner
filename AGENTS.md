@@ -81,7 +81,7 @@ AGENTS.md
 4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
-7. 生产级演进从 Phase A 开始：运行时沙箱、gitleaks、Trivy、SBOM；再进入 Phase B/C/D。
+7. Phase A 已落地：Docker 沙箱、gitleaks、Trivy、SBOM、npm audit；剩余网络白名单、第三方签名、模型型 Skill 沙箱。
 
 ## 命令（部分已可用）
 
@@ -111,11 +111,15 @@ SKILL=write-report ./evals/garak/scan.sh
 # Skill 包装端点（也可手动启动）
 python3 adapters/skill_server.py --skill write-report --port 8090
 
+# 运行时沙箱
+./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
+
+# 供应链扫描（Docker）
+./ci/run_security.sh
+
 # 尚未安装/接入
 semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
 shellcheck skills/**/*.sh
-gitleaks detect --source . --no-git
-trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
 ```
 
 ## 进度更新要求

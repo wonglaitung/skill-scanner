@@ -9,3 +9,7 @@ reports/*
 !reports/.gitkeep
 
 *.log
+
+.trivy-cache/
+
+node_modules/

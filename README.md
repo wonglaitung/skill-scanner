@@ -74,7 +74,35 @@ python scripts/baseline.py diff manager-report
 python scripts/baseline.py list
 ```
 
-### 5. 单独运行各工具
+### 5. 运行时沙箱
+
+脚本型 Skill 在 Docker 中运行，默认 `network none`、只读根文件系统、非 root、CPU/内存/超时限制：
+
+```bash
+./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
+```
+
+沙箱镜像与配置：
+
+- `adapters/sandbox/Dockerfile`
+- `adapters/sandbox/docker-compose.yml`
+
+### 6. 供应链扫描
+
+```bash
+./ci/run_security.sh
+```
+
+包含：
+
+- gitleaks：密钥扫描
+- npm audit：Node 依赖漏洞
+- Trivy：依赖漏洞、IaC、配置错误
+- SBOM：`reports/sbom.cdx.json`
+
+需要 Docker。Garak、Trivy、gitleaks 建议使用独立镜像/容器，避免污染主环境。
+
+### 7. 单独运行各工具
 
 ```bash
 # 结构校验
@@ -146,6 +174,11 @@ AGENTS.md             Agent 工作约定
 | md-to-word 契约测试 | 4/4 |
 | Garak `dan.Dan_11_0` | 1/1（Skill 端点） |
 | Semgrep | 0 findings |
+| gitleaks | 0 leaks |
+| npm audit | 0 vulnerabilities（通过 overrides 修复） |
+| Trivy | 0 findings |
+| SBOM | 622 components（CycloneDX） |
+| 沙箱 | md-to-word 转换通过（network none、read-only） |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
 ## 已知限制
@@ -156,6 +189,8 @@ AGENTS.md             Agent 工作约定
 - H3 工具调用 / 多步 Agent 尚未实现。
 - 目前是单轮基线，不足以支撑 PR 阻断。
 - 纯脚本 Skill 不适用 DeepEval/Garak，其质量由确定性断言和契约测试保证。
+- 模型型 Skill 的运行时隔离尚未实现；当前沙箱只覆盖脚本执行。
+- 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
 
 ## 安全约束
 

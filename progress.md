@@ -24,7 +24,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
-| 生产级演进 | 路线已定：A 运行时与供应链 → B 评测可靠性 → C H3 → D 审计运营 |
+| 生产级演进 | Phase A 进行中：沙箱、gitleaks、Trivy、SBOM、npm audit 已落地 |
 
 ## 已完成里程碑
 
@@ -50,6 +50,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | 手工工具与脚本型 Skill | 新增 `manual_check.py`、`baseline.py`；导入 `md-to-word`（脚本型 S2），转换测试通过，Semgrep 0 findings |
 | 2026-11-03 | 底层架构补齐 | 新增 md-to-word Promptfoo provider/配置、契约测试；新增 `skill_server.py`，Garak 改为扫描 Skill 包装端点 |
 | 2026-11-03 | 生产级路线 | 新增 `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI |
+| 2026-11-03 | Phase A 首批 | Docker 沙箱、gitleaks、Trivy、SBOM、npm audit；0 leaks、0 findings、622 components |
 
 ## 最近验证（2026-11-02）
 
@@ -69,6 +70,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Garak 轻量扫描 | `python3 -m garak --target_type rest -G evals/garak/rest_config.json --spec probes.dan.Dan_11_0 --generations 1 --report_prefix "$PWD/reports/garak_dan"` | 1/1 passed（6.6s） |
 | Garak promptinject | 同上，`--spec probes.promptinject.HijackHateHumans --parallel_attempts 8` | 256 条，600s 到 113/256 超时（未完成） |
 | Semgrep | `semgrep --config p/python --config p/owasp-top-ten adapters ci skills scripts --error` | 1 finding（manual_check subprocess）→ 修复后 0 findings |
+| 沙箱 | `./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"` | 通过（network none、read-only） |
+| gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
 | 脚本型 Promptfoo | `npx promptfoo eval -c evals/promptfooconfig.md-to-word.yaml` | 5/5 passed |
 | 脚本型手工 L1 | `python scripts/manual_check.py --skill md-to-word --level L1` | 通过，Semgrep 0 findings |
@@ -196,7 +199,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] 脚本型 Skill 增加 SCA/密钥检查
 - [x] 脚本型 Skill Promptfoo 与契约测试
 - [x] Garak 改为扫描 Skill 包装端点
-- [ ] Phase A：运行时沙箱、gitleaks、Trivy、SBOM
+- [x] Phase A：Docker 沙箱、gitleaks、Trivy、SBOM、npm audit
+- [ ] Phase A 剩余：网络白名单、第三方签名、模型型 Skill 沙箱
 - [ ] Phase B：多轮基线与门禁
 - [ ] Phase C：H3 工具调用与 Agent 对抗
 - [ ] Phase D：独立审计与运营
@@ -215,6 +219,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 长输出导致 judge 超时 | Faithfulness/Hallucination 在长文本上超过 DeepEval 默认超时 | 用短样本、调大 `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE`、拆分指标 |
 | 指标阈值方向随版本变化 | Hallucination 在 4.3+ 改为最低分语义 | 锁定版本，在文档和测试中标注方向 |
 | 合规要求未明确 | 证据链要求不确定 | 先按工程基线保留 JSON 报告 |
+| 沙箱网络策略 | `network none` 会阻断需要外网的 Skill | 后续接域名白名单代理 |
+| npm overrides | 强制升级传递依赖可能影响 promptfoo | 已跑配置校验与 md-to-word 5/5；持续回归 |
+| 模型型 Skill 未沙箱 | 模型调用仍走本地网关 | 后续隔离网关与权限 |
 
 ## 维护方式
 

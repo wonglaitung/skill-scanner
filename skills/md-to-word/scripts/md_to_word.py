@@ -11,6 +11,7 @@ MD 转 WORD 转换器
 
 import argparse
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -271,7 +272,7 @@ def setup_logging() -> logging.Logger:
     """
     # 获取脚本所在目录
     script_dir = Path(__file__).parent
-    log_path = script_dir / 'md_to_word.log'
+    log_path = Path(os.environ.get('MD_TO_WORD_LOG', script_dir / 'md_to_word.log'))
 
     # 创建日志记录器
     logger = logging.getLogger('md_to_word')

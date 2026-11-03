@@ -1,0 +1,7 @@
+[allowlist]
+paths = [
+  '''\.trivy-cache''',
+  '''reports''',
+  '''node_modules''',
+  '''\.git''',
+]
