@@ -17,8 +17,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word`；1 个工具型 S2 `account-balance-query` |
-| 手工工具 | `manual_check.py` 支持 L0-L3；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate |
-| 自动化验证 | 校验/Ruff/pytest 通过；6 个 S2 均完成 3 轮基线：write-report 8/8、system-specification 8/8、manager-report 8/8、md-to-word 5/5、expense-policy-qa 5/5、account-balance-query 14/14 |
+| 手工工具 | `manual_check.py` 支持 L0-L3；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
+| 自动化验证 | 校验/Ruff/pytest 通过；6 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
 | Garak | 已安装 0.16.0；`dan.Dan_11_0` 1/1 通过；`promptinject` 并行 8 仍 10 分钟超时（113/256）；依赖冲突，建议隔离环境 |
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
@@ -68,6 +68,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | Phase B Delta Gate | 新增 `baseline.py gate`（3 轮门槛、容差、JSON 输出）；6 个 S2 全部 PASS |
 | 2026-11-03 | F-003 修复 | write-report 增加最高优先级输出约束与硬性示例；8/8、DeepEval 1/1；移除未适配的 AskUserQuestion |
 | 2026-11-03 | 长文超时治理 | `SKILL_MAX_TOKENS`/`--max-tokens` 限制生成长度；system-specification 3 轮 8/8、2/2 |
+| 2026-11-03 | Quarantine | 新增 `evals/quarantine.json`、`scripts/quarantine.py`；报告单列隔离用例，Flaky 跳过隔离用例 |
+| 2026-11-03 | Judge 校准 | 新增 20 条人工标注集与 `judge_calibration.py`；一致率 95%、MAE 0.05；1 条不匹配为“相关但事实错误” |
 
 ## 最近验证（2026-11-02）
 
@@ -237,7 +239,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] Phase A 剩余：私钥托管/轮换、模型网关隔离
 - [x] Phase B：多轮基线、趋势、Flaky
 - [x] Phase B：Delta Gate
-- [ ] Phase B：Quarantine、Judge 校准
+- [x] Phase B：Quarantine
+- [x] Phase B：Judge 校准首轮（95%）
+- [ ] Phase B：连续 2 周稳定性与门禁报告
 - [ ] Phase C：H3 工具调用与 Agent 对抗
 - [ ] Phase D：独立审计与运营
 - [x] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook
@@ -253,7 +257,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 |---|---|---|
 | PII 规则可能被绕过 | 新型诱导仍可能复述姓名 | 持续补充 PII 用例，季度复测 |
 | AI 腔规则回退 | 模型仍可能在长文或诱导下用禁用词 | 保留硬性示例与 3 轮基线，回归时加重跑 |
-| 本地模型 judge 能力未知 | 指标分数可能不稳定 | 先跑 20-50 条人工校准 |
+| 本地模型 judge 能力 | 首轮 20 条一致率 95%；仍可能把“相关但错误”判为通过 | 扩充业务标注集，区分 relevance 与 correctness |
 | 基线仅 3 轮 | 还不足以判断 2 周稳定性 | 继续累计 2-4 周数据，保持 Delta Gate 告警不阻断 |
 | LLM 评测无法在托管 runner 运行 | Promptfoo/DeepEval/Garak 依赖本地模型网关 | 用自托管 runner、夜间任务或本地执行 |
 | Garak 依赖冲突 | 安装会升级 torch/click，可能影响其他工具 | 用独立 venv/容器运行 Garak，不污染主环境 |

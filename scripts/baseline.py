@@ -7,6 +7,9 @@ import statistics
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from quarantine import active_entries, match  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
 BASELINES_DIR = ROOT / "evals" / "baselines"
@@ -41,7 +44,7 @@ def case_key(item: dict) -> str:
     return f"{item.get('testIdx')}|{item.get('provider')}|{user_input}"
 
 
-def promptfoo_cases(path: Path) -> dict:
+def promptfoo_cases(path: Path, quarantine: list[dict] | None = None) -> dict:
     if not path.exists():
         return {}
     try:
@@ -49,15 +52,19 @@ def promptfoo_cases(path: Path) -> dict:
     except json.JSONDecodeError:
         return {}
 
+    quarantine = quarantine or []
     cases = {}
     for item in data.get("results", {}).get("results", []):
         key = case_key(item)
+        input_text = (item.get("vars") or {}).get("user_input")
+        entry = match(quarantine, input_text) if item.get("success") is not True else None
         cases[key] = {
-            "input": (item.get("vars") or {}).get("user_input"),
+            "input": input_text,
             "provider": item.get("provider"),
             "passed": item.get("success") is True,
             "error": bool(item.get("error")),
             "reason": item.get("failureReason") or item.get("error"),
+            "quarantined": entry is not None,
         }
     return cases
 
@@ -69,7 +76,7 @@ def find_flaky(runs: list[dict]) -> list[dict]:
     flaky = []
     for key in sorted(keys):
         entries = [run["cases"][key] for run in runs if key in run.get("cases", {})]
-        if len(entries) < 2:
+        if len(entries) < 2 or any(entry.get("quarantined") for entry in entries):
             continue
         passed = sum(1 for entry in entries if entry.get("passed"))
         if 0 < passed < len(entries):
@@ -147,6 +154,7 @@ def collect(
             file=sys.stderr,
         )
 
+    quarantine = active_entries(skill)
     run_entries = []
     for path, data in selected:
         metrics = data.get("metrics", {})
@@ -156,7 +164,7 @@ def collect(
                 "report": str(path.relative_to(ROOT)),
                 "promptfoo": metrics.get("promptfoo", {}),
                 "deepeval": metrics.get("deepeval", {}),
-                "cases": promptfoo_cases(path / "promptfoo.json"),
+                "cases": promptfoo_cases(path / "promptfoo.json", quarantine),
             }
         )
 

@@ -318,6 +318,34 @@ python scripts/manual_check.py --skill my-skill --level L1 --allow-failures
 
 ---
 
+## Quarantine：隔离已知不稳定用例
+
+配置文件：`evals/quarantine.json`。
+
+```json
+{
+  "version": 1,
+  "skills": {
+    "my-skill": [
+      {
+        "case": "完全匹配的 user_input",
+        "reason": "已知模型波动，暂不阻断",
+        "owner": "team-name",
+        "expires": "2026-12-31"
+      }
+    ]
+  }
+}
+```
+
+规则：
+
+- 用例按 `user_input` 精确匹配。
+- `expires` 过期后自动失效。
+- 被隔离用例不降低 Promptfoo 通过率，但报告会单列。
+- Flaky 检测会跳过已隔离用例。
+- 隔离不是修复；到期前必须补修复或续期评审。
+
 ## 第 6 步：建立多轮基线，发布前复核
 
 ### 6.1 采集多轮基线
@@ -357,6 +385,15 @@ Delta Gate（要求基线至少 3 轮）：
 python scripts/baseline.py gate my-skill --tolerance 0.05
 python scripts/baseline.py gate my-skill --json
 ```
+
+判断本地 Judge 是否可信：
+
+```bash
+JUDGE_MODEL=qwen3 JUDGE_API_BASE=http://localhost:8086/v1 \
+  python scripts/judge_calibration.py
+```
+
+校准集：`evals/judge_calibration/relevancy.jsonl`；报告输出到 `reports/judge_calibration/`。
 
 单轮基线仍可用 `save` 保存，但只适合临时记录，不应作为发布门禁依据。
 

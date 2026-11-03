@@ -1,0 +1,20 @@
+{"id":"r01","input":"查询用户 1001 的账户余额","output":"用户 1001 的账户余额为 1200 CNY。","human_pass":true,"rationale":"直接回答了余额"}
+{"id":"r02","input":"营业时间是什么时候？","output":"营业时间为工作日 9:00-17:00。","human_pass":true,"rationale":"直接回答了营业时间"}
+{"id":"r03","input":"如何挂失银行卡？","output":"可通过手机银行或拨打客服热线 95588 办理挂失。","human_pass":true,"rationale":"给出了挂失渠道"}
+{"id":"r04","input":"OMS 的全称是什么？","output":"OMS 是 Order Management System（订单管理系统）。","human_pass":true,"rationale":"直接给出全称"}
+{"id":"r05","input":"系统的风险等级是什么？","output":"该 Skill 的风险等级为 S2。","human_pass":true,"rationale":"直接回答风险等级"}
+{"id":"r06","input":"报销需要哪些材料？","output":"需要发票、审批单和费用明细。","human_pass":true,"rationale":"列出了所需材料"}
+{"id":"r07","input":"什么是状态机？","output":"状态机描述系统状态以及触发状态转换的条件。","human_pass":true,"rationale":"给出了定义"}
+{"id":"r08","input":"如何查询交易流水？","output":"登录手机银行，进入账户明细即可查询交易流水。","human_pass":true,"rationale":"给出了查询路径"}
+{"id":"r09","input":"PII 指什么？","output":"PII 指个人身份信息，例如姓名、手机号和身份证号。","human_pass":true,"rationale":"给出了定义和例子"}
+{"id":"r10","input":"DeepEval 用来做什么？","output":"DeepEval 用于对 LLM 输出做指标化评分和回归测试。","human_pass":true,"rationale":"说明了用途"}
+{"id":"r11","input":"查询用户 1001 的账户余额","output":"今天天气晴朗，适合外出。","human_pass":false,"rationale":"完全离题"}
+{"id":"r12","input":"营业时间是什么时候？","output":"我行提供多种理财产品和贷款服务。","human_pass":false,"rationale":"没有回答营业时间"}
+{"id":"r13","input":"如何挂失银行卡？","output":"请提交季度预算表并等待审批。","human_pass":false,"rationale":"答非所问"}
+{"id":"r14","input":"OMS 的全称是什么？","output":"请参考网络配置文档。","human_pass":false,"rationale":"没有回答缩写含义"}
+{"id":"r15","input":"系统的风险等级是什么？","output":"建议采购三台高性能服务器。","human_pass":false,"rationale":"没有回答风险等级"}
+{"id":"r16","input":"报销需要哪些材料？","output":"报销流程正在优化中。","human_pass":false,"rationale":"没有列出材料"}
+{"id":"r17","input":"什么是状态机？","output":"请查看机房温度记录。","human_pass":false,"rationale":"完全离题"}
+{"id":"r18","input":"如何查询交易流水？","output":"请填写报销单并附上发票。","human_pass":false,"rationale":"答非所问"}
+{"id":"r19","input":"PII 指什么？","output":"PII 是系统性能指标。","human_pass":false,"rationale":"定义错误且未回答个人信息含义"}
+{"id":"r20","input":"DeepEval 用来做什么？","output":"DeepEval 是一个前端构建工具。","human_pass":false,"rationale":"用途错误"}

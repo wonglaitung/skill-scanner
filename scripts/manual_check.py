@@ -16,6 +16,9 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from quarantine import active_entries, match  # noqa: E402
+
 SKILLS_DIR = ROOT / "skills"
 REPORTS_DIR = ROOT / "reports"
 
@@ -133,7 +136,7 @@ def deepeval_target(skill: str, agent: bool = False) -> tuple[Path, str | None] 
     return None
 
 
-def parse_promptfoo(path: Path) -> dict:
+def parse_promptfoo(path: Path, quarantine: list[dict] | None = None) -> dict:
     if not path.exists():
         return {}
     try:
@@ -141,29 +144,55 @@ def parse_promptfoo(path: Path) -> dict:
     except json.JSONDecodeError:
         return {}
 
+    quarantine = quarantine or []
     results = data.get("results", {}).get("results", [])
-    passed = sum(1 for item in results if item.get("success") is True)
-    failed = sum(1 for item in results if item.get("success") is False and not item.get("error"))
-    errors = sum(1 for item in results if item.get("error"))
+    passed = 0
+    failed = 0
+    errors = 0
     findings = []
+    quarantined = []
     for item in results:
-        if item.get("success") is False or item.get("error"):
-            findings.append(
+        input_text = (item.get("vars") or {}).get("user_input")
+        raw_error = item.get("error")
+        is_failure = item.get("success") is False or raw_error
+        entry = match(quarantine, input_text) if is_failure else None
+        if entry is not None:
+            quarantined.append(
                 {
-                    "input": item.get("vars", {}).get("user_input"),
-                    "reason": item.get("failureReason") or item.get("error"),
+                    "input": input_text,
+                    "reason": raw_error or item.get("failureReason"),
+                    "owner": entry.get("owner"),
+                    "expires": entry.get("expires"),
+                    "quarantine_reason": entry.get("reason"),
                 }
             )
+            continue
+        if item.get("success") is True:
+            passed += 1
+        elif raw_error:
+            errors += 1
+        elif item.get("success") is False:
+            failed += 1
+        if is_failure:
+            findings.append(
+                {
+                    "input": input_text,
+                    "reason": item.get("failureReason") or raw_error,
+                }
+            )
+
+    effective_passed = passed + len(quarantined)
     total = len(results)
     return {
         "total": total,
         "passed": passed,
         "failed": failed,
         "errors": errors,
-        "pass_rate": round(passed / total, 4) if total else 0.0,
+        "quarantined": len(quarantined),
+        "quarantine_details": quarantined,
+        "pass_rate": round(effective_passed / total, 4) if total else 0.0,
         "findings": findings,
     }
-
 
 def parse_deepeval(text: str, returncode: int) -> dict:
     match = re.search(
@@ -291,11 +320,17 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
                 f"- 通过：{promptfoo['passed']}",
                 f"- 失败：{promptfoo['failed']}",
                 f"- 错误：{promptfoo['errors']}",
+                f"- 隔离：{promptfoo.get('quarantined', 0)}",
                 f"- 通过率：{promptfoo['pass_rate']}",
             ]
         )
         for finding in promptfoo.get("findings", []):
             lines.append(f"- 失败：{finding.get('input')} -> {finding.get('reason')}")
+        for item in promptfoo.get("quarantine_details", []):
+            lines.append(
+                f"- 隔离：{item.get('input')} -> {item.get('quarantine_reason') or item.get('reason')}"
+                f"（owner {item.get('owner', '-')}，到期 {item.get('expires', '-')}）"
+            )
 
     deepeval = summary.get("metrics", {}).get("deepeval")
     if deepeval:
@@ -398,13 +433,19 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
         ]
     )
     findings = (promptfoo or {}).get("findings", [])
+    quarantined = (promptfoo or {}).get("quarantine_details", [])
     if findings:
         for item in findings:
             lines.append(
                 f"| {item.get('input', '-')} | {item.get('reason', '-')} | "
                 "待定 | 待定 | 待处理 |"
             )
-    else:
+    for item in quarantined:
+        lines.append(
+            f"| {item.get('input', '-')} | {item.get('quarantine_reason') or item.get('reason', '-')} | "
+            f"隔离 | {item.get('owner', '-')} | 已隔离至 {item.get('expires', '-')} |"
+        )
+    if not findings and not quarantined:
         lines.append("| 无 | - | - | - | - |")
     lines.append("")
 
@@ -547,6 +588,7 @@ def main() -> int:
     }
 
     if current_level >= 1:
+        quarantine_entries = active_entries(args.skill)
         config = promptfoo_config(args.skill, agent=args.agent)
         if config is None:
             steps.append(
@@ -568,8 +610,21 @@ def main() -> int:
                 env,
                 timeout=args.promptfoo_timeout,
             )
+            promptfoo_metrics = parse_promptfoo(
+                out / "promptfoo.json", quarantine_entries
+            )
+            if (
+                promptfoo_step["status"] in {"failed", "error"}
+                and promptfoo_metrics.get("failed", 0) == 0
+                and promptfoo_metrics.get("errors", 0) == 0
+                and promptfoo_metrics.get("quarantined", 0) > 0
+            ):
+                promptfoo_step["status"] = "passed"
+                promptfoo_step["reason"] = (
+                    f"quarantined failures: {promptfoo_metrics['quarantined']}"
+                )
             steps.append(promptfoo_step)
-            summary["metrics"]["promptfoo"] = parse_promptfoo(out / "promptfoo.json")
+            summary["metrics"]["promptfoo"] = promptfoo_metrics
 
     if current_level >= 2:
         target = deepeval_target(args.skill, agent=args.agent)

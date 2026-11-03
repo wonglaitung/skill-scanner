@@ -103,6 +103,10 @@ python scripts/baseline.py trend write-report
 python scripts/baseline.py diff write-report --tolerance 0.05
 python scripts/baseline.py gate write-report --tolerance 0.05
 
+# Judge 校准（需本地 qwen3 网关）
+JUDGE_MODEL=qwen3 JUDGE_API_BASE=http://localhost:8086/v1 \
+  python scripts/judge_calibration.py
+
 # Promptfoo（需本地 qwen3 网关）
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
   npx promptfoo eval -c evals/promptfooconfig.smoke.yaml --max-concurrency 1
