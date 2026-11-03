@@ -16,16 +16,16 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 代码实现 | 最小骨架已建立（6 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
-| 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word`；1 个工具型 S2 `account-balance-query` |
+| 试点 Skill | 3 个 S2 纯提示词；1 个示例；1 个脚本型；3 个工具型：`account-balance-query`、`service-ticket-update`、`cross-skill-router` |
 | 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
-| 自动化验证 | 校验/Ruff/pytest 通过；6 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
+| 自动化验证 | 校验/Ruff/pytest 通过；8 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
 | Garak | 已安装 0.16.0；`dan.Dan_11_0` 1/1 通过；`promptinject` 并行 8 仍 10 分钟超时（113/256）；依赖冲突，建议隔离环境 |
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
-| H3 | C4 完成：Gate、录制、回放；上游 harness 修复已提交，pin `c4cf29f` |
+| H3 | 3 类工具 Skill：只读、写操作、跨 Skill；Gate、Trace、录制回放均验证；pin `c4cf29f` |
 | 推进原则 | 先完善人工模式与 SOP；人工底座完整后再提 CI；新增 Skill 复用同一 SOP/脚本 |
 
 ## 已完成里程碑
@@ -63,9 +63,10 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | H3 C2 | 轨迹用例扩到 10 条；新增间接注入、数据外泄、工具报错；DeepEval 4/4；manual_check --agent L2 通过 |
 | 2026-11-03 | H3 C3 | 轨迹用例扩到 14 条；新增跨 Skill、参数注入、提示词泄露；DeepEval 7/7；报告增加发现处理表 |
 | 2026-11-03 | H3 C4 | 接入 `DeterministicGate`；修复上游 redact/RecordingHarness/MockHarness 兼容问题；录制回放 1/1 通过 |
+| 2026-11-03 | H3 通用化 | 新增 `service-ticket-update`（写操作）与 `cross-skill-router`（跨 Skill 只读）；三类工具 Skill 均 3 轮基线、Trace、权限声明与回放 |
 | 2026-11-03 | 上游 harness | `wonglaitung/harness` 提交 `c4cf29f` 已推送；`requirements-harness.txt` pin 更新 |
-| 2026-11-03 | Phase B 多轮基线 | `baseline.py collect/trend`、Flaky 检测、容差 diff、报告基线段完成；6 个 S2 各 3 轮基线，Flaky 0 |
-| 2026-11-03 | Phase B Delta Gate | 新增 `baseline.py gate`（3 轮门槛、容差、JSON 输出）；6 个 S2 全部 PASS |
+| 2026-11-03 | Phase B 多轮基线 | `baseline.py collect/trend`、Flaky 检测、容差 diff、报告基线段完成；8 个 S2 各 3 轮基线，Flaky 0 |
+| 2026-11-03 | Phase B Delta Gate | 新增 `baseline.py gate`（3 轮门槛、容差、JSON 输出）；8 个 S2 全部 PASS |
 | 2026-11-03 | F-003 修复 | write-report 增加最高优先级输出约束与硬性示例；8/8、DeepEval 1/1；移除未适配的 AskUserQuestion |
 | 2026-11-03 | 长文超时治理 | `SKILL_MAX_TOKENS`/`--max-tokens` 限制生成长度；system-specification 3 轮 8/8、2/2 |
 | 2026-11-03 | Quarantine | 新增 `evals/quarantine.json`、`scripts/quarantine.py`；报告单列隔离用例，Flaky 跳过隔离用例 |
@@ -93,15 +94,15 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Semgrep | `semgrep --config p/python --config p/owasp-top-ten adapters ci skills scripts --error` | 1 finding（manual_check subprocess）→ 修复后 0 findings |
 | 沙箱 | `./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"` | 通过（network none、read-only） |
 | 沙箱逃逸 | `./scripts/sandbox_escape_check.sh` | 通过（非 root、只读、无网络、无 Docker socket） |
-| Skill 完整性 | `python scripts/skill_lock.py verify` | 5 个 Skill 全部匹配 |
+| Skill 完整性 | `python scripts/skill_lock.py verify` | 8 个 Skill 全部匹配 |
 | 手工报告含供应链 | `python scripts/manual_check.py --skill md-to-word --level L0` | security passed，Trivy 0，SBOM 622 |
 | 模型端点沙箱 | `PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report` | 健康检查与 chat 请求通过 |
 | 网络白名单 | `docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build` | 模型请求通过；外部 HTTPS 403；直连 IP 不可达 |
-| H3 Promptfoo | `python scripts/manual_check.py --skill account-balance-query --level L1 --agent` | 5/5 passed |
-| H3 ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_h3_account_balance_query.py -q` | 7 passed |
+| H3 Promptfoo | `python scripts/manual_check.py --skill <h3-skill> --level L2 --agent` | 只读 14/14、写操作 10/10、跨 Skill 9/9 |
+| H3 ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_h3_*.py -q` | 只读 7、写操作 2、跨 Skill 2 |
 | H3 手工 L2 | `python scripts/manual_check.py --skill account-balance-query --level L2 --agent` | Promptfoo 14/14、DeepEval 7/7 |
 | H3 Gate | 直接调用 `DeterministicGate` | 已接入；无 unsourced 时不再误隔离 |
-| H3 录制回放 | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest ci/test_h3_recording.py -q` | 1 passed（录制后 MockHarness 回放） |
+| H3 录制回放 | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest ci/test_h3_recording.py -q` | 3 passed（3 类工具 Skill） |
 | 签名工具 | `scripts/sign_skills.py keygen/sign/verify` | 验签通过；篡改 lock 后失败 |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
@@ -244,7 +245,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] Phase B：Quarantine
 - [x] Phase B：Judge 校准首轮（95%）
 - [ ] Phase B：连续 2 周稳定性与门禁报告
-- [ ] Phase C：H3 工具调用与 Agent 对抗
+- [x] Phase C：H3 三类工具 Skill（只读、写、跨 Skill）
+- [ ] Phase C：网页/文件间接注入与 guardrails/OTel
 - [ ] Phase D：独立审计与运营
 - [x] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook
 - [x] H3 C2：10 条 Promptfoo 轨迹用例 + DeepEval ToolCorrectness

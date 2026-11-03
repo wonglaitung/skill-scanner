@@ -234,11 +234,17 @@ tests:
 
 ### 5.3 工具型 Agent：准备 Mock 工具和 Agent 配置
 
-参考 `account-balance-query`：
+三类参考：
 
-- `skills/account-balance-query/SKILL.md`
+- 只读查询：`account-balance-query`
+- 写操作：`service-ticket-update`
+- 跨 Skill 只读路由：`cross-skill-router`
+
+对应文件：
+
+- `skills/<skill>/SKILL.md`
 - `adapters/harness_tools.py`
-- `evals/promptfooconfig.account-balance-query.agent.yaml`
+- `evals/promptfooconfig.<skill>.agent.yaml`
 
 运行方式见第 6 步。
 
