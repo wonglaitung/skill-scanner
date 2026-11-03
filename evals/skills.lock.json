@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "account-balance-query": {
+      "aggregate": "413296fb1abf201dea6b772afeb446adfa873ac80ef8bf967d87fe9c3758b222",
+      "files": {
+        "SKILL.md": "fb5fda755be948bf6e637c2cba78386dd8987c874c14c108edb9eb54185364c9"
+      }
+    },
     "expense-policy-qa": {
       "aggregate": "1060373122777dd96f096a8a2f462c71474f2e6713b7635889e30733b10c7465",
       "files": {

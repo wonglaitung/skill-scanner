@@ -51,6 +51,7 @@ docker run --rm \
   --skip-dirs /repo/.git \
   --skip-dirs /repo/node_modules \
   --skip-dirs /repo/.venv-harness \
+  --skip-dirs /repo/.harness \
   --skip-dirs /repo/reports \
   --scanners vuln,misconfig \
   --include-dev-deps \
@@ -68,6 +69,7 @@ docker run --rm \
   --skip-dirs /repo/.git \
   --skip-dirs /repo/node_modules \
   --skip-dirs /repo/.venv-harness \
+  --skip-dirs /repo/.harness \
   --skip-dirs /repo/reports \
   --format cyclonedx \
   --include-dev-deps \

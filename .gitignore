@@ -15,3 +15,5 @@ reports/*
 node_modules/
 
 .venv-harness/
+
+.harness/

@@ -55,6 +55,9 @@ python scripts/manual_check.py --skill manager-report --level L2
 
 # L3：L2 + Garak（自动启动 Skill 端点）
 python scripts/manual_check.py --skill manager-report --level L3
+
+# H3 Agent 模式
+python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 ```
 
 输出：
@@ -187,6 +190,7 @@ python adapters/skill_server.py --skill write-report --port 8090
 | `manager-report` | 纯提示词 | 算力申请汇报 |
 | `expense-policy-qa` | 纯提示词 | 费用报销问答（示例） |
 | `md-to-word` | 提示词 + 脚本 | Markdown 转 Word |
+| `account-balance-query` | 提示词 + 工具 | H3 工具调用测试 Skill |
 
 ## 目录结构
 
@@ -224,6 +228,8 @@ AGENTS.md             Agent 工作约定
 | 网络白名单 | 外部访问被阻断，仅允许本地模型网关 |
 | Skill 完整性锁 | 5 个 Skill 全部匹配 |
 | 密码学签名 | Ed25519 签名/验签通过，篡改检测失败符合预期 |
+| H3 Promptfoo | 5/5 |
+| H3 ToolCorrectness | 1/1 |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
 ## 已知限制

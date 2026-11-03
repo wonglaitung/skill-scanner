@@ -26,7 +26,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 - 安全团队主导。
 - 先告警，不阻断 PR。
 - 使用本地 OpenAI-compatible 模型网关（`http://localhost:8086/v1`，模型 `qwen3`）。
-- 暂不启用 H3、CI 阻断、独立合规审计。
+- H3 已进入 C1（工具型 Skill 可测）；CI 阻断、独立合规审计仍暂不启用。
 
 ## 目录约定
 
@@ -84,7 +84,7 @@ AGENTS.md
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. H3 改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`），按 C1-C4 推进，详见 `docs/生产级演进路线.md` Phase C。
+8. H3 复用 `wonglaitung/harness`：C1 已完成（Promptfoo 5/5、ToolCorrectness 1/1、manual_check --agent L1/L2 通过）；下一步 C2 扩充轨迹用例。
 
 ## 命令（部分已可用）
 
@@ -96,6 +96,7 @@ pytest -q
 
 # 手工检查（推荐）
 python scripts/manual_check.py --skill write-report --level L2
+python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 python scripts/baseline.py save write-report
 python scripts/baseline.py diff write-report
 

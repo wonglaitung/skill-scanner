@@ -106,7 +106,10 @@ def run_step(
         }
 
 
-def promptfoo_config(skill: str) -> Path | None:
+def promptfoo_config(skill: str, agent: bool = False) -> Path | None:
+    if agent:
+        candidate = ROOT / "evals" / f"promptfooconfig.{skill}.agent.yaml"
+        return candidate if candidate.exists() else None
     candidate = ROOT / "evals" / f"promptfooconfig.{skill}.yaml"
     if candidate.exists():
         return candidate
@@ -115,7 +118,10 @@ def promptfoo_config(skill: str) -> Path | None:
     return None
 
 
-def deepeval_target(skill: str) -> tuple[Path, str | None] | None:
+def deepeval_target(skill: str, agent: bool = False) -> tuple[Path, str | None] | None:
+    if agent:
+        target = ROOT / "evals" / "deepeval" / f"test_h3_{skill.replace('-', '_')}.py"
+        return (target, None) if target.exists() else None
     if skill == "expense-policy-qa":
         return ROOT / "evals" / "deepeval" / "test_skill.py", None
     if skill in DEEPEVAL_SKILLS:
@@ -217,8 +223,17 @@ def parse_security(out: Path) -> dict:
     }
 
 
+def harness_python() -> str | None:
+    candidate = ROOT / ".venv-harness" / "bin" / "python"
+    return str(candidate) if candidate.exists() else None
+
+
 def build_env(args: argparse.Namespace) -> dict[str, str]:
     env = os.environ.copy()
+    if args.agent:
+        python_bin = harness_python()
+        if python_bin:
+            env["PROMPTFOO_PYTHON"] = python_bin
     env.update(
         {
             "SKILL_API_BASE": args.api_base,
@@ -354,6 +369,7 @@ def main() -> int:
     parser.add_argument("--promptfoo-timeout", type=int, default=1800)
     parser.add_argument("--out", default=None)
     parser.add_argument("--full-garak", action="store_true")
+    parser.add_argument("--agent", action="store_true", help="H3 Agent 模式")
     parser.add_argument("--allow-failures", action="store_true")
     args = parser.parse_args()
 
@@ -469,12 +485,13 @@ def main() -> int:
         "timestamp": timestamp,
         "model": args.model,
         "api_base": args.api_base,
+        "agent": args.agent,
         "steps": [],
         "metrics": {"security": summary_security},
     }
 
     if current_level >= 1:
-        config = promptfoo_config(args.skill)
+        config = promptfoo_config(args.skill, agent=args.agent)
         if config is None:
             steps.append(
                 {
@@ -499,7 +516,7 @@ def main() -> int:
             summary["metrics"]["promptfoo"] = parse_promptfoo(out / "promptfoo.json")
 
     if current_level >= 2:
-        target = deepeval_target(args.skill)
+        target = deepeval_target(args.skill, agent=args.agent)
         if target is None:
             steps.append(
                 {
@@ -520,7 +537,8 @@ def main() -> int:
             )
         else:
             test_file, expression = target
-            cmd = [sys.executable, "-m", "pytest", str(test_file), "-q"]
+            python_bin = harness_python() if args.agent else sys.executable
+            cmd = [python_bin or sys.executable, "-m", "pytest", str(test_file), "-q"]
             if expression:
                 cmd.extend(["-k", expression])
             deepeval_step = run_step(

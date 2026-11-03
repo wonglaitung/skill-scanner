@@ -16,7 +16,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 代码实现 | 最小骨架已建立（5 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
-| 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word` |
+| 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word`；1 个工具型 S2 `account-balance-query` |
 | 手工工具 | `scripts/manual_check.py`、`scripts/baseline.py` 已建；支持 L0-L3 与基线 diff |
 | 自动化验证 | 校验/Ruff/pytest 通过；示例 Promptfoo 6/6、DeepEval 1/1；S2 用例扩至 24 条：write-report 7/8（F-003）、system-specification 8/8、manager-report 8/8 |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
@@ -25,7 +25,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
-| H3 | 方案已改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`，HEAD `c38416f`）；已建项目本地 `.venv-harness/`，不污染全局 |
+| H3 | C1 已完成：HarnessAgentAdapter、Mock 工具、TraceHook、Promptfoo 5/5、ToolCorrectness 通过；下一步 C2 |
 | 推进原则 | 先完善人工模式与 SOP；人工底座完整后再提 CI；新增 Skill 复用同一 SOP/脚本 |
 
 ## 已完成里程碑
@@ -59,6 +59,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | Phase A 签名工具 | Ed25519 keygen/sign/verify；篡改检测通过；私钥不入库 |
 | 2026-11-03 | H3 方案 | 改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`）；已确认 qwen3 原生 tool calling；定义 Adapter、TraceHook、Mock 工具与分阶段计划 |
 | 2026-11-03 | H3 隔离环境 | 新增 `setup_harness_env.sh`、`with_harness.sh`；`.venv-harness/` 本地安装，不污染全局 |
+| 2026-11-03 | H3 C1 | 新增 `harness_agent.py`、`harness_tools.py`、`harness_provider.py`、`account-balance-query`；Promptfoo 5/5、ToolCorrectness 1/1、manual_check --agent L1/L2 通过 |
 
 ## 最近验证（2026-11-02）
 
@@ -84,6 +85,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 手工报告含供应链 | `python scripts/manual_check.py --skill md-to-word --level L0` | security passed，Trivy 0，SBOM 622 |
 | 模型端点沙箱 | `PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report` | 健康检查与 chat 请求通过 |
 | 网络白名单 | `docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build` | 模型请求通过；外部 HTTPS 403；直连 IP 不可达 |
+| H3 Promptfoo | `python scripts/manual_check.py --skill account-balance-query --level L1 --agent` | 5/5 passed |
+| H3 ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_h3_account_balance_query.py -q` | 1 passed |
+| H3 手工 L2 | `python scripts/manual_check.py --skill account-balance-query --level L2 --agent` | Promptfoo 5/5、DeepEval 1/1 |
 | 签名工具 | `scripts/sign_skills.py keygen/sign/verify` | 验签通过；篡改 lock 后失败 |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
@@ -224,7 +228,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] Phase B：多轮基线与门禁
 - [ ] Phase C：H3 工具调用与 Agent 对抗
 - [ ] Phase D：独立审计与运营
-- [ ] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook
+- [x] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook
 - [ ] H3 C2：Promptfoo + DeepEval ToolCorrectness
 - [ ] H3 C3：间接注入、未授权工具、跨 Skill、20 条用例
 - [ ] H3 C4：录制回放与 harness gate/security
