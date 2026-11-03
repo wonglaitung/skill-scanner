@@ -128,6 +128,16 @@ docker compose -f adapters/sandbox/docker-compose.model.yml down -v
 - SBOM：`reports/sbom.cdx.json`
 - Skill 文件完整性锁：`python scripts/skill_lock.py verify`
 
+密码学签名（可选，私钥不入库）：
+
+```bash
+python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals/keys/public.pem
+python scripts/sign_skills.py sign --key /secure/skills.pem
+python scripts/sign_skills.py verify --public evals/keys/public.pem
+```
+
+`manual_check.py` 在检测到 `evals/keys/public.pem` 与 `evals/skills.lock.sig` 时会自动验签。生产环境私钥应由 KMS/HSM 或独立签名服务托管。
+
 需要 Docker。Garak、Trivy、gitleaks 建议使用独立镜像/容器，避免污染主环境。
 
 ### 7. 单独运行各工具
@@ -211,6 +221,7 @@ AGENTS.md             Agent 工作约定
 | 模型型 Skill 沙箱 | manager-report 容器内启动并返回响应 |
 | 网络白名单 | 外部访问被阻断，仅允许本地模型网关 |
 | Skill 完整性锁 | 5 个 Skill 全部匹配 |
+| 密码学签名 | Ed25519 签名/验签通过，篡改检测失败符合预期 |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
 ## 已知限制
@@ -223,7 +234,7 @@ AGENTS.md             Agent 工作约定
 - 纯脚本 Skill 不适用 DeepEval/Garak，其质量由确定性断言和契约测试保证。
 - 模型型 Skill 严格沙箱依赖 Docker Compose；外部域名白名单目前只允许 `host.docker.internal:8086`。
 - 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
-- Skill 完整性锁是 SHA256 哈希校验，不是密码学签名；第三方签名尚未实现。
+- 密码学签名工具已实现，但私钥托管、轮换和第三方公钥分发流程尚未落地。
 
 ## 安全约束
 

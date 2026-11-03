@@ -81,7 +81,7 @@ AGENTS.md
 4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
-7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、逃逸检查、模型端点沙箱、网络白名单；剩余密码学签名、模型网关隔离。
+7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
 
 ## 命令（部分已可用）
 
@@ -117,6 +117,11 @@ python3 adapters/skill_server.py --skill write-report --port 8090
 
 # Skill 完整性锁
 python scripts/skill_lock.py verify
+
+# 密码学签名（私钥不入库）
+python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals/keys/public.pem
+python scripts/sign_skills.py sign --key /secure/skills.pem
+python scripts/sign_skills.py verify --public evals/keys/public.pem
 
 # 模型型 Skill 端点沙箱（基础版）
 PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report

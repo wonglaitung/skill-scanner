@@ -24,7 +24,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
-| 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、逃逸检查、模型端点沙箱、网络白名单已落地；密码学签名/网关隔离待做 |
+| 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
 
 ## 已完成里程碑
 
@@ -54,6 +54,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | Phase A 第二批 | security 进入手工报告；SHA256 Skill 完整性锁；沙箱逃逸检查通过 |
 | 2026-11-03 | Phase A 第三批 | 模型型 Skill 端点容器化；manager-report 在沙箱内启动并返回响应 |
 | 2026-11-03 | Phase A 网络白名单 | internal 网络 + egress proxy；外部 HTTPS 403、直连 IP 不可达；模型请求正常 |
+| 2026-11-03 | Phase A 签名工具 | Ed25519 keygen/sign/verify；篡改检测通过；私钥不入库 |
 
 ## 最近验证（2026-11-02）
 
@@ -79,6 +80,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 手工报告含供应链 | `python scripts/manual_check.py --skill md-to-word --level L0` | security passed，Trivy 0，SBOM 622 |
 | 模型端点沙箱 | `PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report` | 健康检查与 chat 请求通过 |
 | 网络白名单 | `docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build` | 模型请求通过；外部 HTTPS 403；直连 IP 不可达 |
+| 签名工具 | `scripts/sign_skills.py keygen/sign/verify` | 验签通过；篡改 lock 后失败 |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
 | 脚本型 Promptfoo | `npx promptfoo eval -c evals/promptfooconfig.md-to-word.yaml` | 5/5 passed |
@@ -213,7 +215,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] 沙箱逃逸检查
 - [x] 模型型 Skill 端点沙箱（基础版）
 - [x] 网络白名单（internal + egress proxy）
-- [ ] Phase A 剩余：第三方密码学签名、模型网关隔离
+- [x] 第三方密码学签名工具（Ed25519）
+- [ ] Phase A 剩余：私钥托管/轮换、模型网关隔离
 - [ ] Phase B：多轮基线与门禁
 - [ ] Phase C：H3 工具调用与 Agent 对抗
 - [ ] Phase D：独立审计与运营

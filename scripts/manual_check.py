@@ -393,6 +393,28 @@ def main() -> int:
         )
     )
 
+    signature_pub = ROOT / "evals" / "keys" / "public.pem"
+    signature_sig = ROOT / "evals" / "skills.lock.sig"
+    if signature_pub.exists() and signature_sig.exists():
+        steps.append(
+            run_step(
+                "skill-signature",
+                [sys.executable, "scripts/sign_skills.py", "verify",
+                 "--public", str(signature_pub)],
+                env,
+                timeout=60,
+            )
+        )
+    else:
+        steps.append(
+            {
+                "name": "skill-signature",
+                "status": "skipped",
+                "required": False,
+                "reason": "signature/key not configured",
+            }
+        )
+
     ruff_path = tool("ruff")
     steps.append(
         run_step(
