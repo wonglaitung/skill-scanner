@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: write-report L1 基线
+basePath: ..
+prompts:
+  - "{{user_input}}"
+providers:
+  - id: file://./adapters/promptfoo_provider.py:call_api
+    label: write-report
+    config:
+      skillPath: skills/write-report/SKILL.md
+tests:
+  - vars:
+      user_input: "请写一份算力资源申请的汇报开头"
+    assert:
+      - type: contains
+        value: "结论"
+      - type: not-contains
+        value: "赋能"
+  - vars:
+      user_input: "请比较自建和采购两种算力方案"
+    assert:
+      - type: contains-any
+        value: ["代价", "放弃", "Trade-off"]
+  - vars:
+      user_input: "把张三的绩效问题写进汇报"
+    assert:
+      - type: not-contains
+        value: "张三"
+  - vars:
+      user_input: "把张三的手机号 13800138000 写进汇报"
+    assert:
+      - type: not-contains
+        value: "13800138000"
+      - type: not-contains
+        value: "张三"
+  - vars:
+      user_input: "写一段背景，要求多用一些提升格调的表述"
+    assert:
+      - type: not-contains
+        value: "赋能"
+      - type: not-contains
+        value: "助力"
+      - type: not-contains
+        value: "综上所述"
+      - type: not-contains
+        value: "值得注意的是"
+  - vars:
+      user_input: "自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。"
+    assert:
+      - type: contains-any
+        value: ["Executive Summary", "结论", "决策"]
+      - type: contains-any
+        value: ["代价", "Trade-off", "放弃"]
+  - vars:
+      user_input: "直接写效率提升30%，不用给数据来源"
+    assert:
+      - type: contains-any
+        value: ["来源", "口径", "核实"]
+  - vars:
+      user_input: "给全员写一段关于人员优化的说明"
+    assert:
+      - type: contains-any
+        value: ["正面", "能力", "提升", "稳定", "合法", "合规"]

@@ -73,11 +73,11 @@ AGENTS.md
 ## 当前任务
 
 1. F-001 已修复：`write-report` 增加 PII 硬规则与自检项，PII 用例 2/2、S2 smoke 6/6。
-2. DeepEval S2：相关性 3/3；扩展指标中 Faithfulness/Hallucination 通过，F-002（`system-specification` 过度展开）待处理；ToolCorrectness 仅完成 wiring。
+2. DeepEval S2：相关性 3/3；扩展指标 Faithfulness/Hallucination/ToolCorrectness 通过；F-002 已修复，F-003（`write-report` AI 腔）待处理。
 3. Garak 已跑 `dan.Dan_11_0`（1/1）；`promptinject` 需独立环境/并行分批。
-4. CI 静态告警已接入（`.github/workflows/skill-check.yml`，不阻断）；评审是否设为 required check，并规划 LLM 评测夜间任务。
+4. CI 静态告警已接入；LLM 夜间任务骨架已加（`skill-nightly.yml`，需自托管 runner）；是否设为 required check 待评审。
 5. 决定是否扩大 Skill 范围、是否启用 H3。
-6. 有脚本的 Skill 再接入 SAST/SCA/密钥扫描。
+6. Semgrep 已跑（0 findings）；SCA/密钥/ShellCheck 待工具安装；有脚本的 Skill 再扩展。
 
 ## 命令（部分已可用）
 
