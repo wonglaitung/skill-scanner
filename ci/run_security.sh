@@ -4,6 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+REPORT_DIR="${REPORT_DIR:-$ROOT/reports}"
+case "$REPORT_DIR" in
+  "$ROOT"/*) REPORT_REL="${REPORT_DIR#"$ROOT"/}" ;;
+  *)
+    echo "[FAIL] REPORT_DIR must be inside $ROOT"
+    exit 2
+    ;;
+esac
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "[SKIP] docker not available; install gitleaks/trivy locally or run in CI"
   exit 2
@@ -13,7 +22,7 @@ GITLEAKS_IMAGE="${GITLEAKS_IMAGE:-zricethezav/gitleaks:latest}"
 TRIVY_IMAGE="${TRIVY_IMAGE:-aquasec/trivy:latest}"
 USER_SPEC="$(id -u):$(id -g)"
 
-mkdir -p reports .trivy-cache
+mkdir -p "$REPORT_DIR" .trivy-cache
 
 status=0
 
@@ -45,7 +54,7 @@ docker run --rm \
   --scanners vuln,misconfig \
   --include-dev-deps \
   --format sarif \
-  --output /repo/reports/trivy.sarif \
+  --output "/repo/$REPORT_REL/trivy.sarif" \
   /repo || status=1
 
 echo "== Trivy SBOM =="
@@ -60,7 +69,7 @@ docker run --rm \
   --skip-dirs /repo/reports \
   --format cyclonedx \
   --include-dev-deps \
-  --output /repo/reports/sbom.cdx.json \
+  --output "/repo/$REPORT_REL/sbom.cdx.json" \
   /repo || status=1
 
 exit "$status"

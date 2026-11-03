@@ -186,6 +186,37 @@ def parse_deepeval(text: str, returncode: int) -> dict:
     return {"pass_rate": 1.0 if returncode == 0 else 0.0, "raw_exit_code": returncode}
 
 
+def parse_security(out: Path) -> dict:
+    trivy_path = out / "trivy.sarif"
+    sbom_path = out / "sbom.cdx.json"
+    findings = 0
+    severities: dict[str, int] = {}
+    if trivy_path.exists():
+        try:
+            data = json.loads(trivy_path.read_text(encoding="utf-8"))
+            for run in data.get("runs", []):
+                for result in run.get("results", []):
+                    findings += 1
+                    level = result.get("level", "unknown")
+                    severities[level] = severities.get(level, 0) + 1
+        except json.JSONDecodeError:
+            pass
+
+    components = 0
+    if sbom_path.exists():
+        try:
+            data = json.loads(sbom_path.read_text(encoding="utf-8"))
+            components = len(data.get("components", []))
+        except json.JSONDecodeError:
+            pass
+
+    return {
+        "trivy_findings": findings,
+        "trivy_severities": severities,
+        "sbom_components": components,
+    }
+
+
 def build_env(args: argparse.Namespace) -> dict[str, str]:
     env = os.environ.copy()
     env.update(
@@ -250,6 +281,20 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
                 f"- 通过率：{deepeval.get('pass_rate')}",
                 f"- 通过：{deepeval.get('passed', '-')}",
                 f"- 失败：{deepeval.get('failed', '-')}",
+            ]
+        )
+
+    security = summary.get("metrics", {}).get("security")
+    if security:
+        lines.extend(
+            [
+                "",
+                "## 供应链",
+                "",
+                f"- 状态：{security.get('status')}",
+                f"- Trivy findings：{security.get('trivy_findings', 0)}",
+                f"- Trivy 严重级别：{security.get('trivy_severities', {})}",
+                f"- SBOM components：{security.get('sbom_components', 0)}",
             ]
         )
 
@@ -339,6 +384,14 @@ def main() -> int:
         timeout=120,
     )
     steps.append(validate)
+    steps.append(
+        run_step(
+            "skill-lock",
+            [sys.executable, "scripts/skill_lock.py", "verify", "--skill", args.skill],
+            env,
+            timeout=60,
+        )
+    )
 
     ruff_path = tool("ruff")
     steps.append(
@@ -365,30 +418,17 @@ def main() -> int:
         )
     )
 
-    gitleaks_path = tool("gitleaks")
-    steps.append(
-        run_step(
-            "gitleaks",
-            [gitleaks_path, "detect", "--source", ".", "--no-git"]
-            if gitleaks_path
-            else None,
-            env,
-            timeout=300,
-        )
+    security_env = {**env, "REPORT_DIR": str(out)}
+    docker_path = tool("docker")
+    security_step = run_step(
+        "security",
+        [tool("bash") or "bash", "ci/run_security.sh"] if docker_path else None,
+        security_env,
+        timeout=900,
     )
-
-    trivy_path = tool("trivy")
-    steps.append(
-        run_step(
-            "trivy",
-            [trivy_path, "fs", "--scanners", "vuln,misconfig", "--format", "sarif",
-             "--output", str(out / "trivy.sarif"), "."]
-            if trivy_path
-            else None,
-            env,
-            timeout=600,
-        )
-    )
+    steps.append(security_step)
+    summary_security = parse_security(out)
+    summary_security["status"] = security_step["status"]
 
     shellcheck_path = tool("shellcheck")
     shell_files = [str(path) for path in (SKILLS_DIR / args.skill).rglob("*.sh")]
@@ -408,7 +448,7 @@ def main() -> int:
         "model": args.model,
         "api_base": args.api_base,
         "steps": [],
-        "metrics": {},
+        "metrics": {"security": summary_security},
     }
 
     if current_level >= 1:

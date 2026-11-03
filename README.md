@@ -80,7 +80,10 @@ python scripts/baseline.py list
 
 ```bash
 ./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
+./scripts/sandbox_escape_check.sh
 ```
+
+逃逸检查覆盖：非 root、工作区只读、`/etc/shadow` 不可读、无外网、无 Docker socket。
 
 沙箱镜像与配置：
 
@@ -99,6 +102,7 @@ python scripts/baseline.py list
 - npm audit：Node 依赖漏洞
 - Trivy：依赖漏洞、IaC、配置错误
 - SBOM：`reports/sbom.cdx.json`
+- Skill 文件完整性锁：`python scripts/skill_lock.py verify`
 
 需要 Docker。Garak、Trivy、gitleaks 建议使用独立镜像/容器，避免污染主环境。
 
@@ -179,6 +183,8 @@ AGENTS.md             Agent 工作约定
 | Trivy | 0 findings |
 | SBOM | 622 components（CycloneDX） |
 | 沙箱 | md-to-word 转换通过（network none、read-only） |
+| 沙箱逃逸检查 | 通过（非 root、只读、无网络、无 Docker socket） |
+| Skill 完整性锁 | 5 个 Skill 全部匹配 |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
 ## 已知限制
@@ -191,6 +197,7 @@ AGENTS.md             Agent 工作约定
 - 纯脚本 Skill 不适用 DeepEval/Garak，其质量由确定性断言和契约测试保证。
 - 模型型 Skill 的运行时隔离尚未实现；当前沙箱只覆盖脚本执行。
 - 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
+- Skill 完整性锁是 SHA256 哈希校验，不是密码学签名；第三方签名尚未实现。
 
 ## 安全约束
 

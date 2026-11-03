@@ -81,7 +81,7 @@ AGENTS.md
 4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
-7. Phase A 已落地：Docker 沙箱、gitleaks、Trivy、SBOM、npm audit；剩余网络白名单、第三方签名、模型型 Skill 沙箱。
+7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、逃逸检查；剩余网络白名单、密码学签名、模型型 Skill 沙箱。
 
 ## 命令（部分已可用）
 
@@ -113,6 +113,10 @@ python3 adapters/skill_server.py --skill write-report --port 8090
 
 # 运行时沙箱
 ./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
+./scripts/sandbox_escape_check.sh
+
+# Skill 完整性锁
+python scripts/skill_lock.py verify
 
 # 供应链扫描（Docker）
 ./ci/run_security.sh
