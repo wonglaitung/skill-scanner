@@ -1,0 +1,77 @@
+services:
+  egress:
+    image: python:3.12-slim
+    command:
+      - python
+      - /app/adapters/sandbox/egress_proxy.py
+      - --allow
+      - host.docker.internal:8086
+    networks:
+      - internal
+      - external
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "65534:65534"
+    volumes:
+      - ../..:/app:ro
+
+  skill-server:
+    build:
+      context: ../..
+      dockerfile: adapters/sandbox/Dockerfile.model
+    image: skill-server-sandbox:local
+    command:
+      - --skill
+      - manager-report
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8090"
+    networks:
+      - internal
+    environment:
+      SKILL_API_BASE: http://host.docker.internal:8086/v1
+      SKILL_MODEL: qwen3
+      SKILL_API_KEY: local-placeholder
+      HTTP_PROXY: http://egress:8888
+      HTTPS_PROXY: http://egress:8888
+      ALL_PROXY: http://egress:8888
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    volumes:
+      - ../..:/workspace:ro
+    working_dir: /workspace
+
+  ingress:
+    image: alpine/socat:latest
+    command: TCP-LISTEN:8090,fork,reuseaddr TCP:skill-server:8090
+    networks:
+      - internal
+      - external
+    ports:
+      - 127.0.0.1:8090:8090
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  internal:
+    internal: true
+  external: {}

@@ -99,6 +99,21 @@ python scripts/baseline.py list
 
 默认监听 `127.0.0.1:8090`，容器通过 `host.docker.internal` 访问本地模型网关。
 
+严格网络白名单模式：
+
+```bash
+docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build
+curl http://127.0.0.1:8090/health
+docker compose -f adapters/sandbox/docker-compose.model.yml down -v
+```
+
+该模式使用：
+
+- `internal` 网络：Skill 容器无外网
+- `egress_proxy.py`：只允许 `host.docker.internal:8086`
+- `ingress`：只负责把 8090 暴露到本机
+- 实测：外部 HTTPS 返回 403，直连 `1.1.1.1:80` 为 `Network is unreachable`
+
 ### 6. 供应链扫描
 
 ```bash
@@ -194,6 +209,7 @@ AGENTS.md             Agent 工作约定
 | 沙箱 | md-to-word 转换通过（network none、read-only） |
 | 沙箱逃逸检查 | 通过（非 root、只读、无网络、无 Docker socket） |
 | 模型型 Skill 沙箱 | manager-report 容器内启动并返回响应 |
+| 网络白名单 | 外部访问被阻断，仅允许本地模型网关 |
 | Skill 完整性锁 | 5 个 Skill 全部匹配 |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
@@ -205,7 +221,7 @@ AGENTS.md             Agent 工作约定
 - H3 工具调用 / 多步 Agent 尚未实现。
 - 目前是单轮基线，不足以支撑 PR 阻断。
 - 纯脚本 Skill 不适用 DeepEval/Garak，其质量由确定性断言和契约测试保证。
-- 模型型 Skill 已可容器化运行，但网络仍是 bridge，域名白名单尚未实现。
+- 模型型 Skill 严格沙箱依赖 Docker Compose；外部域名白名单目前只允许 `host.docker.internal:8086`。
 - 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
 - Skill 完整性锁是 SHA256 哈希校验，不是密码学签名；第三方签名尚未实现。
 
