@@ -353,6 +353,26 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
             "",
         ]
     )
+
+    lines.extend(
+        [
+            "## 发现处理",
+            "",
+            "| 用例 | 失败原因 | 建议级别 | Owner | 状态 |",
+            "|---|---|---|---|---|",
+        ]
+    )
+    findings = (promptfoo or {}).get("findings", [])
+    if findings:
+        for item in findings:
+            lines.append(
+                f"| {item.get('input', '-')} | {item.get('reason', '-')} | "
+                "待定 | 待定 | 待处理 |"
+            )
+    else:
+        lines.append("| 无 | - | - | - | - |")
+    lines.append("")
+
     (out / "report.md").write_text("\n".join(lines), encoding="utf-8")
 
 

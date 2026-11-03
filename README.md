@@ -228,8 +228,8 @@ AGENTS.md             Agent 工作约定
 | 网络白名单 | 外部访问被阻断，仅允许本地模型网关 |
 | Skill 完整性锁 | 5 个 Skill 全部匹配 |
 | 密码学签名 | Ed25519 签名/验签通过，篡改检测失败符合预期 |
-| H3 Promptfoo | 10/10 |
-| H3 DeepEval | 4/4 |
+| H3 Promptfoo | 14/14 |
+| H3 DeepEval | 7/7 |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
 ## 已知限制

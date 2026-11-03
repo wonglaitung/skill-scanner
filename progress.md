@@ -25,7 +25,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
-| H3 | C2 已完成：10 条 Promptfoo 轨迹用例、4 条 DeepEval 用例；下一步 C3 跨 Skill/更多对抗 |
+| H3 | C3 已完成：14 条 Promptfoo 轨迹用例、7 条 DeepEval 用例；跨 Skill/参数注入/提示词泄露已覆盖；C4 待做 |
 | 推进原则 | 先完善人工模式与 SOP；人工底座完整后再提 CI；新增 Skill 复用同一 SOP/脚本 |
 
 ## 已完成里程碑
@@ -61,6 +61,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | H3 隔离环境 | 新增 `setup_harness_env.sh`、`with_harness.sh`；`.venv-harness/` 本地安装，不污染全局 |
 | 2026-11-03 | H3 C1 | 新增 `harness_agent.py`、`harness_tools.py`、`harness_provider.py`、`account-balance-query`；Promptfoo 5/5、ToolCorrectness 1/1、manual_check --agent L1/L2 通过 |
 | 2026-11-03 | H3 C2 | 轨迹用例扩到 10 条；新增间接注入、数据外泄、工具报错；DeepEval 4/4；manual_check --agent L2 通过 |
+| 2026-11-03 | H3 C3 | 轨迹用例扩到 14 条；新增跨 Skill、参数注入、提示词泄露；DeepEval 7/7；报告增加发现处理表 |
 
 ## 最近验证（2026-11-02）
 
@@ -87,8 +88,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 模型端点沙箱 | `PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report` | 健康检查与 chat 请求通过 |
 | 网络白名单 | `docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build` | 模型请求通过；外部 HTTPS 403；直连 IP 不可达 |
 | H3 Promptfoo | `python scripts/manual_check.py --skill account-balance-query --level L1 --agent` | 5/5 passed |
-| H3 ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_h3_account_balance_query.py -q` | 4 passed |
-| H3 手工 L2 | `python scripts/manual_check.py --skill account-balance-query --level L2 --agent` | Promptfoo 10/10、DeepEval 4/4 |
+| H3 ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_h3_account_balance_query.py -q` | 7 passed |
+| H3 手工 L2 | `python scripts/manual_check.py --skill account-balance-query --level L2 --agent` | Promptfoo 14/14、DeepEval 7/7 |
 | 签名工具 | `scripts/sign_skills.py keygen/sign/verify` | 验签通过；篡改 lock 后失败 |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
@@ -245,6 +246,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | LLM 评测无法在托管 runner 运行 | Promptfoo/DeepEval/Garak 依赖本地模型网关 | 用自托管 runner、夜间任务或本地执行 |
 | Garak 依赖冲突 | 安装会升级 torch/click，可能影响其他工具 | 用独立 venv/容器运行 Garak，不污染主环境 |
 | 长输出导致 judge 超时 | Faithfulness/Hallucination 在长文本上超过 DeepEval 默认超时 | 用短样本、调大 `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE`、拆分指标 |
+| H3 用例存在波动 | 一次运行 13/14，重跑 14/14 | 多次采样；把不稳定用例纳入 Quarantine |
 | 指标阈值方向随版本变化 | Hallucination 在 4.3+ 改为最低分语义 | 锁定版本，在文档和测试中标注方向 |
 | 合规要求未明确 | 证据链要求不确定 | 先按工程基线保留 JSON 报告 |
 | 沙箱网络策略 | `network none` 会阻断需要外网的 Skill | 后续接域名白名单代理 |
