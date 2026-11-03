@@ -14,7 +14,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 2. `progress.md`：当前阶段、已完成事项、待办与风险。
 3. `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI。
 4. `docs/如何扫描Skill.md`：手工扫描步骤、命令与常见问题。
-5. `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md` 与 `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`：背景资料，若与主方案冲突以主方案为准。
+6. `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md` 与 `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`：背景资料，若与主方案冲突以主方案为准。
 
 ## 当前阶段
 
@@ -71,7 +71,7 @@ AGENTS.md
 - Garak 只做发布前独立扫描，不进入 PR 门禁。
 - DeepEval 用于 L2 指标化评分，分数纳入基线。
 - 测试数据默认使用合成数据，禁止真实 PII、密钥、生产凭证。
-- 复用 `harness-sdk` 时锁定版本（Alpha），保留 MIT 许可声明。
+- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c38416f`，使用 `requirements-harness.txt`；禁止浮动版本，保留 MIT 许可声明。
 - 未经明确要求，不要提交（commit）或推送（push）。
 
 ## 当前任务
@@ -83,6 +83,7 @@ AGENTS.md
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
+8. H3 改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`），按 C1-C4 推进，详见 `docs/生产级演进路线.md` Phase C。
 
 ## 命令（部分已可用）
 

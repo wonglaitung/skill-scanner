@@ -590,7 +590,7 @@ Harness 统一要求：
 
 #### 7.2.1 复用现有 Agent harness SDK
 
-如果团队已有 Agent 运行时 SDK（例如 `wonglaitung/harness`，其设计理念是 `Agent = Model + Harness`），不需要从零重写执行层。按职责复用：
+如果团队已有 Agent 运行时 SDK（`wonglaitung/harness`，本机 checkout 在 `/data/harness`，设计理念是 `Agent = Model + Harness`），不需要从零重写执行层。H3 具体实施见《生产级演进路线》Phase C。按职责复用：
 
 | 方案需求 | 可复用组件 | 用途 |
 |---|---|---|
@@ -622,7 +622,7 @@ async def run_skill(user_input: str):
 - 复用范围是「执行 + 确定性校验 + 运行时防护」，不包括评测编排与打分。
 - Promptfoo 仍负责回归、断言与 redteam；DeepEval 仍负责指标评分；Garak 仍负责发布前独立扫描。
 - Skill 是通用包装格式，不绑定开发语言或 SDK；若 Skill 不是由该 SDK 执行，只复用其中的库能力，不要求迁移 Skill。
-- 该 SDK 目前为 Alpha，需锁定版本、隔离依赖；License 为 MIT，需保留声明。
+- 该 SDK 目前为 Alpha，必须锁定 `harness-sdk==0.1.0` 与 commit `c38416f`，使用 `requirements-harness.txt` 安装；禁止浮动版本，License 为 MIT，需保留声明。
 - 本项目把适配层目录命名为 `adapters/`，避免与 `wonglaitung/harness` 这个 Agent SDK 重名。
 
 #### 7.2.2 Adapter 契约

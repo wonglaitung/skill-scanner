@@ -25,6 +25,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
+| H3 | 方案已改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`，HEAD `c38416f`），版本锁定见 `requirements-harness.txt` |
 
 ## 已完成里程碑
 
@@ -55,6 +56,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | Phase A 第三批 | 模型型 Skill 端点容器化；manager-report 在沙箱内启动并返回响应 |
 | 2026-11-03 | Phase A 网络白名单 | internal 网络 + egress proxy；外部 HTTPS 403、直连 IP 不可达；模型请求正常 |
 | 2026-11-03 | Phase A 签名工具 | Ed25519 keygen/sign/verify；篡改检测通过；私钥不入库 |
+| 2026-11-03 | H3 方案 | 改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`）；已确认 qwen3 原生 tool calling；定义 Adapter、TraceHook、Mock 工具与分阶段计划 |
 
 ## 最近验证（2026-11-02）
 
@@ -220,7 +222,10 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] Phase B：多轮基线与门禁
 - [ ] Phase C：H3 工具调用与 Agent 对抗
 - [ ] Phase D：独立审计与运营
-- [ ] H3 工具调用测试与 harness SDK 适配
+- [ ] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook
+- [ ] H3 C2：Promptfoo + DeepEval ToolCorrectness
+- [ ] H3 C3：间接注入、未授权工具、跨 Skill、20 条用例
+- [ ] H3 C4：录制回放与 harness gate/security
 
 ## 风险与阻塞
 

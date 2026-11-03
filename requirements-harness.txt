@@ -1,0 +1,2 @@
+# Lock the harness SDK to the reviewed commit. Do not use a floating branch.
+harness-sdk @ git+https://github.com/wonglaitung/harness.git@c38416f#subdirectory=packages/sdk

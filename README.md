@@ -238,6 +238,12 @@ AGENTS.md             Agent 工作约定
 - 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
 - 密码学签名工具已实现，但私钥托管、轮换和第三方公钥分发流程尚未落地。
 
+## 依赖锁定
+
+- `harness-sdk` 必须锁定版本与 commit，使用 `requirements-harness.txt`。
+- 禁止使用浮动分支或 `latest`。
+- 升级 harness 时重新跑 H3 用例并更新基线。
+
 ## 安全约束
 
 - 只使用合成数据，禁止真实 PII、密钥、生产凭证。
