@@ -24,6 +24,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
+| 生产级演进 | 路线已定：A 运行时与供应链 → B 评测可靠性 → C H3 → D 审计运营 |
 
 ## 已完成里程碑
 
@@ -48,6 +49,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-02 | 夜间任务与审计模板 | 新增 `skill-nightly.yml` 骨架（自托管 runner）；新增 `docs/对抗审核报告模板.md`；Semgrep 扫描 0 findings |
 | 2026-11-03 | 手工工具与脚本型 Skill | 新增 `manual_check.py`、`baseline.py`；导入 `md-to-word`（脚本型 S2），转换测试通过，Semgrep 0 findings |
 | 2026-11-03 | 底层架构补齐 | 新增 md-to-word Promptfoo provider/配置、契约测试；新增 `skill_server.py`，Garak 改为扫描 Skill 包装端点 |
+| 2026-11-03 | 生产级路线 | 新增 `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI |
 
 ## 最近验证（2026-11-02）
 
@@ -194,6 +196,10 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] 脚本型 Skill 增加 SCA/密钥检查
 - [x] 脚本型 Skill Promptfoo 与契约测试
 - [x] Garak 改为扫描 Skill 包装端点
+- [ ] Phase A：运行时沙箱、gitleaks、Trivy、SBOM
+- [ ] Phase B：多轮基线与门禁
+- [ ] Phase C：H3 工具调用与 Agent 对抗
+- [ ] Phase D：独立审计与运营
 - [ ] H3 工具调用测试与 harness SDK 适配
 
 ## 风险与阻塞

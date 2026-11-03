@@ -12,7 +12,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 1. `docs/Agent Skill 工程化检查落地方案.md`：唯一方案源，工具链、门禁、目录、路线图以它为准。
 2. `progress.md`：当前阶段、已完成事项、待办与风险。
-3. `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md` 与 `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`：背景资料，若与主方案冲突以主方案为准。
+3. `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI。
+4. `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md` 与 `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`：背景资料，若与主方案冲突以主方案为准。
 
 ## 当前阶段
 
@@ -80,7 +81,7 @@ AGENTS.md
 4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
-7. 决定是否扩大 Skill 范围、是否启用 H3。
+7. 生产级演进从 Phase A 开始：运行时沙箱、gitleaks、Trivy、SBOM；再进入 Phase B/C/D。
 
 ## 命令（部分已可用）
 
