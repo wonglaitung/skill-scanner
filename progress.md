@@ -14,7 +14,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 |---|---|
 | 方案文档 | 已完成 v2.8 |
 | 代码实现 | 最小骨架已建立（5 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
-| CI 流水线 | 静态告警已接入；夜间 LLM 评测工作流骨架已加（需自托管 runner）；未设为 required check |
+| CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word` |
 | 手工工具 | `scripts/manual_check.py`、`scripts/baseline.py` 已建；支持 L0-L3 与基线 diff |
@@ -26,6 +26,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
 | H3 | 方案已改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`，HEAD `c38416f`），版本锁定见 `requirements-harness.txt` |
+| 推进原则 | 先完善人工模式与 SOP；人工底座完整后再提 CI；新增 Skill 复用同一 SOP/脚本 |
 
 ## 已完成里程碑
 

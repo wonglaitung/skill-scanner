@@ -390,3 +390,19 @@ python scripts/baseline.py save my-skill
 - Garak `promptinject` 受本地模型速度限制。
 - 模型网关尚未按 Skill 分配独立凭证/配额。
 - 签名私钥托管与轮换流程待定。
+
+---
+
+## 11. 新增 Skill 时怎么复用 SOP
+
+不需要重新设计流程，按同一套模板做：
+
+1. 复制一个同类 Skill 的 `SKILL.md` 结构，改 `name`、`description`、`metadata`。
+2. 复制 `evals/promptfooconfig.<old-skill>.yaml`，改 `skillPath` 和用例。
+3. 脚本型 Skill 复用现有 provider 模式，补一个 `adapters/<skill>_provider.py`。
+4. 执行 `python scripts/skill_lock.py generate`。
+5. 需要签名时执行 `python scripts/sign_skills.py sign --key ...`。
+6. 先跑 L0，再跑 L1；高风险 Skill 再跑 L2/L3。
+7. 通过后 `python scripts/baseline.py save <skill-name>`。
+
+新增 Skill 的边际成本主要是补元数据、评测配置和用例，不是重写流程。
