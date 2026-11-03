@@ -27,6 +27,7 @@
 | `system-specification` | S2 | 纯提示词 | 金融系统规格书编写规范 |
 | `manager-report` | S2 | 纯提示词 | 银行算力申请汇报 |
 | `expense-policy-qa` | S2 | 纯提示词 | 费用报销政策问答（示例） |
+| `md-to-word` | S2 | 提示词 + 脚本 | Markdown 转 Word，验证脚本型 Skill |
 
 ## 3. 检查方法
 
@@ -36,6 +37,7 @@
 | L1 回归 | Promptfoo | 确定性断言：包含/不包含、边界、PII、AI 腔 |
 | L2 指标 | DeepEval | `AnswerRelevancyMetric`（阈值 0.7） |
 | 对抗 | Garak | 轻量 `dan.Dan_11_0` 1/1 通过；`promptinject` 未完成 |
+| 手工入口 | `scripts/manual_check.py` | L0-L3 一键执行与报告 |
 | CI | - | 未接入，首期手动/本地运行 |
 
 ## 4. 结果
@@ -58,6 +60,7 @@
 | `write-report` | 8 | 7/8 | F-003：追问/模板中出现 AI 腔 |
 | `system-specification` | 8 | 8/8 | 1 条用例较慢（约 5 分钟） |
 | `manager-report` | 8 | 8/8 | PII 修复后通过 |
+| `md-to-word` | 1 | 1/1 | 脚本转换测试（Markdown 转 docx） |
 
 合计 24 条，23 条通过；F-003 待处理。
 
@@ -97,7 +100,7 @@
 
 | 项目 | 结果 | 说明 |
 |---|---|---|
-| Semgrep | 0 findings | 扫描 `adapters/`、`ci/` 共 4 个文件 |
+| Semgrep | 0 findings | 扫描 `adapters/`、`ci/`、`skills/md-to-word` 共 13 个文件 |
 | CI 静态告警 | 已接入 | validate / Ruff / pytest，不阻断 |
 | 夜间 LLM 评测 | 骨架已加 | 需自托管 runner 访问本地网关 |
 | gitleaks / Trivy / ShellCheck | 未运行 | 工具未安装 |

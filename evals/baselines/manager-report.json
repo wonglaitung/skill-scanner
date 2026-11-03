@@ -1,0 +1,21 @@
+{
+  "skill": "manager-report",
+  "level": "L2",
+  "timestamp": "2026-11-03-112551",
+  "model": "qwen3",
+  "api_base": "http://localhost:8086/v1",
+  "metrics": {
+    "promptfoo": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "errors": 0,
+      "pass_rate": 1.0,
+      "findings": []
+    },
+    "deepeval": {
+      "pass_rate": 1.0,
+      "raw_exit_code": 0
+    }
+  }
+}

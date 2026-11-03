@@ -8,12 +8,12 @@ echo "== SKILL.md validation =="
 python3 ci/validate_skill.py
 
 echo "== Ruff =="
-ruff check adapters ci evals skills
+ruff check adapters ci evals skills scripts
 
 if command -v semgrep >/dev/null 2>&1; then
   echo "== Semgrep =="
   semgrep --config p/python --config p/javascript --config p/owasp-top-ten \
-    adapters ci skills --error
+    adapters ci skills scripts --error
 else
   echo "[SKIP] semgrep not installed"
 fi

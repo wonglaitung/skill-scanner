@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -63,8 +64,16 @@ def validate_skill(path: Path) -> list[str]:
 
 
 def main() -> int:
-    paths = sorted(SKILLS_DIR.glob("*/SKILL.md"))
-    if not paths:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--skill", help="Skill directory name under skills/")
+    args = parser.parse_args()
+
+    if args.skill:
+        paths = [SKILLS_DIR / args.skill / "SKILL.md"]
+    else:
+        paths = sorted(SKILLS_DIR.glob("*/SKILL.md"))
+
+    if not paths or not all(path.exists() for path in paths):
         print(f"[FAIL] no skills found under {SKILLS_DIR}")
         return 1
 

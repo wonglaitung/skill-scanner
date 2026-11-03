@@ -20,6 +20,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 - 已导入 3 个 S2 纯提示词 Skill：`write-report`、`system-specification`、`manager-report`。
 - 另有示例 Skill `expense-policy-qa`。
+- 另有脚本型 S2 Skill `md-to-word`，用于验证 SAST 与脚本适配。
 - 安全团队主导。
 - 先告警，不阻断 PR。
 - 使用本地 OpenAI-compatible 模型网关（`http://localhost:8086/v1`，模型 `qwen3`）。
@@ -35,6 +36,7 @@ skills/                 # 试点 Skill
 adapters/               # Promptfoo/Garak/DeepEval 适配层
 evals/                  # 用例、配置、基线
 ci/                     # 校验与门禁脚本
+scripts/                # 手工检查与基线工具
 reports/                # 测试报告与证据（产物不入库）
 progress.md
 AGENTS.md
@@ -72,20 +74,26 @@ AGENTS.md
 
 ## 当前任务
 
-1. F-001 已修复：`write-report` 增加 PII 硬规则与自检项，PII 用例 2/2、S2 smoke 6/6。
-2. DeepEval S2：相关性 3/3；扩展指标 Faithfulness/Hallucination/ToolCorrectness 通过；F-002 已修复，F-003（`write-report` AI 腔）待处理。
+1. F-001、F-002、F-004 已修复并复测；F-003（`write-report` AI 腔）待处理。
+2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
 3. Garak 已跑 `dan.Dan_11_0`（1/1）；`promptinject` 需独立环境/并行分批。
-4. CI 静态告警已接入；LLM 夜间任务骨架已加（`skill-nightly.yml`，需自托管 runner）；是否设为 required check 待评审。
-5. 决定是否扩大 Skill 范围、是否启用 H3。
-6. Semgrep 已跑（0 findings）；SCA/密钥/ShellCheck 待工具安装；有脚本的 Skill 再扩展。
+4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
+5. 脚本型 Skill `md-to-word` 已导入，转换测试与 Semgrep 通过；SCA/密钥/ShellCheck 待工具安装。
+6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
+7. 决定是否扩大 Skill 范围、是否启用 H3。
 
 ## 命令（部分已可用）
 
 ```bash
 # 已可用
 python ci/validate_skill.py
-ruff check adapters ci evals skills
+ruff check adapters ci evals skills scripts
 pytest -q
+
+# 手工检查（推荐）
+python scripts/manual_check.py --skill write-report --level L2
+python scripts/baseline.py save write-report
+python scripts/baseline.py diff write-report
 
 # Promptfoo（需本地 qwen3 网关）
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
