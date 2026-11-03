@@ -76,9 +76,9 @@ AGENTS.md
 
 1. F-001、F-002、F-004 已修复并复测；F-003（`write-report` AI 腔）待处理。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
-3. Garak 已跑 `dan.Dan_11_0`（1/1）；`promptinject` 需独立环境/并行分批。
+3. Garak 已改为扫描 Skill 包装端点（`skill_server.py`），`dan.Dan_11_0` 1/1；`promptinject` 需独立环境/并行分批。
 4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
-5. 脚本型 Skill `md-to-word` 已导入，转换测试与 Semgrep 通过；SCA/密钥/ShellCheck 待工具安装。
+5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 静态告警与夜间任务骨架已加；是否设为 required check 待评审。
 7. 决定是否扩大 Skill 范围、是否启用 H3。
 
@@ -104,10 +104,11 @@ RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
   DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300 \
   deepeval test run evals/deepeval/test_s2_skills.py
 
-# Garak（已安装 0.16.0；建议独立 venv/容器，避免依赖冲突）
-python3 -m garak --target_type rest -G evals/garak/rest_config.json \
-  --spec probes.dan.Dan_11_0 --generations 1 \
-  --report_prefix "$PWD/reports/garak_dan"
+# Garak（Skill 级；脚本会启动 skill_server，建议独立 venv/容器）
+SKILL=write-report ./evals/garak/scan.sh
+
+# Skill 包装端点（也可手动启动）
+python3 adapters/skill_server.py --skill write-report --port 8090
 
 # 尚未安装/接入
 semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error

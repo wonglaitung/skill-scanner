@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.7 |
+| 文档版本 | v2.8 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -741,6 +741,7 @@ python -m garak \
 - `request_timeout` 建议设为 120 秒以上，本地小模型单次响应可能超过默认 20 秒。
 - `--report_prefix` 使用绝对路径，避免 Garak 把报告写到其运行目录下。
 - `promptinject` 等探针条目多，本地模型应分批或并行执行（`--parallel_attempts`），并放到独立 venv/容器。
+- **Garak 应扫描 Skill 包装端点，而不是裸模型**。`evals/garak/rest_config.json` 只用于模型级快速检查；Skill 级扫描使用 `adapters/skill_server.py`，或直接运行 `SKILL=write-report ./evals/garak/scan.sh`。`manual_check.py --level L3` 会自动启动该端点。
 
 要点：
 
@@ -1432,3 +1433,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v2.5 | 2026-11-02 | 本地模型网关示例端口统一为 `http://localhost:8086/v1` |
 | v2.6 | 2026-11-02 | Garak rest 配置改为 JSON；补充 `request_timeout`、绝对报告路径与 `-G` 格式说明 |
 | v2.7 | 2026-11-02 | 补充 DeepEval 扩展指标实践：Hallucination 4.3+ 阈值方向、长文本超时、ToolCorrectness wiring |
+| v2.8 | 2026-11-03 | 补齐脚本型 Skill 架构：Promptfoo provider、契约测试、Garak Skill 包装端点与 `skill_server.py` |

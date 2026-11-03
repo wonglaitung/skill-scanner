@@ -7,9 +7,11 @@ import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -19,6 +21,7 @@ REPORTS_DIR = ROOT / "reports"
 
 LEVELS = {"L0": 0, "L1": 1, "L2": 2, "L3": 3}
 DEEPEVAL_SKILLS = {"write-report", "system-specification", "manager-report"}
+SCRIPT_SKILLS = {"md-to-word"}
 
 
 def tool(name: str) -> str | None:
@@ -27,6 +30,24 @@ def tool(name: str) -> str | None:
 
 def module_available(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
+
+
+def free_port() -> int:
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def wait_for_health(url: str, timeout: float = 20.0) -> None:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1) as response:
+                if response.status == 200:
+                    return
+        except Exception:  # noqa: BLE001
+            time.sleep(0.2)
+    raise RuntimeError(f"health check timed out: {url}")
 
 
 def run_step(
@@ -291,6 +312,13 @@ def main() -> int:
     parser.add_argument("--allow-failures", action="store_true")
     args = parser.parse_args()
 
+    if not re.fullmatch(r"[a-z0-9-]+", args.skill):
+        print(f"[FAIL] invalid skill name: {args.skill}")
+        return 2
+    if not args.api_base.startswith(("http://", "https://")):
+        print(f"[FAIL] invalid api base: {args.api_base}")
+        return 2
+
     skill_path = SKILLS_DIR / args.skill / "SKILL.md"
     if not skill_path.exists():
         print(f"[FAIL] skill not found: {skill_path}")
@@ -446,7 +474,16 @@ def main() -> int:
             )
 
     if current_level >= 3:
-        if not module_available("garak"):
+        if args.skill in SCRIPT_SKILLS:
+            steps.append(
+                {
+                    "name": "garak",
+                    "status": "skipped",
+                    "required": False,
+                    "reason": "deterministic script skill has no LLM endpoint",
+                }
+            )
+        elif not module_available("garak"):
             steps.append(
                 {
                     "name": "garak",
@@ -456,25 +493,106 @@ def main() -> int:
                 }
             )
         else:
-            spec = "probes.dan.Dan_11_0"
-            parallel = []
-            if args.full_garak:
-                spec = "probes.promptinject.HijackHateHumans"
-                parallel = ["--parallel_attempts", "8"]
-            garak_step = run_step(
-                "garak",
-                [sys.executable, "-m", "garak", "--target_type", "rest",
-                 "-G", "evals/garak/rest_config.json", "--spec", spec,
-                 "--generations", "1", *parallel,
-                 "--report_prefix", str(out / "garak")],
-                env,
-                timeout=args.promptfoo_timeout,
-            )
-            steps.append(garak_step)
-            summary["metrics"]["garak"] = {
-                "status": garak_step["status"],
-                "report": str(out / "garak.report.jsonl"),
-            }
+            server_proc = None
+            try:
+                port = free_port()
+                # 参数已校验，且使用 list 形式，不经过 shell
+                # nosemgrep
+                server_proc = subprocess.Popen(
+                    [  # nosemgrep
+                        sys.executable,
+                        "adapters/skill_server.py",
+                        "--skill",
+                        args.skill,
+                        "--port",
+                        str(port),
+                        "--api-base",
+                        args.api_base,
+                        "--model",
+                        args.model,
+                        "--api-key",
+                        args.api_key,
+                    ],
+                    cwd=ROOT,
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                wait_for_health(f"http://127.0.0.1:{port}/health")
+
+                garak_config = {
+                    "rest": {
+                        "RestGenerator": {
+                            "uri": f"http://127.0.0.1:{port}/v1/chat/completions",
+                            "method": "post",
+                            "headers": {"Content-Type": "application/json"},
+                            "req_template_json_object": {
+                                "model": args.model,
+                                "messages": [
+                                    {"role": "user", "content": "$INPUT"}
+                                ],
+                                "temperature": 0,
+                            },
+                            "response_json": True,
+                            "response_json_field": "$.choices[0].message.content",
+                            "request_timeout": 180,
+                        }
+                    }
+                }
+                config_path = out / "garak_rest_config.json"
+                config_path.write_text(
+                    json.dumps(garak_config), encoding="utf-8"
+                )
+
+                spec = "probes.dan.Dan_11_0"
+                parallel = []
+                if args.full_garak:
+                    spec = "probes.promptinject.HijackHateHumans"
+                    parallel = ["--parallel_attempts", "8"]
+                garak_step = run_step(
+                    "garak",
+                    [
+                        sys.executable,
+                        "-m",
+                        "garak",
+                        "--target_type",
+                        "rest",
+                        "-G",
+                        str(config_path),
+                        "--spec",
+                        spec,
+                        "--generations",
+                        "1",
+                        *parallel,
+                        "--report_prefix",
+                        str(out / "garak"),
+                    ],
+                    env,
+                    timeout=args.promptfoo_timeout,
+                )
+                steps.append(garak_step)
+                summary["metrics"]["garak"] = {
+                    "status": garak_step["status"],
+                    "report": str(out / "garak.report.jsonl"),
+                    "target": f"skill:{args.skill}",
+                }
+            except Exception as exc:  # noqa: BLE001
+                steps.append(
+                    {
+                        "name": "garak",
+                        "status": "error",
+                        "required": True,
+                        "reason": str(exc),
+                    }
+                )
+            finally:
+                if server_proc is not None:
+                    server_proc.terminate()
+                    try:
+                        server_proc.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        server_proc.kill()
 
     summary["steps"] = steps
     (out / "summary.json").write_text(

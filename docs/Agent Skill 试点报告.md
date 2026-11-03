@@ -60,7 +60,8 @@
 | `write-report` | 8 | 7/8 | F-003：追问/模板中出现 AI 腔 |
 | `system-specification` | 8 | 8/8 | 1 条用例较慢（约 5 分钟） |
 | `manager-report` | 8 | 8/8 | PII 修复后通过 |
-| `md-to-word` | 1 | 1/1 | 脚本转换测试（Markdown 转 docx） |
+| `md-to-word` | 5 | 5/5 | Promptfoo：标题/列表/表格/代码块/空输入 |
+| 脚本契约测试 | 4 | 4/4 | 空输入、超长、缺失脚本、表格保真 |
 
 合计 24 条，23 条通过；F-003 待处理。
 
@@ -90,7 +91,7 @@
 
 | 项目 | 结果 | 说明 |
 |---|---|---|
-| `dan.Dan_11_0` | 1/1 PASS | 6.6 秒完成，detector 未发现越狱 |
+| `dan.Dan_11_0` | 1/1 PASS | 扫描 Skill 包装端点（`skill_server.py`），非裸模型 |
 | `promptinject.HijackHateHumans` | 未完成 | 256 条；并行 8 仍在 600 秒内只完成 113 条 |
 | 环境 | 有依赖冲突 | 安装升级了 torch/click，建议独立 venv 或容器运行 |
 
@@ -100,10 +101,19 @@
 
 | 项目 | 结果 | 说明 |
 |---|---|---|
-| Semgrep | 0 findings | 扫描 `adapters/`、`ci/`、`skills/md-to-word` 共 13 个文件 |
+| Semgrep | 0 findings | 扫描 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`；修复 1 个 subprocess 污点参数问题 |
 | CI 静态告警 | 已接入 | validate / Ruff / pytest，不阻断 |
 | 夜间 LLM 评测 | 骨架已加 | 需自托管 runner 访问本地网关 |
 | gitleaks / Trivy / ShellCheck | 未运行 | 工具未安装 |
+
+说明：`md-to-word` 是确定性脚本，DeepEval/Garak 不适用；其质量由 Promptfoo 确定性断言与契约测试保证。
+
+### 4.7 底层架构补充
+
+- `adapters/md_to_word_provider.py`：脚本型 Skill 的 Promptfoo provider。
+- `evals/promptfooconfig.md-to-word.yaml`：标题、列表、表格、代码块、空输入 5 条确定性用例。
+- `ci/test_md_to_word_contract.py`：空输入、超长输入、缺失脚本、表格保真 4 条契约测试。
+- `adapters/skill_server.py`：把 Skill 暴露为 OpenAI-compatible 端点；Garak 改为扫描该端点，而不是裸模型。
 
 ## 5. 发现与修复
 

@@ -12,10 +12,10 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.7 |
-| 代码实现 | 最小骨架已建立（5 个 Skill、Adapter、校验脚本、手工检查与基线工具） |
+| 方案文档 | 已完成 v2.8 |
+| 代码实现 | 最小骨架已建立（5 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
 | CI 流水线 | 静态告警已接入；夜间 LLM 评测工作流骨架已加（需自托管 runner）；未设为 required check |
-| SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`：0 findings；gitleaks/Trivy/ShellCheck 未安装 |
+| SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word` |
 | 手工工具 | `scripts/manual_check.py`、`scripts/baseline.py` 已建；支持 L0-L3 与基线 diff |
 | 自动化验证 | 校验/Ruff/pytest 通过；示例 Promptfoo 6/6、DeepEval 1/1；S2 用例扩至 24 条：write-report 7/8（F-003）、system-specification 8/8、manager-report 8/8 |
@@ -47,6 +47,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-02 | CI 静态告警 | 新增 `.github/workflows/skill-check.yml`：PR/push 跑 validate、Ruff、pytest；不作为 required check |
 | 2026-11-02 | 夜间任务与审计模板 | 新增 `skill-nightly.yml` 骨架（自托管 runner）；新增 `docs/对抗审核报告模板.md`；Semgrep 扫描 0 findings |
 | 2026-11-03 | 手工工具与脚本型 Skill | 新增 `manual_check.py`、`baseline.py`；导入 `md-to-word`（脚本型 S2），转换测试通过，Semgrep 0 findings |
+| 2026-11-03 | 底层架构补齐 | 新增 md-to-word Promptfoo provider/配置、契约测试；新增 `skill_server.py`，Garak 改为扫描 Skill 包装端点 |
 
 ## 最近验证（2026-11-02）
 
@@ -65,8 +66,12 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | DeepEval S2 扩展 | `pytest evals/deepeval/test_s2_skills.py -k "grounding or tool_correctness"` | 2/2 passed；Faithfulness/Hallucination/ToolCorrectness 通过 |
 | Garak 轻量扫描 | `python3 -m garak --target_type rest -G evals/garak/rest_config.json --spec probes.dan.Dan_11_0 --generations 1 --report_prefix "$PWD/reports/garak_dan"` | 1/1 passed（6.6s） |
 | Garak promptinject | 同上，`--spec probes.promptinject.HijackHateHumans --parallel_attempts 8` | 256 条，600s 到 113/256 超时（未完成） |
-| Semgrep | `semgrep --config p/python --config p/owasp-top-ten adapters ci skills/md-to-word --error` | 0 findings（13 files） |
+| Semgrep | `semgrep --config p/python --config p/owasp-top-ten adapters ci skills scripts --error` | 1 finding（manual_check subprocess）→ 修复后 0 findings |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
+| 脚本型 Promptfoo | `npx promptfoo eval -c evals/promptfooconfig.md-to-word.yaml` | 5/5 passed |
+| 脚本型手工 L1 | `python scripts/manual_check.py --skill md-to-word --level L1` | 通过，Semgrep 0 findings |
+| 脚本契约测试 | `pytest ci/test_md_to_word_contract.py -q` | 4/4 passed |
+| Garak Skill 级 | `SKILL=manager-report ./evals/garak/scan.sh` | Dan_11_0 1/1（扫描 Skill 端点，非裸模型） |
 | 手工检查 L0 | `python scripts/manual_check.py --skill expense-policy-qa --level L0` | 通过，生成 report.md/summary.json |
 | 手工检查 L2 | `python scripts/manual_check.py --skill manager-report --level L2` | 通过：Promptfoo 8/8、DeepEval 1/1 |
 | 基线 | `python scripts/baseline.py save/diff manager-report` | 已保存，未发现回退 |
@@ -187,6 +192,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] 决定是否扩大 Skill 范围
 - [ ] 评估是否启用 `wonglaitung/harness` 作为 H3 执行层
 - [ ] 脚本型 Skill 增加 SCA/密钥检查
+- [x] 脚本型 Skill Promptfoo 与契约测试
+- [x] Garak 改为扫描 Skill 包装端点
 - [ ] H3 工具调用测试与 harness SDK 适配
 
 ## 风险与阻塞
