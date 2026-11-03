@@ -71,7 +71,7 @@ AGENTS.md
 - Garak 只做发布前独立扫描，不进入 PR 门禁。
 - DeepEval 用于 L2 指标化评分，分数纳入基线。
 - 测试数据默认使用合成数据，禁止真实 PII、密钥、生产凭证。
-- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c38416f`，使用 `requirements-harness.txt`；禁止浮动版本，保留 MIT 许可声明。
+- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c38416f`，使用 `requirements-harness.txt`；优先项目本地 `.venv-harness/`，禁止污染全局环境；禁止浮动版本，保留 MIT 许可声明。
 - 未经明确要求，不要提交（commit）或推送（push）。
 - 人工模式技术底座完整前，不引入 CI；先完善 `manual_check`、`baseline`、H3 与 SOP。
 
@@ -125,6 +125,10 @@ python scripts/skill_lock.py verify
 python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals/keys/public.pem
 python scripts/sign_skills.py sign --key /secure/skills.pem
 python scripts/sign_skills.py verify --public evals/keys/public.pem
+
+# H3 本地隔离环境
+./scripts/setup_harness_env.sh
+./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
 
 # 模型型 Skill 端点沙箱（基础版）
 PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report

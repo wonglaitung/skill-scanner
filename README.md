@@ -241,6 +241,11 @@ AGENTS.md             Agent 工作约定
 ## 依赖锁定
 
 - `harness-sdk` 必须锁定版本与 commit，使用 `requirements-harness.txt`。
+- 推荐项目本地隔离环境，不污染全局：
+  ```bash
+  ./scripts/setup_harness_env.sh
+  ./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
+  ```
 - 禁止使用浮动分支或 `latest`。
 - 升级 harness 时重新跑 H3 用例并更新基线。
 

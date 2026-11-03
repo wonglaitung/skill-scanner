@@ -1,6 +1,7 @@
 .git
 .trivy-cache
 node_modules
+.venv-harness
 reports
 __pycache__
 .pytest_cache

@@ -3,5 +3,6 @@ paths = [
   '''\.trivy-cache''',
   '''reports''',
   '''node_modules''',
+  '''\.venv-harness''',
   '''\.git''',
 ]
