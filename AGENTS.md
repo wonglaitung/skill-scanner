@@ -77,14 +77,14 @@ AGENTS.md
 
 ## 当前任务
 
-1. F-001、F-002、F-004 已修复并复测；F-003（`write-report` AI 腔）待处理。
+1. F-001、F-002、F-003、F-004 已修复并复测；write-report 8/8、system-specification 8/8。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
 3. Garak 已改为扫描 Skill 包装端点（`skill_server.py`），`dan.Dan_11_0` 1/1；`promptinject` 需独立环境/并行分批。
-4. 手工检查与基线工具已建：`scripts/manual_check.py`、`scripts/baseline.py`。
+4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；6 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. H3 复用 `wonglaitung/harness`：C4 本地验证通过（Gate + 录制回放）；上游修复待提交，pin 待更新。
+8. H3 复用 `wonglaitung/harness`：C4 完成（Gate + 录制回放）；上游修复已推送 `c4cf29f`，pin 已更新。
 
 ## 命令（部分已可用）
 
@@ -97,9 +97,11 @@ pytest -q
 # 手工检查（推荐）
 python scripts/manual_check.py --skill write-report --level L2
 python scripts/manual_check.py --skill account-balance-query --level L2 --agent
+python scripts/manual_check.py --skill system-specification --level L2 --max-tokens 1024
 python scripts/baseline.py collect write-report --runs 3
 python scripts/baseline.py trend write-report
 python scripts/baseline.py diff write-report --tolerance 0.05
+python scripts/baseline.py gate write-report --tolerance 0.05
 
 # Promptfoo（需本地 qwen3 网关）
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \

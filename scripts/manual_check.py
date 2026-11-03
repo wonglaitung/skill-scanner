@@ -240,6 +240,7 @@ def build_env(args: argparse.Namespace) -> dict[str, str]:
             "SKILL_MODEL": args.model,
             "SKILL_API_KEY": args.api_key,
             "SKILL_TIMEOUT": str(args.skill_timeout),
+            "SKILL_MAX_TOKENS": str(args.max_tokens),
             "JUDGE_MODEL": args.judge_model or args.model,
             "JUDGE_API_BASE": args.api_base,
             "JUDGE_API_KEY": args.api_key,
@@ -419,6 +420,7 @@ def main() -> int:
     parser.add_argument("--api-key", default="local-placeholder")
     parser.add_argument("--judge-model", default=None)
     parser.add_argument("--skill-timeout", type=int, default=180)
+    parser.add_argument("--max-tokens", type=int, default=2048)
     parser.add_argument("--deepeval-timeout", type=int, default=300)
     parser.add_argument("--promptfoo-timeout", type=int, default=1800)
     parser.add_argument("--out", default=None)

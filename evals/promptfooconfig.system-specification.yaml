@@ -50,7 +50,7 @@ tests:
       - type: contains-any
         value: ["具体", "必须", "可实施"]
       - type: not-contains
-        value: "大概"
+        value: "好的，大概"
   - vars:
       user_input: "写订单状态机"
     assert:

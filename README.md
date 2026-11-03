@@ -77,6 +77,7 @@ reports/<skill>/<timestamp>/
 python scripts/baseline.py collect manager-report --runs 3
 python scripts/baseline.py trend manager-report
 python scripts/baseline.py diff manager-report --tolerance 0.05
+python scripts/baseline.py gate manager-report --tolerance 0.05
 python scripts/baseline.py list
 ```
 

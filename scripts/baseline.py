@@ -307,6 +307,81 @@ def diff(skill: str, report: Path | None, fail_on_regression: bool, tolerance: f
     return 0
 
 
+def gate(
+    skill: str,
+    report: Path | None,
+    tolerance: float,
+    min_runs: int,
+    as_json: bool,
+) -> int:
+    baseline_path = BASELINES_DIR / f"{skill}.json"
+    if not baseline_path.exists():
+        print(f"no baseline for {skill}; run: python scripts/baseline.py collect {skill}")
+        return 2
+    baseline = load_json(baseline_path)
+    if baseline.get("schema_version") != SCHEMA_VERSION:
+        print(f"legacy baseline for {skill}; run collect --runs 3 first")
+        return 2
+    run_count = baseline.get("aggregate", {}).get("run_count", 0)
+    if run_count < min_runs:
+        print(f"baseline has {run_count} runs, need at least {min_runs}")
+        return 2
+
+    current_path = report or latest_summary(skill)
+    current = load_json(current_path)
+    checks = []
+    for name, section, key in [
+        ("promptfoo.pass_rate", "promptfoo", "promptfoo"),
+        ("deepeval.pass_rate", "deepeval", "deepeval"),
+    ]:
+        mean = (
+            baseline.get("aggregate", {})
+            .get(section, {})
+            .get("pass_rate", {})
+            .get("mean")
+        )
+        value = current.get("metrics", {}).get(key, {}).get("pass_rate")
+        if mean is None and value is None:
+            passed = True
+        else:
+            passed = (
+                isinstance(mean, (int, float))
+                and isinstance(value, (int, float))
+                and value >= mean - tolerance
+            )
+        checks.append(
+            {
+                "metric": name,
+                "baseline_mean": mean,
+                "current": value,
+                "tolerance": tolerance,
+                "passed": passed,
+            }
+        )
+
+    passed = all(check["passed"] for check in checks)
+    result = {
+        "skill": skill,
+        "passed": passed,
+        "baseline_runs": run_count,
+        "baseline": str(baseline_path),
+        "current": str(current_path),
+        "checks": checks,
+        "flaky_baseline_cases": len(baseline.get("flaky", [])),
+    }
+    if as_json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        print(f"gate: {'PASS' if passed else 'FAIL'}  skill={skill} runs={run_count}")
+        for check in checks:
+            print(
+                f"  {check['metric']}: baseline={check['baseline_mean']} "
+                f"current={check['current']} tolerance={check['tolerance']} "
+                f"{'ok' if check['passed'] else 'regressed'}"
+            )
+    return 0 if passed else 1
+
+
 def trend(skill: str) -> int:
     baseline_path = BASELINES_DIR / f"{skill}.json"
     if not baseline_path.exists():
@@ -371,6 +446,13 @@ def main() -> int:
     trend_parser = sub.add_parser("trend")
     trend_parser.add_argument("skill")
 
+    gate_parser = sub.add_parser("gate")
+    gate_parser.add_argument("skill")
+    gate_parser.add_argument("--report", type=Path, default=None)
+    gate_parser.add_argument("--tolerance", type=float, default=0.05)
+    gate_parser.add_argument("--min-runs", type=int, default=3)
+    gate_parser.add_argument("--json", action="store_true")
+
     sub.add_parser("list")
 
     args = parser.parse_args()
@@ -382,6 +464,8 @@ def main() -> int:
         return diff(args.skill, args.report, args.fail_on_regression, args.tolerance)
     if args.command == "trend":
         return trend(args.skill)
+    if args.command == "gate":
+        return gate(args.skill, args.report, args.tolerance, args.min_runs, args.json)
     return list_baselines()
 
 

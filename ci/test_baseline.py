@@ -30,3 +30,28 @@ def test_find_flaky() -> None:
     assert flaky[0]["passed"] == 2
     assert flaky[0]["failed"] == 1
     assert flaky[0]["reasons"] == ["boom"]
+
+
+def test_gate_detects_regression(tmp_path, monkeypatch) -> None:
+    reports = tmp_path / "reports"
+    baselines = tmp_path / "baselines"
+    monkeypatch.setattr(baseline, "REPORTS_DIR", reports)
+    monkeypatch.setattr(baseline, "BASELINES_DIR", baselines)
+
+    report_dir = reports / "demo" / "2026-01-01-000000"
+    report_dir.mkdir(parents=True)
+    (report_dir / "summary.json").write_text(
+        '{"skill":"demo","timestamp":"2026-01-01-000000",'
+        '"metrics":{"promptfoo":{"pass_rate":0.9},"deepeval":{"pass_rate":1.0}}}',
+        encoding="utf-8",
+    )
+
+    baselines.mkdir()
+    (baselines / "demo.json").write_text(
+        '{"schema_version":2,"skill":"demo","aggregate":{"run_count":3,'
+        '"promptfoo":{"pass_rate":{"mean":1.0,"std":0.0}},'
+        '"deepeval":{"pass_rate":{"mean":1.0,"std":0.0}}},"flaky":[]}',
+        encoding="utf-8",
+    )
+    assert baseline.gate("demo", None, 0.05, 3, False) == 1
+    assert baseline.gate("demo", None, 0.2, 3, False) == 0

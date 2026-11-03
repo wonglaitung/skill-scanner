@@ -351,6 +351,13 @@ python scripts/baseline.py diff my-skill --tolerance 0.05
 python scripts/baseline.py diff my-skill --fail-on-regression --tolerance 0.05
 ```
 
+Delta Gate（要求基线至少 3 轮）：
+
+```bash
+python scripts/baseline.py gate my-skill --tolerance 0.05
+python scripts/baseline.py gate my-skill --json
+```
+
 单轮基线仍可用 `save` 保存，但只适合临时记录，不应作为发布门禁依据。
 
 ### 6.2 发布前
@@ -371,6 +378,7 @@ S2/S3 发布前：
 python ci/validate_skill.py --skill my-skill
 python scripts/manual_check.py --skill my-skill --level L1
 python scripts/baseline.py collect my-skill --runs 3
+python scripts/baseline.py gate my-skill
 ```
 
 通过后再进入 L2/L3。

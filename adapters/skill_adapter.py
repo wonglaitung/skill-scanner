@@ -37,6 +37,7 @@ class LocalGatewayAdapter:
         model: str,
         api_key: str,
         timeout: float = 60.0,
+        max_tokens: int | None = None,
     ) -> None:
         self.skill_path = Path(skill_path)
         if not self.skill_path.is_absolute():
@@ -46,6 +47,7 @@ class LocalGatewayAdapter:
         self.model = model
         self.api_key = api_key
         self.timeout = timeout
+        self.max_tokens = max_tokens
 
     @classmethod
     def from_env(
@@ -62,23 +64,29 @@ class LocalGatewayAdapter:
             model=model or os.environ.get("SKILL_MODEL", "local-skill-model"),
             api_key=os.environ.get("SKILL_API_KEY", "local-placeholder"),
             timeout=float(os.environ.get("SKILL_TIMEOUT", "60")),
+            max_tokens=int(os.environ["SKILL_MAX_TOKENS"])
+            if os.environ.get("SKILL_MAX_TOKENS")
+            else None,
         )
 
     def invoke(
         self, user_input: str, context: dict[str, Any] | None = None
     ) -> SkillRunResult:
         started_at = time.perf_counter()
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_input},
+            ],
+            "temperature": 0,
+        }
+        if self.max_tokens is not None:
+            payload["max_tokens"] = self.max_tokens
         response = httpx.post(
             f"{self.api_base}/chat/completions",
             headers={"Authorization": f"Bearer {self.api_key}"},
-            json={
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": user_input},
-                ],
-                "temperature": 0,
-            },
+            json=payload,
             timeout=self.timeout,
         )
         response.raise_for_status()

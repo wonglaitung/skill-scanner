@@ -29,15 +29,15 @@
       }
     },
     "system-specification": {
-      "aggregate": "cfe57dec4c06ce4268a3be8e9773c6d98188ae5e1f6f9621a77b81de79b5eaaf",
+      "aggregate": "9bcda2072785076250e3aa5efe22c68713f9318a07b7c17330e6388964e5b38c",
       "files": {
-        "SKILL.md": "5ca79f0db20f83879c1ef4b1a4cd47a21a85af11b58c57cc679f5cb2315eac4c"
+        "SKILL.md": "e99b5ffa7bb87a8528d6030347d5947dc5e7422b3af3e09a80e8cb413b69eb3b"
       }
     },
     "write-report": {
-      "aggregate": "302b46c60e4dc5bf9e1245830fddcebfe36e309a2577a8ac73076d7a9900aeed",
+      "aggregate": "1a4eb267a23afcc527baef0b605c78d24874789156b1d2a99de6f9a23f34e2ee",
       "files": {
-        "SKILL.md": "ebef0a2d38e6ea76e9bb88ed7158cf96790cc54cb8f2a9a67fbea988628da03e"
+        "SKILL.md": "f612f2357f80a0f78e24a13830bb30f98aa766a486ac5af69de655fe8f5cf9ab"
       }
     }
   }
