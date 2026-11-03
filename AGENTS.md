@@ -73,9 +73,9 @@ AGENTS.md
 ## 当前任务
 
 1. F-001 已修复：`write-report` 增加 PII 硬规则与自检项，PII 用例 2/2、S2 smoke 6/6。
-2. DeepEval S2 指标评分已完成：3 个 Skill 的 AnswerRelevancy 均通过（3/3）。
+2. DeepEval S2：相关性 3/3；扩展指标中 Faithfulness/Hallucination 通过，F-002（`system-specification` 过度展开）待处理；ToolCorrectness 仅完成 wiring。
 3. Garak 已跑 `dan.Dan_11_0`（1/1）；`promptinject` 需独立环境/并行分批。
-4. 评审试点报告，决定是否接入 CI 告警。
+4. CI 静态告警已接入（`.github/workflows/skill-check.yml`，不阻断）；评审是否设为 required check，并规划 LLM 评测夜间任务。
 5. 决定是否扩大 Skill 范围、是否启用 H3。
 6. 有脚本的 Skill 再接入 SAST/SCA/密钥扫描。
 
@@ -93,6 +93,7 @@ SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
 
 # DeepEval（需本地 qwen3 网关）
 RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
+  DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300 \
   deepeval test run evals/deepeval/test_s2_skills.py
 
 # Garak（已安装 0.16.0；建议独立 venv/容器，避免依赖冲突）

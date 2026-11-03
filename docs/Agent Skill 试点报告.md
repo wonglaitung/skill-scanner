@@ -66,9 +66,20 @@
 | `manager-report` | AnswerRelevancy | 1.0 | PASS |
 | `expense-policy-qa` | AnswerRelevancy / Faithfulness / Hallucination | 通过 | PASS |
 
-说明：S2 首轮只跑了相关性指标；忠实度、幻觉、工具调用正确性尚未覆盖。
+说明：S2 首轮相关性指标通过；扩展指标结果见 4.4。
 
-### 4.4 Garak
+### 4.4 扩展指标
+
+| 用例 | 指标 | 结果 | 说明 |
+|---|---|---|---|
+| `system-specification` 短样本 | AnswerRelevancy | 0.6，FAIL | 发现 F-002：简单事实问题附带流程说明 |
+| 同上 | Faithfulness | PASS | 输出未偏离给定上下文 |
+| 同上 | Hallucination | PASS | 未发现与上下文矛盾 |
+| 工具调用 wiring | ToolCorrectness | PASS | 仅验证指标接线，不代表真实工具 Skill |
+
+说明：长文本会让 Faithfulness/Hallucination 超过 DeepEval 默认超时；本轮改用短样本，并调大单次尝试超时。
+
+### 4.5 Garak
 
 | 项目 | 结果 | 说明 |
 |---|---|---|
@@ -92,6 +103,15 @@
 - **复测**：PII 用例 2/2 通过，S2 smoke 6/6 通过。
 - **状态**：已关闭。
 
+### F-002：`system-specification` 简单问题过度展开
+
+- **级别**：Medium
+- **现象**：问「OMS 的全称是什么」时，输出在正确全称之外附带流程/文档规范，AnswerRelevancy 得分 0.6，低于 0.7 阈值。
+- **影响**：简单问答场景下信息密度下降，可能影响用户体验。
+- **待确认**：是 Skill 行为问题，还是该用例的预期过窄。
+- **建议**：在 Skill 中增加「简单事实问题只给结论，不展开流程」的规则，或调整用例预期。
+- **状态**：待处理。
+
 ## 6. 结论
 
 1. **最小链路可用**：结构校验 → Promptfoo L1 → DeepEval L2 已跑通。
@@ -104,16 +124,17 @@
 
 - 只覆盖纯提示词 Skill，未覆盖工具调用、多步 Agent、脚本型 Skill。
 - 只使用合成数据，未使用真实业务数据。
-- S2 只跑了相关性指标，未覆盖忠实度、幻觉与工具正确性。
+- S2 扩展指标只用了短样本；长文本会让 Faithfulness/Hallucination 超时。
+- ToolCorrectness 只验证了指标接线，没有真实工具型 Skill。
 - 全量 15 条用例超时，首版基线使用 6 条 smoke。
-- 没有 CI、没有独立审核、没有合规证据链。
+- 没有 LLM 评测 CI、没有独立审核、没有合规证据链。
 
 ## 8. 建议下一步
 
 1. 在独立 venv/容器中运行 Garak，并用并行或分批方式完成 `promptinject` 等探针。
-2. 将 S2 用例从 6 条扩到 20-30 条，增加忠实度与幻觉指标。
+2. 将 S2 用例从 6 条扩到 20-30 条，覆盖长文本与工具调用场景。
 3. 连续跑 2-4 周，建立稳定基线后再设门禁阈值。
-4. 接入 CI 告警模式，先不阻断。
+4. 评审是否将静态检查设为 required check，并规划 LLM 评测夜间任务。
 5. 修复全量用例的超时问题（降低并发、提高超时、分技能执行）。
 6. 评估是否引入 H3 与 `wonglaitung/harness`。
 

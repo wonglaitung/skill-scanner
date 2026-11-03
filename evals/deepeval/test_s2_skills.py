@@ -9,9 +9,14 @@ import pytest
 pytest.importorskip("deepeval")
 
 from deepeval import assert_test
-from deepeval.metrics import AnswerRelevancyMetric
+from deepeval.metrics import (
+    AnswerRelevancyMetric,
+    FaithfulnessMetric,
+    HallucinationMetric,
+    ToolCorrectnessMetric,
+)
 from deepeval.models import LocalModel
-from deepeval.test_case import LLMTestCase
+from deepeval.test_case import LLMTestCase, ToolCall, ToolCallParams
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "adapters"))
@@ -51,4 +56,56 @@ def test_s2_skill_relevancy(skill: str, input_text: str) -> None:
     assert_test(
         test_case,
         [AnswerRelevancyMetric(threshold=0.7, model=JUDGE)],
+    )
+
+
+GROUNDING_CONTEXT = [
+    "OMS 的全称是 Order Management System（订单管理系统），负责订单创建、校验、路由、成交、撤改和状态追踪。"
+]
+
+
+def test_system_spec_grounding() -> None:
+    adapter = LocalGatewayAdapter.from_env(
+        skill_path="skills/system-specification/SKILL.md",
+    )
+    input_text = "OMS 的全称是什么？"
+    result = adapter.invoke(input_text)
+    test_case = LLMTestCase(
+        input=input_text,
+        actual_output=result.output,
+        context=GROUNDING_CONTEXT,
+        retrieval_context=GROUNDING_CONTEXT,
+    )
+    assert_test(
+        test_case,
+        [
+            AnswerRelevancyMetric(threshold=0.7, model=JUDGE),
+            FaithfulnessMetric(threshold=0.7, model=JUDGE),
+            HallucinationMetric(threshold=0.5, model=JUDGE),
+        ],
+    )
+
+
+def test_tool_correctness_wiring() -> None:
+    expected_tools = [
+        ToolCall(name="query_balance", input_parameters={"user_id": "1001"})
+    ]
+    tools_called = [
+        ToolCall(name="query_balance", input_parameters={"user_id": "1001"})
+    ]
+    test_case = LLMTestCase(
+        input="查询用户 1001 的余额",
+        actual_output="已查询用户 1001 的余额。",
+        expected_tools=expected_tools,
+        tools_called=tools_called,
+    )
+    assert_test(
+        test_case,
+        [
+            ToolCorrectnessMetric(
+                threshold=0.8,
+                model=JUDGE,
+                evaluation_params=[ToolCallParams.INPUT_PARAMETERS],
+            )
+        ],
     )

@@ -1,0 +1,40 @@
+name: skill-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: 结构与代码检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Validate SKILL.md
+        run: python ci/validate_skill.py
+
+      - name: Ruff
+        run: ruff check adapters ci evals skills
+
+      - name: Pytest
+        run: pytest -q
+
+# LLM 评测（Promptfoo / DeepEval / Garak）依赖本地模型网关，
+# 不在 GitHub 托管 runner 上运行；请在本机或自托管 runner 执行。

@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.6 |
+| 文档版本 | v2.7 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -446,7 +446,7 @@ defaultTest:
 |---|---|---|---|
 | 相关性 | AnswerRelevancyMetric | `input`、`actual_output` | ≥ 0.7 |
 | 忠实度 | FaithfulnessMetric | `input`、`actual_output`、`retrieval_context` | ≥ 0.7 |
-| 幻觉 | HallucinationMetric | `input`、`actual_output`、`context` | ≤ 0.5（越低越好） |
+| 幻觉 | HallucinationMetric | `input`、`actual_output`、`context` | ≥ 0.5（4.3+：1 为通过；旧版为 ≤ 0.5） |
 | 上下文相关性 | ContextualRelevancyMetric | `input`、`retrieval_context` | ≥ 0.7 |
 | 工具调用正确性 | ToolCorrectnessMetric | `input`、`expected_tools`、`tools_called` | ≥ 0.8 |
 | 自定义业务标准 | GEval | 按 rubric 定义 | 按业务定义 |
@@ -522,7 +522,9 @@ def test_skill_output():
 
 - 指标名是 `AnswerRelevancyMetric`，不是 `AnswerRelevanceMetric`；
 - `HallucinationMetric` 依赖 `context`（ground truth，标准答案），`retrieval_context` 用于 RAG（Retrieval-Augmented Generation，检索增强生成）类指标，两者语义不同；
-- 各指标阈值方向不同，以官方文档为准（幻觉率越低越好）；
+- `HallucinationMetric` 的阈值方向随版本变化：4.3+ 中 1 为通过、`threshold` 为最低分；升级时必须重新校准；
+- 各指标阈值方向以锁定版本的官方文档为准，不要跨版本复用阈值；
+- 长文本会让 Faithfulness/Hallucination 超过 DeepEval 默认超时；优先使用短样本，或调大 `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE`；
 - `ToolCorrectnessMetric` 需要提供 `expected_tools` 与 `tools_called`，用于校验工具选择是否正确；
 - judge 模型需固定版本；安全团队每月人工抽检不少于 50 条，一致率低于 80% 时暂停 L2 门禁；
 - 关键用例可采用双 judge 投票，结果需缓存，相同输入输出不重复打分；
@@ -1429,3 +1431,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v2.4 | 2026-11-02 | 补充对抗审核要求：独立性、覆盖范围、方法与证据、定级与修复时限、审核门禁与指标；发布门禁与风险/KPI 同步更新 |
 | v2.5 | 2026-11-02 | 本地模型网关示例端口统一为 `http://localhost:8086/v1` |
 | v2.6 | 2026-11-02 | Garak rest 配置改为 JSON；补充 `request_timeout`、绝对报告路径与 `-G` 格式说明 |
+| v2.7 | 2026-11-02 | 补充 DeepEval 扩展指标实践：Hallucination 4.3+ 阈值方向、长文本超时、ToolCorrectness wiring |
