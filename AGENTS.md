@@ -71,7 +71,7 @@ AGENTS.md
 - Garak 只做发布前独立扫描，不进入 PR 门禁。
 - DeepEval 用于 L2 指标化评分，分数纳入基线。
 - 测试数据默认使用合成数据，禁止真实 PII、密钥、生产凭证。
-- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c38416f`，使用 `requirements-harness.txt`；优先项目本地 `.venv-harness/`，禁止污染全局环境；禁止浮动版本，保留 MIT 许可声明。
+- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt`；优先项目本地 `.venv-harness/`，禁止污染全局环境；禁止浮动版本，保留 MIT 许可声明。
 - 未经明确要求，不要提交（commit）或推送（push）。
 - 人工模式技术底座完整前，不引入 CI；先完善 `manual_check`、`baseline`、H3 与 SOP。
 
@@ -84,7 +84,7 @@ AGENTS.md
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. H3 复用 `wonglaitung/harness`：C3 已完成（Promptfoo 14/14、DeepEval 7/7、跨 Skill/参数注入/提示词泄露）；下一步 C4 录制回放与 gate/security。
+8. H3 复用 `wonglaitung/harness`：C4 本地验证通过（Gate + 录制回放）；上游修复待提交，pin 待更新。
 
 ## 命令（部分已可用）
 

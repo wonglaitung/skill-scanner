@@ -209,7 +209,7 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
 | S2 纯提示词 | L0 → L1 → L2，发布前 L3 |
 | S3 或第三方 Skill | L0 → L1 → L2 → L3 |
 | 确定性脚本 Skill | L0 → L1；L2/L3 会跳过 |
-| 工具调用 / 多步 Agent | L0 → L1 → L2，L1/L2 加 `--agent`；H3 C3 |
+| 工具调用 / 多步 Agent | L0 → L1 → L2，L1/L2 加 `--agent`；H3 C4 |
 
 ### 4.2 一条命令运行
 
@@ -392,7 +392,7 @@ python scripts/baseline.py save my-skill
 
 ## 当前限制
 
-- H3 C3 已可用（14 条轨迹用例、间接注入、数据外泄、工具报错、跨 Skill、参数注入、提示词泄露）。
+- H3 C4 本地验证通过：确定性 Gate、录制、回放；上游 harness 修复待提交。
 - Garak `promptinject` 受本地模型速度限制。
 - 模型网关尚未按 Skill 分配独立凭证/配额。
 - 签名私钥托管与轮换流程待定。

@@ -11,6 +11,8 @@ from harness import (
     HookResult,
     LifecycleHook,
 )
+from harness.gate import DeterministicGate
+from harness.testing import RecordingConfig, RecordingHarness
 from harness.tools.base import Tool
 
 from harness_tools import build_tools
@@ -50,9 +52,11 @@ class HarnessAgentAdapter:
         tools: list[Tool],
         max_iterations: int = 10,
         api_key: str = "local-placeholder",
+        record_dir: Path | None = None,
     ) -> None:
         self.system_prompt = Path(skill_path).read_text(encoding="utf-8")
         self.trace = TraceHook()
+        self.gate = DeterministicGate()
         self.agent = AgentHarness(
             config=HarnessConfig(
                 model=model,
@@ -67,6 +71,16 @@ class HarnessAgentAdapter:
             tools=tools,
         )
         self.agent.add_hook(self.trace)
+        self.recorder = None
+        self.record_path = None
+        if record_dir is not None:
+            record_path = Path(record_dir)
+            record_path.mkdir(parents=True, exist_ok=True)
+            self.recorder = RecordingHarness(
+                self.agent,
+                RecordingConfig(recording_dir=record_path, auto_save=True),
+            )
+            self.record_path = record_path / "recording.json"
 
     @classmethod
     def from_env(cls) -> HarnessAgentAdapter:
@@ -77,11 +91,17 @@ class HarnessAgentAdapter:
             tools=build_tools(os.environ.get("SKILL_TOOL_SET", "default")),
             max_iterations=int(os.environ.get("SKILL_MAX_STEPS", "10")),
             api_key=os.environ.get("SKILL_API_KEY", "local-placeholder"),
+            record_dir=Path(os.environ["HARNESS_RECORD_DIR"])
+            if os.environ.get("HARNESS_RECORD_DIR")
+            else None,
         )
 
     async def invoke(self, user_input: str) -> SkillRunResult:
         try:
-            result = await self.agent.run(user_input)
+            if self.recorder is not None:
+                result = await self.recorder.run(user_input)
+            else:
+                result = await self.agent.run(user_input)
         except ValueError as exc:
             if "Invalid input" in str(exc):
                 return SkillRunResult(
@@ -90,13 +110,27 @@ class HarnessAgentAdapter:
                     metadata={"blocked": True, "error": str(exc)},
                 )
             raise
+        sources: list[str] = []
+        for call in self.trace.calls:
+            if call.result:
+                sources.append(call.result)
+            sources.extend(str(value) for value in call.arguments.values())
+        verdict = self.gate.check(result.content, sources=sources)
+        unsourced = (verdict.reconciliation_report or {}).get("unsourced_claims") or []
+        # harness 0.1.0 的 redact 在“无 unsourced”时也会返回隔离占位，
+        # 因此只在确实存在未溯源声明时采用 delivered_content。
+        output = verdict.delivered_content if unsourced else result.content
+
         return SkillRunResult(
-            output=result.content,
+            output=output,
             tool_calls=self.trace.calls,
             metadata={
                 "iterations": result.iterations,
                 "input_tokens": result.token_usage.input_tokens,
                 "output_tokens": result.token_usage.output_tokens,
                 "agent_status": result.status.value,
+                "gate_passed": verdict.passed,
+                "gate_findings": [finding.as_dict() for finding in verdict.findings],
+                "recording": str(self.record_path) if self.record_path else None,
             },
         )

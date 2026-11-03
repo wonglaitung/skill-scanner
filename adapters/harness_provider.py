@@ -25,6 +25,13 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
         tools=build_tools(config.get("toolSet", "default")),
         max_iterations=int(config.get("maxSteps", 10)),
         api_key=config.get("apiKey", os.getenv("SKILL_API_KEY", "local-placeholder")),
+        record_dir=Path(config["recordDir"])
+        if config.get("recordDir")
+        else (
+            Path(os.environ["HARNESS_RECORD_DIR"])
+            if os.environ.get("HARNESS_RECORD_DIR")
+            else None
+        ),
     )
     result = asyncio.run(adapter.invoke(prompt))
     return {
