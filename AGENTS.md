@@ -97,8 +97,9 @@ pytest -q
 # 手工检查（推荐）
 python scripts/manual_check.py --skill write-report --level L2
 python scripts/manual_check.py --skill account-balance-query --level L2 --agent
-python scripts/baseline.py save write-report
-python scripts/baseline.py diff write-report
+python scripts/baseline.py collect write-report --runs 3
+python scripts/baseline.py trend write-report
+python scripts/baseline.py diff write-report --tolerance 0.05
 
 # Promptfoo（需本地 qwen3 网关）
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \

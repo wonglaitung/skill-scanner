@@ -17,7 +17,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word`；1 个工具型 S2 `account-balance-query` |
-| 手工工具 | `scripts/manual_check.py`、`scripts/baseline.py` 已建；支持 L0-L3 与基线 diff |
+| 手工工具 | `manual_check.py` 支持 L0-L3；`baseline.py` 支持多轮采集、趋势、Flaky 与容差 diff |
 | 自动化验证 | 校验/Ruff/pytest 通过；示例 Promptfoo 6/6、DeepEval 1/1；S2 用例扩至 24 条：write-report 7/8（F-003）、system-specification 8/8、manager-report 8/8 |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
 | Garak | 已安装 0.16.0；`dan.Dan_11_0` 1/1 通过；`promptinject` 并行 8 仍 10 分钟超时（113/256）；依赖冲突，建议隔离环境 |
@@ -64,6 +64,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | H3 C3 | 轨迹用例扩到 14 条；新增跨 Skill、参数注入、提示词泄露；DeepEval 7/7；报告增加发现处理表 |
 | 2026-11-03 | H3 C4 | 接入 `DeterministicGate`；修复上游 redact/RecordingHarness/MockHarness 兼容问题；录制回放 1/1 通过 |
 | 2026-11-03 | 上游 harness | `wonglaitung/harness` 提交 `c4cf29f` 已推送；`requirements-harness.txt` pin 更新 |
+| 2026-11-03 | Phase B 多轮基线 | `baseline.py collect/trend`、Flaky 检测、容差 diff、报告基线段完成；H3 3 轮 14/14、7/7，Flaky 0 |
 
 ## 最近验证（2026-11-02）
 
@@ -103,7 +104,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Garak Skill 级 | `SKILL=manager-report ./evals/garak/scan.sh` | Dan_11_0 1/1（扫描 Skill 端点，非裸模型） |
 | 手工检查 L0 | `python scripts/manual_check.py --skill expense-policy-qa --level L0` | 通过，生成 report.md/summary.json |
 | 手工检查 L2 | `python scripts/manual_check.py --skill manager-report --level L2` | 通过：Promptfoo 8/8、DeepEval 1/1 |
-| 基线 | `python scripts/baseline.py save/diff manager-report` | 已保存，未发现回退 |
+| 基线 | `python scripts/baseline.py collect/trend/diff manager-report` | 多轮采集与 Flaky 已可用；manager-report 仍为单轮旧基线 |
 | write-report 8 条 | `npx promptfoo eval -c evals/promptfooconfig.write-report.yaml` | 7/8 passed（F-003） |
 | system-specification 8 条 | `npx promptfoo eval -c evals/promptfooconfig.system-specification.yaml` | 8/8 passed（1 条较慢） |
 | manager-report 8 条 | `npx promptfoo eval -c evals/promptfooconfig.manager-report.yaml` | 8/8 passed |
@@ -231,7 +232,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] 网络白名单（internal + egress proxy）
 - [x] 第三方密码学签名工具（Ed25519）
 - [ ] Phase A 剩余：私钥托管/轮换、模型网关隔离
-- [ ] Phase B：多轮基线与门禁
+- [x] Phase B：多轮基线、趋势、Flaky
+- [ ] Phase B：Delta Gate、Quarantine、Judge 校准
 - [ ] Phase C：H3 工具调用与 Agent 对抗
 - [ ] Phase D：独立审计与运营
 - [x] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook

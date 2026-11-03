@@ -250,6 +250,16 @@ def build_env(args: argparse.Namespace) -> dict[str, str]:
     return env
 
 
+def load_baseline(skill: str) -> dict | None:
+    path = ROOT / "evals" / "baselines" / f"{skill}.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+
 def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[dict]) -> None:
     lines = [
         f"# Skill 手工检查报告：{skill}",
@@ -298,6 +308,30 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
                 f"- 失败：{deepeval.get('failed', '-')}",
             ]
         )
+
+    baseline = load_baseline(skill)
+    if baseline and baseline.get("schema_version") == 2:
+        aggregate = baseline.get("aggregate", {})
+        pf = aggregate.get("promptfoo", {}).get("pass_rate", {})
+        de = aggregate.get("deepeval", {}).get("pass_rate", {})
+        lines.extend(
+            [
+                "",
+                "## 多轮基线",
+                "",
+                f"- 基线轮数：{aggregate.get('run_count', 0)}",
+                f"- Promptfoo 均值：{pf.get('mean')} ± {pf.get('std')} "
+                f"（min {pf.get('min')} / max {pf.get('max')}）",
+                f"- DeepEval 均值：{de.get('mean')} ± {de.get('std')} "
+                f"（min {de.get('min')} / max {de.get('max')}）",
+                f"- Flaky 用例：{len(baseline.get('flaky', []))}",
+            ]
+        )
+        for item in baseline.get("flaky", [])[:10]:
+            lines.append(
+                f"- Flaky：{item.get('input')} -> "
+                f"{item.get('passed')}/{item.get('runs')} 通过；{item.get('reasons')}"
+            )
 
     security = summary.get("metrics", {}).get("security")
     if security:

@@ -318,27 +318,40 @@ python scripts/manual_check.py --skill my-skill --level L1 --allow-failures
 
 ---
 
-## 第 6 步：保存基线，发布前复核
+## 第 6 步：建立多轮基线，发布前复核
 
-### 6.1 保存基线
+### 6.1 采集多轮基线
 
-首次通过后：
+先连续跑 3 轮同一级别检查，再采集：
 
 ```bash
-python scripts/baseline.py save my-skill
+python scripts/manual_check.py --skill my-skill --level L2
+python scripts/manual_check.py --skill my-skill --level L2
+python scripts/manual_check.py --skill my-skill --level L2
+python scripts/baseline.py collect my-skill --runs 3
+```
+
+`collect` 会记录每轮指标、均值/标准差、用例级结果和 Flaky 用例。
+
+查看趋势：
+
+```bash
+python scripts/baseline.py trend my-skill
 ```
 
 后续对比：
 
 ```bash
-python scripts/baseline.py diff my-skill
+python scripts/baseline.py diff my-skill --tolerance 0.05
 ```
 
 如果希望回退时返回非零：
 
 ```bash
-python scripts/baseline.py diff my-skill --fail-on-regression
+python scripts/baseline.py diff my-skill --fail-on-regression --tolerance 0.05
 ```
+
+单轮基线仍可用 `save` 保存，但只适合临时记录，不应作为发布门禁依据。
 
 ### 6.2 发布前
 
@@ -357,7 +370,7 @@ S2/S3 发布前：
 ```bash
 python ci/validate_skill.py --skill my-skill
 python scripts/manual_check.py --skill my-skill --level L1
-python scripts/baseline.py save my-skill
+python scripts/baseline.py collect my-skill --runs 3
 ```
 
 通过后再进入 L2/L3。
@@ -409,6 +422,6 @@ python scripts/baseline.py save my-skill
 4. 执行 `python scripts/skill_lock.py generate`。
 5. 需要签名时执行 `python scripts/sign_skills.py sign --key ...`。
 6. 先跑 L0，再跑 L1；高风险 Skill 再跑 L2/L3。
-7. 通过后 `python scripts/baseline.py save <skill-name>`。
+7. 通过后连续跑 3 轮，再执行 `python scripts/baseline.py collect <skill-name> --runs 3`。
 
 新增 Skill 的边际成本主要是补元数据、评测配置和用例，不是重写流程。

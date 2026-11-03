@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
 BASELINES_DIR = ROOT / "evals" / "baselines"
+SCHEMA_VERSION = 2
 
 
 def latest_summary(skill: str) -> Path:
@@ -20,6 +22,211 @@ def latest_summary(skill: str) -> Path:
 
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def summarize_values(values: list[float]) -> dict:
+    if not values:
+        return {"mean": None, "std": None, "min": None, "max": None, "n": 0}
+    return {
+        "mean": round(statistics.mean(values), 4),
+        "std": round(statistics.pstdev(values), 4),
+        "min": round(min(values), 4),
+        "max": round(max(values), 4),
+        "n": len(values),
+    }
+
+
+def case_key(item: dict) -> str:
+    user_input = (item.get("vars") or {}).get("user_input") or ""
+    return f"{item.get('testIdx')}|{item.get('provider')}|{user_input}"
+
+
+def promptfoo_cases(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = load_json(path)
+    except json.JSONDecodeError:
+        return {}
+
+    cases = {}
+    for item in data.get("results", {}).get("results", []):
+        key = case_key(item)
+        cases[key] = {
+            "input": (item.get("vars") or {}).get("user_input"),
+            "provider": item.get("provider"),
+            "passed": item.get("success") is True,
+            "error": bool(item.get("error")),
+            "reason": item.get("failureReason") or item.get("error"),
+        }
+    return cases
+
+
+def find_flaky(runs: list[dict]) -> list[dict]:
+    keys: set[str] = set()
+    for run in runs:
+        keys.update(run.get("cases", {}))
+    flaky = []
+    for key in sorted(keys):
+        entries = [run["cases"][key] for run in runs if key in run.get("cases", {})]
+        if len(entries) < 2:
+            continue
+        passed = sum(1 for entry in entries if entry.get("passed"))
+        if 0 < passed < len(entries):
+            flaky.append(
+                {
+                    "case": key,
+                    "input": entries[0].get("input"),
+                    "provider": entries[0].get("provider"),
+                    "runs": len(entries),
+                    "passed": passed,
+                    "failed": len(entries) - passed,
+                    "pass_rate": round(passed / len(entries), 4),
+                    "reasons": sorted(
+                        {str(entry.get("reason")) for entry in entries if entry.get("reason")}
+                    ),
+                }
+            )
+    flaky.sort(key=lambda item: (item["pass_rate"], item["case"]))
+    return flaky
+
+
+def matching_summaries(
+    skill: str,
+    runs: int,
+    level: str | None,
+    agent: bool | None,
+    report: Path | None,
+) -> tuple[list[tuple[Path, dict]], dict]:
+    paths = sorted((REPORTS_DIR / skill).glob("*/summary.json"))
+    if not paths:
+        raise FileNotFoundError(f"no reports found for {skill}")
+
+    summaries = [(path.parent, load_json(path)) for path in paths]
+    if report is not None:
+        report = report.resolve()
+        if report.name == "summary.json":
+            report = report.parent
+        summaries = [(path, data) for path, data in summaries if path.resolve() <= report]
+        if not summaries:
+            raise FileNotFoundError(f"no report at or before {report}")
+
+    latest = summaries[-1][1]
+    target_level = level if level is not None else latest.get("level")
+    target_agent = agent if agent is not None else latest.get("agent")
+    target_total = latest.get("metrics", {}).get("promptfoo", {}).get("total")
+
+    selected = []
+    for path, data in summaries:
+        if data.get("level") != target_level:
+            continue
+        if agent is not None and bool(data.get("agent")) != agent:
+            continue
+        if target_agent is not None and bool(data.get("agent")) != bool(target_agent):
+            continue
+        if data.get("metrics", {}).get("promptfoo", {}).get("total") != target_total:
+            continue
+        selected.append((path, data))
+    return selected[-runs:], latest
+
+
+def collect(
+    skill: str,
+    runs: int,
+    level: str | None,
+    agent: bool | None,
+    report: Path | None,
+) -> int:
+    selected, _ = matching_summaries(skill, runs, level, agent, report)
+    if not selected:
+        print(f"no matching reports for {skill}", file=sys.stderr)
+        return 2
+    if len(selected) < runs:
+        print(
+            f"warning: requested {runs} runs, found {len(selected)} matching reports",
+            file=sys.stderr,
+        )
+
+    run_entries = []
+    for path, data in selected:
+        metrics = data.get("metrics", {})
+        run_entries.append(
+            {
+                "timestamp": data.get("timestamp") or path.name,
+                "report": str(path.relative_to(ROOT)),
+                "promptfoo": metrics.get("promptfoo", {}),
+                "deepeval": metrics.get("deepeval", {}),
+                "cases": promptfoo_cases(path / "promptfoo.json"),
+            }
+        )
+
+    promptfoo_pass_rates = [
+        run.get("promptfoo", {}).get("pass_rate")
+        for run in run_entries
+        if isinstance(run.get("promptfoo", {}).get("pass_rate"), (int, float))
+    ]
+    deepeval_pass_rates = [
+        run.get("deepeval", {}).get("pass_rate")
+        for run in run_entries
+        if isinstance(run.get("deepeval", {}).get("pass_rate"), (int, float))
+    ]
+    flaky = find_flaky(run_entries)
+    latest = run_entries[-1]
+    baseline = {
+        "schema_version": SCHEMA_VERSION,
+        "skill": skill,
+        "level": selected[-1][1].get("level"),
+        "agent": selected[-1][1].get("agent"),
+        "model": selected[-1][1].get("model"),
+        "api_base": selected[-1][1].get("api_base"),
+        "generated_at": run_entries[-1]["timestamp"],
+        "runs": run_entries,
+        "aggregate": {
+            "run_count": len(run_entries),
+            "promptfoo": {
+                "pass_rate": summarize_values(promptfoo_pass_rates),
+                "total": latest.get("promptfoo", {}).get("total"),
+                "passed": summarize_values(
+                    [float(run.get("promptfoo", {}).get("passed", 0)) for run in run_entries]
+                ),
+                "failed": summarize_values(
+                    [float(run.get("promptfoo", {}).get("failed", 0)) for run in run_entries]
+                ),
+                "errors": summarize_values(
+                    [float(run.get("promptfoo", {}).get("errors", 0)) for run in run_entries]
+                ),
+            },
+            "deepeval": {
+                "pass_rate": summarize_values(deepeval_pass_rates),
+                "passed": summarize_values(
+                    [
+                        float(run.get("deepeval", {}).get("passed", 0))
+                        for run in run_entries
+                    ]
+                ),
+                "failed": summarize_values(
+                    [
+                        float(run.get("deepeval", {}).get("failed", 0))
+                        for run in run_entries
+                    ]
+                ),
+            },
+        },
+        "flaky": flaky,
+    }
+
+    BASELINES_DIR.mkdir(parents=True, exist_ok=True)
+    target = BASELINES_DIR / f"{skill}.json"
+    target.write_text(json.dumps(baseline, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    pf = baseline["aggregate"]["promptfoo"]["pass_rate"]
+    de = baseline["aggregate"]["deepeval"]["pass_rate"]
+    print(f"baseline saved: {target}")
+    print(f"runs: {len(run_entries)}  promptfoo mean={pf['mean']} std={pf['std']}")
+    print(f"deepeval mean={de['mean']} std={de['std']}  flaky={len(flaky)}")
+    for item in flaky:
+        print(f"  flaky {item['pass_rate']:.2f}  {item['input']} -> {item['reasons']}")
+    return 0
 
 
 def save(skill: str, report: Path | None) -> int:
@@ -40,53 +247,57 @@ def save(skill: str, report: Path | None) -> int:
     return 0
 
 
-def diff(skill: str, report: Path | None, fail_on_regression: bool) -> int:
+def baseline_metric(baseline: dict, metric: str) -> tuple[float | None, dict | None]:
+    if baseline.get("schema_version") == SCHEMA_VERSION:
+        section, field = metric.split(".", 1)
+        aggregate = baseline.get("aggregate", {}).get(section, {}).get(field, {})
+        return aggregate.get("mean"), aggregate
+    value = baseline.get("metrics", {}).get(metric.split(".", 1)[0], {}).get(
+        metric.split(".", 1)[1]
+    )
+    return value, None
+
+
+def diff(skill: str, report: Path | None, fail_on_regression: bool, tolerance: float) -> int:
     baseline_path = BASELINES_DIR / f"{skill}.json"
     if not baseline_path.exists():
-        print(f"no baseline for {skill}; run: python scripts/baseline.py save {skill}")
+        print(f"no baseline for {skill}; run: python scripts/baseline.py collect {skill}")
         return 2
 
     baseline = load_json(baseline_path)
     current = load_json(report or latest_summary(skill))
-    old_metrics = baseline.get("metrics", {})
-    new_metrics = current.get("metrics", {})
-
-    rows = []
-    regressions = []
-
-    def compare(name: str, old: object, new: object, higher_is_better: bool = True) -> None:
-        if old is None and new is None:
-            return
-        rows.append((name, old, new))
-        if isinstance(old, (int, float)) and isinstance(new, (int, float)):
-            if higher_is_better and new < old:
-                regressions.append(name)
-            if not higher_is_better and new > old:
-                regressions.append(name)
-
-    compare(
-        "promptfoo.pass_rate",
-        old_metrics.get("promptfoo", {}).get("pass_rate"),
-        new_metrics.get("promptfoo", {}).get("pass_rate"),
-    )
-    compare(
-        "deepeval.pass_rate",
-        old_metrics.get("deepeval", {}).get("pass_rate"),
-        new_metrics.get("deepeval", {}).get("pass_rate"),
-    )
-    compare(
-        "promptfoo.failed",
-        old_metrics.get("promptfoo", {}).get("failed"),
-        new_metrics.get("promptfoo", {}).get("failed"),
-        higher_is_better=False,
-    )
+    old_pf, old_pf_agg = baseline_metric(baseline, "promptfoo.pass_rate")
+    old_de, old_de_agg = baseline_metric(baseline, "deepeval.pass_rate")
+    new_pf = current.get("metrics", {}).get("promptfoo", {}).get("pass_rate")
+    new_de = current.get("metrics", {}).get("deepeval", {}).get("pass_rate")
 
     print(f"baseline: {baseline_path}")
     print(f"current:  {report or latest_summary(skill)}")
     print()
     print(f"{'metric':30} {'baseline':>12} {'current':>12}")
-    for name, old, new in rows:
-        print(f"{name:30} {str(old):>12} {str(new):>12}")
+    for name, old, new, agg in [
+        ("promptfoo.pass_rate", old_pf, new_pf, old_pf_agg),
+        ("deepeval.pass_rate", old_de, new_de, old_de_agg),
+    ]:
+        old_text = f"{old:.4f}" if isinstance(old, (int, float)) else "-"
+        if agg:
+            old_text = f"{old_text}±{agg.get('std', 0):.3f}"
+        new_text = f"{new:.4f}" if isinstance(new, (int, float)) else "-"
+        print(f"{name:30} {old_text:>12} {new_text:>12}")
+
+    regressions = []
+    if isinstance(old_pf, (int, float)) and isinstance(new_pf, (int, float)):
+        if new_pf < old_pf - tolerance:
+            regressions.append("promptfoo.pass_rate")
+    if isinstance(old_de, (int, float)) and isinstance(new_de, (int, float)):
+        if new_de < old_de - tolerance:
+            regressions.append("deepeval.pass_rate")
+
+    flaky = baseline.get("flaky", [])
+    if flaky:
+        print(f"\nbaseline flaky cases: {len(flaky)}")
+        for item in flaky[:10]:
+            print(f"  {item['pass_rate']:.2f}  {item['input']} -> {item['reasons']}")
 
     if regressions:
         print("\nregressions: " + ", ".join(regressions))
@@ -96,20 +307,56 @@ def diff(skill: str, report: Path | None, fail_on_regression: bool) -> int:
     return 0
 
 
+def trend(skill: str) -> int:
+    baseline_path = BASELINES_DIR / f"{skill}.json"
+    if not baseline_path.exists():
+        print(f"no baseline for {skill}; run: python scripts/baseline.py collect {skill}")
+        return 2
+    baseline = load_json(baseline_path)
+    if baseline.get("schema_version") != SCHEMA_VERSION:
+        print(f"{skill}: legacy single-run baseline")
+        return 0
+    print(f"{'timestamp':22} {'promptfoo':>12} {'deepeval':>12} {'flaky':>6}")
+    for run in baseline.get("runs", []):
+        pf = run.get("promptfoo", {}).get("pass_rate", "-")
+        de = run.get("deepeval", {}).get("pass_rate", "-")
+        print(f"{run.get('timestamp', '-'):22} {str(pf):>12} {str(de):>12} {'':>6}")
+    pf = baseline.get("aggregate", {}).get("promptfoo", {}).get("pass_rate", {})
+    de = baseline.get("aggregate", {}).get("deepeval", {}).get("pass_rate", {})
+    print(
+        f"{'mean±std':22} "
+        f"{str(pf.get('mean')) + '±' + str(pf.get('std')):>12} "
+        f"{str(de.get('mean')) + '±' + str(de.get('std')):>12} "
+        f"{len(baseline.get('flaky', [])):>6}"
+    )
+    return 0
+
+
 def list_baselines() -> int:
     BASELINES_DIR.mkdir(parents=True, exist_ok=True)
     for path in sorted(BASELINES_DIR.glob("*.json")):
         data = load_json(path)
-        print(
-            f"{path.stem:24} {data.get('timestamp', '-'):20} "
-            f"level={data.get('level', '-')} model={data.get('model', '-')}"
-        )
+        if data.get("schema_version") == SCHEMA_VERSION:
+            pf = data.get("aggregate", {}).get("promptfoo", {}).get("pass_rate", {})
+            print(
+                f"{path.stem:24} runs={data.get('aggregate', {}).get('run_count', 0):<3} "
+                f"pf={pf.get('mean')} flaky={len(data.get('flaky', []))}"
+            )
+        else:
+            print(f"{path.stem:24} single-run timestamp={data.get('timestamp', '-')}")
     return 0
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="保存与对比手工检查基线")
+    parser = argparse.ArgumentParser(description="保存、采集与对比手工检查基线")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    collect_parser = sub.add_parser("collect")
+    collect_parser.add_argument("skill")
+    collect_parser.add_argument("--runs", type=int, default=3)
+    collect_parser.add_argument("--level", default=None)
+    collect_parser.add_argument("--agent", action="store_true", default=None)
+    collect_parser.add_argument("--report", type=Path, default=None)
 
     save_parser = sub.add_parser("save")
     save_parser.add_argument("skill")
@@ -119,14 +366,22 @@ def main() -> int:
     diff_parser.add_argument("skill")
     diff_parser.add_argument("--report", type=Path, default=None)
     diff_parser.add_argument("--fail-on-regression", action="store_true")
+    diff_parser.add_argument("--tolerance", type=float, default=0.0)
+
+    trend_parser = sub.add_parser("trend")
+    trend_parser.add_argument("skill")
 
     sub.add_parser("list")
 
     args = parser.parse_args()
+    if args.command == "collect":
+        return collect(args.skill, args.runs, args.level, args.agent, args.report)
     if args.command == "save":
         return save(args.skill, args.report)
     if args.command == "diff":
-        return diff(args.skill, args.report, args.fail_on_regression)
+        return diff(args.skill, args.report, args.fail_on_regression, args.tolerance)
+    if args.command == "trend":
+        return trend(args.skill)
     return list_baselines()
 
 

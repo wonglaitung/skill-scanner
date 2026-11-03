@@ -74,8 +74,9 @@ reports/<skill>/<timestamp>/
 ### 4. 基线
 
 ```bash
-python scripts/baseline.py save manager-report
-python scripts/baseline.py diff manager-report
+python scripts/baseline.py collect manager-report --runs 3
+python scripts/baseline.py trend manager-report
+python scripts/baseline.py diff manager-report --tolerance 0.05
 python scripts/baseline.py list
 ```
 
