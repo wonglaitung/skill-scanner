@@ -84,7 +84,7 @@ AGENTS.md
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. H3 复用 `wonglaitung/harness`：C1 已完成（Promptfoo 5/5、ToolCorrectness 1/1、manual_check --agent L1/L2 通过）；下一步 C2 扩充轨迹用例。
+8. H3 复用 `wonglaitung/harness`：C2 已完成（Promptfoo 10/10、DeepEval 4/4、间接注入/外泄/工具报错）；下一步 C3 跨 Skill 与更多对抗。
 
 ## 命令（部分已可用）
 
