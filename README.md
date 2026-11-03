@@ -87,8 +87,17 @@ python scripts/baseline.py list
 
 沙箱镜像与配置：
 
-- `adapters/sandbox/Dockerfile`
+- `adapters/sandbox/Dockerfile`：脚本执行沙箱
+- `adapters/sandbox/Dockerfile.model`：模型型 Skill 端点沙箱
 - `adapters/sandbox/docker-compose.yml`
+
+模型型 Skill 可在容器内启动：
+
+```bash
+./scripts/run_skill_server_sandboxed.sh manager-report
+```
+
+默认监听 `127.0.0.1:8090`，容器通过 `host.docker.internal` 访问本地模型网关。
 
 ### 6. 供应链扫描
 
@@ -184,6 +193,7 @@ AGENTS.md             Agent 工作约定
 | SBOM | 622 components（CycloneDX） |
 | 沙箱 | md-to-word 转换通过（network none、read-only） |
 | 沙箱逃逸检查 | 通过（非 root、只读、无网络、无 Docker socket） |
+| 模型型 Skill 沙箱 | manager-report 容器内启动并返回响应 |
 | Skill 完整性锁 | 5 个 Skill 全部匹配 |
 | pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
 
@@ -195,7 +205,7 @@ AGENTS.md             Agent 工作约定
 - H3 工具调用 / 多步 Agent 尚未实现。
 - 目前是单轮基线，不足以支撑 PR 阻断。
 - 纯脚本 Skill 不适用 DeepEval/Garak，其质量由确定性断言和契约测试保证。
-- 模型型 Skill 的运行时隔离尚未实现；当前沙箱只覆盖脚本执行。
+- 模型型 Skill 已可容器化运行，但网络仍是 bridge，域名白名单尚未实现。
 - 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
 - Skill 完整性锁是 SHA256 哈希校验，不是密码学签名；第三方签名尚未实现。
 

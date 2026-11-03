@@ -1,0 +1,9 @@
+.git
+.trivy-cache
+node_modules
+reports
+__pycache__
+.pytest_cache
+.ruff_cache
+.deepeval
+*.log

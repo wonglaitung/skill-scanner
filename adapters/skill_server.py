@@ -90,9 +90,9 @@ def main() -> int:
     parser.add_argument("--skill", required=True)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8090)
-    parser.add_argument("--api-base", default="http://localhost:8086/v1")
-    parser.add_argument("--model", default="qwen3")
-    parser.add_argument("--api-key", default="local-placeholder")
+    parser.add_argument("--api-base", default=None)
+    parser.add_argument("--model", default=None)
+    parser.add_argument("--api-key", default=None)
     parser.add_argument("--timeout", type=float, default=180)
     args = parser.parse_args()
 
@@ -101,13 +101,14 @@ def main() -> int:
         model=args.model,
         api_base=args.api_base,
     )
-    adapter.api_key = args.api_key
+    if args.api_key:
+        adapter.api_key = args.api_key
     adapter.timeout = args.timeout
 
     server = ThreadingHTTPServer((args.host, args.port), make_handler(adapter))
     print(
         f"Skill endpoint: http://{args.host}:{args.port}/v1/chat/completions "
-        f"(skill={args.skill}, model={args.model})",
+        f"(skill={args.skill}, model={adapter.model}, api_base={adapter.api_base})",
         flush=True,
     )
     try:
