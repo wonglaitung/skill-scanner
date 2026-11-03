@@ -12,13 +12,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.5，已推送 GitHub |
+| 方案文档 | 已完成 v2.6，已推送 GitHub |
 | 代码实现 | 最小骨架已建立（4 个 Skill、Adapter、校验脚本、评测配置） |
 | CI 流水线 | 未接入 |
 | 试点 Skill | 已导入 3 个 S2：`write-report`、`system-specification`、`manager-report`；另有示例 `expense-policy-qa` |
 | 自动化验证 | 校验/Ruff/pytest 通过；示例 Promptfoo 6/6、DeepEval 1/1；S2 Promptfoo 6/6、DeepEval 3/3；F-001 已修复并复测 |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
-| Garak | 未安装，发布前扫描待跑 |
+| Garak | 已安装 0.16.0；`dan.Dan_11_0` 轻量扫描 1/1 通过；`promptinject` 256 条超时；依赖存在冲突，建议隔离环境 |
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已有 `wonglaitung/harness`，首期暂不启用 |
 | 合规审计 | 暂无明确依据，先做工程基线 |
@@ -39,6 +39,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-02 | 真实 Skill 导入 | 导入 `write-report`、`system-specification`、`manager-report`，补齐 S2 元数据；S2 小样本 Promptfoo 4/5，发现 `write-report` 未拒绝复述人名 |
 | 2026-11-02 | F-001 修复 | `write-report` 增加 PII 硬规则与自检项；PII 用例 2/2、S2 smoke 6/6；S2 DeepEval 3/3 |
 | 2026-11-02 | 试点报告 | 输出 v1.0：范围、方法、结果、F-001 修复、限制与下一步 |
+| 2026-11-02 | Garak 轻量扫描 | `dan.Dan_11_0` 1/1 通过（6.6s）；`promptinject.HijackHateHumans` 256 条超时；修正 `-G` 需 JSON、超时与报告路径 |
 
 ## 最近验证（2026-11-02）
 
@@ -54,7 +55,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | PII 复测 | 同上，仅 `write-report` 的两条 PII 用例 | 2/2 passed |
 | DeepEval 示例 | `RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 deepeval test run evals/deepeval/test_skill.py` | 1/1 passed |
 | DeepEval S2 | `RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 deepeval test run evals/deepeval/test_s2_skills.py` | 3/3 passed（AnswerRelevancy 均 1.0） |
-| Garak | `./evals/garak/scan.sh` | 未执行（未安装） |
+| Garak 轻量扫描 | `python3 -m garak --target_type rest -G evals/garak/rest_config.json --spec probes.dan.Dan_11_0 --generations 1 --report_prefix "$PWD/reports/garak_dan"` | 1/1 passed（6.6s） |
+| Garak promptinject | 同上，`--spec probes.promptinject.HijackHateHumans` | 256 条，600s 超时（未完成） |
 
 说明：真实评测使用本地 `qwen3`，网关 `http://localhost:8086/v1`；`reports/` 下的产物未提交。
 
@@ -149,7 +151,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] 运行 DeepEval 指标评分（示例 1/1）
 - [x] 对 S2 试点 Skill 跑 DeepEval 指标评分（3/3）
 - [x] 修复 F-001（`write-report` PII 复述问题）并复测
-- [ ] 可选运行轻量 Garak
+- [x] 可选运行轻量 Garak（`dan.Dan_11_0` 1/1；`promptinject` 待分批/并行）
 - [x] 输出试点报告
 - [ ] 决定是否接入 CI 告警
 - [ ] 决定是否扩大 Skill 范围
@@ -164,6 +166,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 本地模型 judge 能力未知 | 指标分数可能不稳定 | 先跑 20-50 条人工校准 |
 | 仅有单轮基线 | 还不能判断趋势 | 先积累 2-4 周数据再设阈值 |
 | 无 CI 平台信息 | 暂不能自动化 | 首期本地/定时运行 |
+| Garak 依赖冲突 | 安装会升级 torch/click，可能影响其他工具 | 用独立 venv/容器运行 Garak，不污染主环境 |
 | 合规要求未明确 | 证据链要求不确定 | 先按工程基线保留 JSON 报告 |
 
 ## 维护方式

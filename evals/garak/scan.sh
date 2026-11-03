@@ -8,7 +8,8 @@ mkdir -p reports
 
 python -m garak \
   --target_type rest \
-  -G evals/garak/rest_config.yaml \
+  -G evals/garak/rest_config.json \
   --spec probes.promptinject,probes.dan,probes.encoding,probes.leakreplay \
   --generations 3 \
-  --report_prefix reports/garak
+  --parallel_attempts "${GARAK_PARALLEL:-4}" \
+  --report_prefix "$ROOT/reports/garak"

@@ -74,7 +74,7 @@ AGENTS.md
 
 1. F-001 已修复：`write-report` 增加 PII 硬规则与自检项，PII 用例 2/2、S2 smoke 6/6。
 2. DeepEval S2 指标评分已完成：3 个 Skill 的 AnswerRelevancy 均通过（3/3）。
-3. 可选运行轻量 Garak。
+3. Garak 已跑 `dan.Dan_11_0`（1/1）；`promptinject` 需独立环境/并行分批。
 4. 评审试点报告，决定是否接入 CI 告警。
 5. 决定是否扩大 Skill 范围、是否启用 H3。
 6. 有脚本的 Skill 再接入 SAST/SCA/密钥扫描。
@@ -92,15 +92,19 @@ SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
   npx promptfoo eval -c evals/promptfooconfig.smoke.yaml --max-concurrency 1
 
 # DeepEval（需本地 qwen3 网关）
-RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 \
-  deepeval test run evals/deepeval/test_skill.py
+RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
+  deepeval test run evals/deepeval/test_s2_skills.py
+
+# Garak（已安装 0.16.0；建议独立 venv/容器，避免依赖冲突）
+python3 -m garak --target_type rest -G evals/garak/rest_config.json \
+  --spec probes.dan.Dan_11_0 --generations 1 \
+  --report_prefix "$PWD/reports/garak_dan"
 
 # 尚未安装/接入
 semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
 shellcheck skills/**/*.sh
 gitleaks detect --source . --no-git
 trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
-./evals/garak/scan.sh
 ```
 
 ## 进度更新要求

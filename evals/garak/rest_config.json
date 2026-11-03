@@ -1,0 +1,24 @@
+{
+  "rest": {
+    "RestGenerator": {
+      "uri": "http://localhost:8086/v1/chat/completions",
+      "method": "post",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "req_template_json_object": {
+        "model": "qwen3",
+        "messages": [
+          {
+            "role": "user",
+            "content": "$INPUT"
+          }
+        ],
+        "temperature": 0
+      },
+      "response_json": true,
+      "response_json_field": "$.choices[0].message.content",
+      "request_timeout": 120
+    }
+  }
+}

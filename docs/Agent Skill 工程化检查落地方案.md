@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.5 |
+| 文档版本 | v2.6 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -701,37 +701,44 @@ expected:
 
 Garak 是发布前的独立扫描器，不作为 PR 门禁。它使用固定的已知攻击库，为合规审计提供独立于 Promptfoo 的扫描证据。新版本 CLI（命令行工具）已用 `--target_type` / `--spec`，`--model_type` / `--probes` 为废弃参数。
 
-本地模型网关通过 `rest` generator 接入：
+本地模型网关通过 `rest` generator 接入。注意：`-G` 读取的是 JSON 配置，不是 YAML：
 
-```yaml
-# evals/garak/rest_config.yaml
-rest:
-  RestGenerator:
-    uri: http://localhost:8086/v1/chat/completions
-    method: post
-    headers:
-      Content-Type: application/json
-      Authorization: Bearer $KEY
-    req_template_json_object:
-      model: local-skill-model
-      messages:
-        - role: user
-          content: $INPUT
-      temperature: 0
-    response_json: true
-    response_json_field: $.choices[0].message.content
+```json
+{
+  "rest": {
+    "RestGenerator": {
+      "uri": "http://localhost:8086/v1/chat/completions",
+      "method": "post",
+      "headers": { "Content-Type": "application/json" },
+      "req_template_json_object": {
+        "model": "qwen3",
+        "messages": [{ "role": "user", "content": "$INPUT" }],
+        "temperature": 0
+      },
+      "response_json": true,
+      "response_json_field": "$.choices[0].message.content",
+      "request_timeout": 120
+    }
+  }
+}
 ```
 
 ```bash
 python -m garak \
   --target_type rest \
-  -G evals/garak/rest_config.yaml \
-  --spec probes.promptinject,probes.dan,probes.encoding,probes.leakreplay \
-  --generations 3 \
-  --report_prefix reports/garak
+  -G evals/garak/rest_config.json \
+  --spec probes.dan.Dan_11_0 \
+  --generations 1 \
+  --report_prefix "$PWD/reports/garak"
 ```
 
-说明：需要鉴权时设置 `REST_API_KEY` 环境变量（或通过 `key_env_var` 指定）；本地网关无需鉴权时删除 `Authorization` 行。`$INPUT` 会替换为攻击提示词。
+说明：
+
+- `-G` 只接受 JSON；写成 YAML 会报 JSON 解析错误。
+- 本地网关无需鉴权时不要放 `Authorization` 头；需要时通过 `REST_API_KEY` 或 `key_env_var` 注入。
+- `request_timeout` 建议设为 120 秒以上，本地小模型单次响应可能超过默认 20 秒。
+- `--report_prefix` 使用绝对路径，避免 Garak 把报告写到其运行目录下。
+- `promptinject` 等探针条目多，本地模型应分批或并行执行（`--parallel_attempts`），并放到独立 venv/容器。
 
 要点：
 
@@ -1023,7 +1030,7 @@ skill-scanner/
 │   │   └── golden_set.jsonl
 │   └── garak/
 │       ├── scan.sh
-│       └── rest_config.yaml
+│       └── rest_config.json
 ├── ci/
 │   ├── validate_skill.py    # Schema 与契约校验
 │   ├── gate.py              # 门禁判定
@@ -1421,3 +1428,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v2.3 | 2026-11-02 | 补充复用现有 Agent harness SDK 的边界与组件映射；新增 Adapter 契约；适配层目录统一为 `adapters/`，避免与 Agent SDK 重名 |
 | v2.4 | 2026-11-02 | 补充对抗审核要求：独立性、覆盖范围、方法与证据、定级与修复时限、审核门禁与指标；发布门禁与风险/KPI 同步更新 |
 | v2.5 | 2026-11-02 | 本地模型网关示例端口统一为 `http://localhost:8086/v1` |
+| v2.6 | 2026-11-02 | Garak rest 配置改为 JSON；补充 `request_timeout`、绝对报告路径与 `-G` 格式说明 |
