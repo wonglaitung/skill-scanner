@@ -104,6 +104,7 @@ def matching_summaries(
     level: str | None,
     agent: bool | None,
     report: Path | None,
+    total: int | None = None,
 ) -> tuple[list[tuple[Path, dict]], dict]:
     paths = sorted((REPORTS_DIR / skill).glob("*/summary.json"))
     if not paths:
@@ -119,9 +120,21 @@ def matching_summaries(
             raise FileNotFoundError(f"no report at or before {report}")
 
     latest = summaries[-1][1]
+    if level is None:
+        with_promptfoo = [
+            data
+            for _, data in summaries
+            if data.get("metrics", {}).get("promptfoo", {}).get("total") is not None
+        ]
+        if with_promptfoo:
+            latest = with_promptfoo[-1]
     target_level = level if level is not None else latest.get("level")
     target_agent = agent if agent is not None else latest.get("agent")
-    target_total = latest.get("metrics", {}).get("promptfoo", {}).get("total")
+    target_total = (
+        total
+        if total is not None
+        else latest.get("metrics", {}).get("promptfoo", {}).get("total")
+    )
 
     selected = []
     for path, data in summaries:
@@ -273,14 +286,31 @@ def diff(skill: str, report: Path | None, fail_on_regression: bool, tolerance: f
         return 2
 
     baseline = load_json(baseline_path)
-    current = load_json(report or latest_summary(skill))
+    if report is not None:
+        current_path = report
+    else:
+        baseline_total = (
+            baseline.get("aggregate", {}).get("promptfoo", {}).get("total")
+        )
+        selected, _ = matching_summaries(
+            skill,
+            1,
+            baseline.get("level"),
+            baseline.get("agent"),
+            None,
+            baseline_total,
+        )
+        current_path = (
+            selected[-1][0] / "summary.json" if selected else latest_summary(skill)
+        )
+    current = load_json(current_path)
     old_pf, old_pf_agg = baseline_metric(baseline, "promptfoo.pass_rate")
     old_de, old_de_agg = baseline_metric(baseline, "deepeval.pass_rate")
     new_pf = current.get("metrics", {}).get("promptfoo", {}).get("pass_rate")
     new_de = current.get("metrics", {}).get("deepeval", {}).get("pass_rate")
 
     print(f"baseline: {baseline_path}")
-    print(f"current:  {report or latest_summary(skill)}")
+    print(f"current:  {current_path}")
     print()
     print(f"{'metric':30} {'baseline':>12} {'current':>12}")
     for name, old, new, agg in [
@@ -335,7 +365,24 @@ def gate(
         print(f"baseline has {run_count} runs, need at least {min_runs}")
         return 2
 
-    current_path = report or latest_summary(skill)
+    if report is not None:
+        current_path = report
+    else:
+        baseline_total = (
+            baseline.get("aggregate", {}).get("promptfoo", {}).get("total")
+        )
+        selected, _ = matching_summaries(
+            skill,
+            1,
+            baseline.get("level"),
+            baseline.get("agent"),
+            None,
+            baseline_total,
+        )
+        if not selected:
+            print(f"no matching report for baseline of {skill}")
+            return 2
+        current_path = selected[-1][0] / "summary.json"
     current = load_json(current_path)
     checks = []
     for name, section, key in [

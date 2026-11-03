@@ -505,6 +505,17 @@ def main() -> int:
             timeout=60,
         )
     )
+    capability_step = run_step(
+        "capability-audit",
+        [sys.executable, "scripts/capability_audit.py", "--skill", args.skill],
+        env,
+        timeout=60,
+    )
+    if "status: skipped" in capability_step.get("stdout", ""):
+        capability_step["status"] = "skipped"
+        capability_step["required"] = False
+        capability_step["reason"] = "no tool declarations"
+    steps.append(capability_step)
 
     signature_pub = ROOT / "evals" / "keys" / "public.pem"
     signature_sig = ROOT / "evals" / "skills.lock.sig"

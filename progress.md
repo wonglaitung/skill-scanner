@@ -17,7 +17,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词：`write-report`、`system-specification`、`manager-report`；1 个示例 `expense-policy-qa`；1 个脚本型 S2 `md-to-word`；1 个工具型 S2 `account-balance-query` |
-| 手工工具 | `manual_check.py` 支持 L0-L3；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
+| 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
 | 自动化验证 | 校验/Ruff/pytest 通过；6 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
 | Garak | 已安装 0.16.0；`dan.Dan_11_0` 1/1 通过；`promptinject` 并行 8 仍 10 分钟超时（113/256）；依赖冲突，建议隔离环境 |
@@ -70,6 +70,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | 长文超时治理 | `SKILL_MAX_TOKENS`/`--max-tokens` 限制生成长度；system-specification 3 轮 8/8、2/2 |
 | 2026-11-03 | Quarantine | 新增 `evals/quarantine.json`、`scripts/quarantine.py`；报告单列隔离用例，Flaky 跳过隔离用例 |
 | 2026-11-03 | Judge 校准 | 新增 20 条人工标注集与 `judge_calibration.py`；一致率 95%、MAE 0.05；1 条不匹配为“相关但事实错误” |
+| 2026-11-03 | 使用说明 | 重写 `docs/如何扫描Skill.md`：按用户路径给出 10 步操作、三条最短命令路径与常见问题 |
+| 2026-11-03 | 能力一致性审计 | 新增 `capability_audit.py` 与 `metadata.tool-permissions` 声明；检查 allowed-tools、tool-set、实际 Trace 一致性；已接入 manual_check |
 
 ## 最近验证（2026-11-02）
 

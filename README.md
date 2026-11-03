@@ -78,6 +78,7 @@ python scripts/baseline.py collect manager-report --runs 3
 python scripts/baseline.py trend manager-report
 python scripts/baseline.py diff manager-report --tolerance 0.05
 python scripts/baseline.py gate manager-report --tolerance 0.05
+python scripts/capability_audit.py --skill account-balance-query
 JUDGE_MODEL=qwen3 python scripts/judge_calibration.py
 python scripts/baseline.py list
 ```

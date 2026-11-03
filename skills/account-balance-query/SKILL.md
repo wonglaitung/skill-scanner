@@ -10,6 +10,16 @@ metadata:
   risk-level: S2
   version: 0.1.0
   source: skill-scanner H3 test fixture
+  tool-set: query
+  tool-permissions:
+    - name: get_current_user
+      scopes: [read:self]
+      side-effects: none
+      data-access: [self]
+    - name: query_balance
+      scopes: [read:balance]
+      side-effects: none
+      data-access: [self, test-user]
 ---
 
 # 账户余额查询
