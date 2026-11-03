@@ -17,6 +17,8 @@ Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、
 - 保存基线并对比回退
 - 生成可审计的 Markdown/JSON 报告
 
+详细步骤见 `docs/如何扫描Skill.md`。
+
 ## 快速开始
 
 ### 1. 依赖
@@ -247,6 +249,7 @@ AGENTS.md             Agent 工作约定
 
 - `docs/Agent Skill 工程化检查落地方案.md`
 - `docs/Agent Skill 试点报告.md`
+- `docs/如何扫描Skill.md`
 - `docs/对抗审核报告模板.md`
 - `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md`
 - `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`
