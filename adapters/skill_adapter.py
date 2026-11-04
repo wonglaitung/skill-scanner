@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 
+from input_guard import REFUSAL, is_encoding_request
 from safety_prompt import SAFETY_PROMPT
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,6 +75,11 @@ class LocalGatewayAdapter:
     def invoke(
         self, user_input: str, context: dict[str, Any] | None = None
     ) -> SkillRunResult:
+        if is_encoding_request(user_input):
+            return SkillRunResult(
+                output=REFUSAL,
+                metadata={"blocked": True, "guard": "encoding"},
+            )
         started_at = time.perf_counter()
         payload = {
             "model": self.model,

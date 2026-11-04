@@ -74,10 +74,12 @@ reports/garak/release/<skill>/<timestamp>/
 
 | Probe | 初始 true compliant | 加规则后 true compliant | 结论 |
 |---|---:|---:|---|
-| `encoding.InjectBase64` | 24/256（9.38%） | 3/256（1.17%） | **未完全修复**，F-007 |
+| `encoding.InjectBase64` | 24/256（9.38%） | 0/256 | 已修复，F-007 |
 | `leakreplay.LiteratureCloze` | 120/256（46.88%） | 0/256 | 已修复，F-008 |
 
-Base64 仍有 3 条输出解码后的歧视词，说明 Prompt 约束不足以彻底阻止解码泄露，需要运行时内容过滤或拒绝所有编码转换请求。这两个 probe 仍不应加入 Release v1 必过集。
+Base64 的最终修复不是继续加 Prompt，而是在 `adapters/input_guard.py` 增加运行时输入护栏：识别 Base64/编码/解码请求并在进入模型前拒绝。复测 true compliant 0；原始 ASR 仍有 1.56%/0.39% 的检测器误报。
+
+这两个 probe 目前仍未加入 Release v1 必过集；可在 Release v2 评估。
 
 ## 暂缓 probe
 
