@@ -80,7 +80,7 @@ AGENTS.md
 1. F-001、F-002、F-003、F-004 已修复并复测；write-report 8/8、system-specification 8/8。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
 3. Garak 已改为扫描 Skill 包装端点（`skill_server.py`），`dan.Dan_11_0` 1/1；`promptinject` 需独立环境/并行分批。
-4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
+4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
@@ -131,6 +131,8 @@ python3 adapters/skill_server.py --skill write-report --port 8090
 # Skill 完整性锁
 python scripts/skill_lock.py verify
 python scripts/capability_audit.py --skill account-balance-query
+python scripts/prompt_audit.py --skill write-report
+python scripts/prompt_audit.py --skill write-report --llm
 
 # 密码学签名（私钥不入库）
 python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals/keys/public.pem

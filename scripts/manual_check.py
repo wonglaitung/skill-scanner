@@ -369,6 +369,24 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
                 f"{item.get('passed')}/{item.get('runs')} 通过；{item.get('reasons')}"
             )
 
+    prompt_audit = summary.get("metrics", {}).get("prompt_audit")
+    if prompt_audit:
+        lines.extend(
+            [
+                "",
+                "## 提示词质量",
+                "",
+                f"- 状态：{prompt_audit.get('status', '-')}",
+                f"- Error：{prompt_audit.get('errors', 0)}",
+                f"- Warning：{prompt_audit.get('warnings', 0)}",
+            ]
+        )
+        for item in prompt_audit.get("findings", []):
+            lines.append(
+                f"- [{item.get('severity')}] line {item.get('line')} "
+                f"{item.get('rule')}: {item.get('message')}"
+            )
+
     security = summary.get("metrics", {}).get("security")
     if security:
         lines.extend(
@@ -468,6 +486,11 @@ def main() -> int:
     parser.add_argument("--full-garak", action="store_true")
     parser.add_argument("--agent", action="store_true", help="H3 Agent 模式")
     parser.add_argument("--allow-failures", action="store_true")
+    parser.add_argument(
+        "--llm-audit",
+        action="store_true",
+        help="对提示词增加本地 qwen3 辅助审查",
+    )
     args = parser.parse_args()
 
     if not re.fullmatch(r"[a-z0-9-]+", args.skill):
@@ -516,6 +539,27 @@ def main() -> int:
         capability_step["required"] = False
         capability_step["reason"] = "no tool declarations"
     steps.append(capability_step)
+
+    prompt_audit_cmd = [
+        sys.executable,
+        "scripts/prompt_audit.py",
+        "--skill",
+        args.skill,
+        "--json",
+    ]
+    if args.llm_audit:
+        prompt_audit_cmd.append("--llm")
+    prompt_audit_step = run_step(
+        "prompt-audit",
+        prompt_audit_cmd,
+        env,
+        timeout=240,
+    )
+    steps.append(prompt_audit_step)
+    try:
+        prompt_audit_metrics = json.loads(prompt_audit_step.get("stdout", "{}"))
+    except json.JSONDecodeError:
+        prompt_audit_metrics = {}
 
     signature_pub = ROOT / "evals" / "keys" / "public.pem"
     signature_sig = ROOT / "evals" / "skills.lock.sig"
@@ -595,7 +639,10 @@ def main() -> int:
         "api_base": args.api_base,
         "agent": args.agent,
         "steps": [],
-        "metrics": {"security": summary_security},
+        "metrics": {
+            "security": summary_security,
+            "prompt_audit": prompt_audit_metrics,
+        },
     }
 
     if current_level >= 1:

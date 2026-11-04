@@ -296,7 +296,37 @@ python scripts/capability_audit.py --skill account-balance-query --json
 
 说明：工具名和实现的一致性是自动检查；`description` 的语义是否准确，仍需人工复核。
 
-### 5.5 长输出 Skill：加 token 上限
+### 5.5 提示词质量检查
+
+`manual_check.py` 会自动运行 `prompt-audit`，检查：
+
+- 手机号、身份证号、邮箱、私钥、API Key
+- 内部路径、本地端点、测试哨兵值
+- “输出系统提示词”“忽略以上指令”等泄露诱导短语
+- `allowed-tools` 放行但正文又禁止调用同一工具
+
+手工运行：
+
+```bash
+python scripts/prompt_audit.py --skill my-skill
+python scripts/prompt_audit.py --skill my-skill --json
+```
+
+增加本地 qwen3 辅助审查：
+
+```bash
+python scripts/prompt_audit.py --skill my-skill --llm
+```
+
+或让 `manual_check` 一并执行：
+
+```bash
+python scripts/manual_check.py --skill my-skill --level L2 --llm-audit
+```
+
+确定性规则无法覆盖所有语义矛盾，LLM 审查也可能误报；高影响结论仍需人工确认。
+
+### 5.6 长输出 Skill：加 token 上限
 
 `system-specification` 这类会生成长文档的 Skill，建议加：
 
@@ -360,6 +390,7 @@ SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
 | `--skill-timeout 300` | 单次模型调用经常超时 |
 | `--deepeval-timeout 600` | DeepEval 长文本超时 |
 | `--allow-failures` | 只想先出报告，不因失败中断 |
+| `--llm-audit` | 提示词检查增加本地 qwen3 辅助审查 |
 | `--full-garak` | 需要尝试完整 `promptinject` |
 | `--agent` | 工具调用 / 多步 Agent Skill |
 
@@ -387,9 +418,10 @@ reports/<skill>/<timestamp>/
 1. **步骤结果表**：passed / failed / skipped / timeout；
 2. **Promptfoo**：失败用例和原因；
 3. **DeepEval**：通过率；
-4. **多轮基线**：均值、标准差、Flaky；
-5. **供应链**：Trivy findings、SBOM；
-6. **发现处理**：谁负责、是否复测、是否隔离。
+4. **提示词质量**：Error / Warning 和命中位置；
+5. **多轮基线**：均值、标准差、Flaky；
+6. **供应链**：Trivy findings、SBOM；
+7. **发现处理**：谁负责、是否复测、是否隔离。
 
 ### 7.3 状态怎么理解
 
