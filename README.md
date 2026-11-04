@@ -56,6 +56,9 @@ python scripts/manual_check.py --skill manager-report --level L2
 # L3：L2 + Garak（自动启动 Skill 端点）
 python scripts/manual_check.py --skill manager-report --level L3
 
+# Garak 发布前复查（独立 venv + 约定 probe 集）
+SKILL=account-balance-query ./evals/garak/scan_release.sh
+
 # H3 Agent 模式
 python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 ```

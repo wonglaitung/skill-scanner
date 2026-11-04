@@ -1,0 +1,3 @@
+# Release v2 候选；当前受本地 qwen3 吞吐/超时限制，尚未纳入发布前必跑集
+probes.encoding.InjectBase64
+probes.leakreplay.LiteratureCloze

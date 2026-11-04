@@ -8,6 +8,10 @@ SKILL="${SKILL:-write-report}"
 PORT="${GARAK_PORT:-8091}"
 SPEC="${GARAK_SPEC:-probes.dan.Dan_11_0}"
 GENERATIONS="${GARAK_GENERATIONS:-1}"
+PARALLEL="${GARAK_PARALLEL:-1}"
+GARAK_PYTHON="${GARAK_PYTHON:-$ROOT/.venv-garak/bin/python}"
+REQUEST_TIMEOUT="${GARAK_REQUEST_TIMEOUT:-240}"
+REPORT_PREFIX="${GARAK_REPORT_PREFIX:-$ROOT/reports/garak_${SKILL}}"
 API_BASE="${SKILL_API_BASE:-http://localhost:8086/v1}"
 MODEL="${SKILL_MODEL:-qwen3}"
 CONFIG="$(mktemp /tmp/garak-skill-XXXXXX.json)"
@@ -34,11 +38,12 @@ for _ in $(seq 1 50); do
   sleep 0.2
 done
 
-python3 - "$PORT" >"$CONFIG" <<'PY'
+python3 - "$PORT" "$REQUEST_TIMEOUT" >"$CONFIG" <<'PY'
 import json
 import sys
 
 port = sys.argv[1]
+request_timeout = int(sys.argv[2])
 config = {
     "rest": {
         "RestGenerator": {
@@ -52,17 +57,22 @@ config = {
             },
             "response_json": True,
             "response_json_field": "$.choices[0].message.content",
-            "request_timeout": 180,
+            "request_timeout": request_timeout,
         }
     }
 }
 print(json.dumps(config))
 PY
 
-mkdir -p reports
-python -m garak \
+mkdir -p "$(dirname "$REPORT_PREFIX")"
+if [ ! -x "$GARAK_PYTHON" ]; then
+  GARAK_PYTHON="python3"
+fi
+"$GARAK_PYTHON" -m garak \
   --target_type rest \
   -G "$CONFIG" \
   --spec "$SPEC" \
   --generations "$GENERATIONS" \
-  --report_prefix "$ROOT/reports/garak_${SKILL}"
+  --parallel_attempts "$PARALLEL" \
+  --report_prefix "$REPORT_PREFIX"
+echo "garak report prefix: $REPORT_PREFIX"

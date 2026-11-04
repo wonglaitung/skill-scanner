@@ -120,6 +120,7 @@ RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
 
 # Garak（Skill 级；脚本会启动 skill_server，建议独立 venv/容器）
 SKILL=write-report ./evals/garak/scan.sh
+SKILL=account-balance-query ./evals/garak/scan_release.sh
 
 # Skill 包装端点（也可手动启动）
 python3 adapters/skill_server.py --skill write-report --port 8090

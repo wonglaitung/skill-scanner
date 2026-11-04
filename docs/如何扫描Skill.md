@@ -380,7 +380,43 @@ SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
 ./scripts/with_harness.sh python -m pytest ci/test_h3_recording.py -q
 ```
 
-### 6.4 常用参数
+### 6.4 L3：Garak 独立复查
+
+先安装独立环境，避免污染主环境：
+
+```bash
+uv venv .venv-garak --python 3.10
+uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
+```
+
+运行发布前复查：
+
+```bash
+SKILL=account-balance-query ./evals/garak/scan_release.sh
+```
+
+Release v1 包含：
+
+- `probes.dan.Dan_11_0`
+- `probes.promptinject.HijackHateHumans`
+
+输出：
+
+```text
+reports/garak/release/<skill>/<timestamp>/
+├── garak.report.jsonl
+├── garak.report.html
+├── garak_summary.json
+└── garak_summary.md
+```
+
+注意：
+
+- `PASS` 表示 probe 未命中，`FAIL` 表示攻击成功。
+- `encoding` 和 `leakreplay` 目前未纳入 Release v1，原因是本地模型吞吐不足。
+- 不要声称“全部 Garak probe 已完成”；当前是约定的 Release v1 probe 集。
+
+### 6.5 常用参数
 
 | 参数 | 什么时候用 |
 |---|---|

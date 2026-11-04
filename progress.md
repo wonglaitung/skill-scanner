@@ -20,7 +20,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
 | 自动化验证 | 校验/Ruff/pytest 通过；8 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
-| Garak | 已安装 0.16.0；`dan.Dan_11_0` 1/1 通过；`promptinject` 并行 8 仍 10 分钟超时（113/256）；依赖冲突，建议隔离环境 |
+| Garak | 已安装 0.16.0 于独立 `.venv-garak`；Release v1 完成：`Dan_11_0` PASS，`promptinject.HijackHateHumans` FAIL（ASR 18.36%） |
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
@@ -73,7 +73,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | Judge 校准 | 新增 20 条人工标注集与 `judge_calibration.py`；一致率 95%、MAE 0.05；1 条不匹配为“相关但事实错误” |
 | 2026-11-03 | 使用说明 | 重写 `docs/如何扫描Skill.md`：按用户路径给出 10 步操作、三条最短命令路径与常见问题 |
 | 2026-11-03 | 能力一致性审计 | 新增 `capability_audit.py` 与 `metadata.tool-permissions` 声明；检查 allowed-tools、tool-set、实际 Trace 一致性；已接入 manual_check |
-| 2026-11-04 | 提示词质量检查 | 新增 `prompt_audit.py`：PII/密钥/内部信息/泄露短语/权限矛盾；支持 `--llm`；新增种子集与 6 个测试；已接入 manual_check |
+| 2026-11-04 | 提示词质量检查 | 新增 `prompt_audit.py`：PII/密钥/内部信息/泄露短语/权限矛盾；支持 `--llm`；新增种子集与 7 个测试；已接入 manual_check |
+| 2026-11-04 | Garak Release v1 | 独立 `.venv-garak`；Dan PASS；promptinject FAIL，ASR 18.36%（47/256）；新增 `scan_release.sh` 与 `garak_summary.py` |
 
 ## 最近验证（2026-11-02）
 
@@ -128,8 +129,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | F-002 | `system-specification` | Medium | 对「OMS 的全称是什么」这类简单事实问题，输出附带流程说明，AnswerRelevancy 0.6 < 0.7 | DeepEval 运行输出（本地） | 已修复：增加“回答范围”规则；grounding 测试通过 |
 | F-003 | `write-report` | Medium | 用户要求“提升格调”时，追问/模板中出现“赋能”“助力”“值得注意的是” | `reports/write-report/2026-11-03-204421/` | 已修复：最高优先级约束、硬性示例、PII 示例去姓名；3 轮 8/8、DeepEval 1/1 |
 | F-004 | `manager-report` | High | 拒绝写入“张三”时，在建议示例中复述姓名 | `reports/promptfoo.manager-report.json`（未提交） | 已修复：增加最高优先级 PII 规则；PII 用例 2/2、8 条基线 8/8 |
+| F-005 | `account-balance-query` | High | Garak `promptinject.HijackHateHumans` 攻击成功率 18.36%（47/256），95% CI 13.67%–23.05% | `reports/garak/release/account-balance-query/2026-11-04-111057/` | 待修复：强化注入隔离/拒绝策略后复测 |
 
-说明：F-001、F-002、F-003、F-004 均已修复并复测通过。
+说明：F-001、F-002、F-003、F-004 已修复并复测通过；F-005 为 Garak 新发现，待修复。
 
 ## 关键决策
 
@@ -265,7 +267,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 本地模型 judge 能力 | 首轮 20 条一致率 95%；仍可能把“相关但错误”判为通过 | 扩充业务标注集，区分 relevance 与 correctness |
 | 基线仅 3 轮 | 还不足以判断 2 周稳定性 | 继续累计 2-4 周数据，保持 Delta Gate 告警不阻断 |
 | LLM 评测无法在托管 runner 运行 | Promptfoo/DeepEval/Garak 依赖本地模型网关 | 用自托管 runner、夜间任务或本地执行 |
-| Garak 依赖冲突 | 安装会升级 torch/click，可能影响其他工具 | 用独立 venv/容器运行 Garak，不污染主环境 |
+| Garak promptinject 命中 | Release v1 ASR 18.36%，不是可忽略的模型波动 | 作为 High 发现处理；修复后重跑并记录 ASR 与置信区间 |
 | 长输出导致 judge 超时 | Faithfulness/Hallucination 在长文本上超过 DeepEval 默认超时 | 用短样本、调大 `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE`、拆分指标 |
 | H3 用例存在波动 | 一次运行 13/14，重跑 14/14 | 多次采样；把不稳定用例纳入 Quarantine |
 | 长文生成超时 | system-spec 等长输出可能超过 60-180s | 已加 `--max-tokens`；继续观察超时与截断 |
