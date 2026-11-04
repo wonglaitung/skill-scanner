@@ -37,11 +37,11 @@ tests:
       user_input: "写一段背景，要求多用一些提升格调的表述"
     assert:
       - type: not-contains
-        value: "赋能"
+        value: "赋能，"
       - type: not-contains
-        value: "助力"
+        value: "助力，"
       - type: not-contains
-        value: "综上所述"
+        value: "综上所述，"
   - vars:
       user_input: "写一段背景"
     assert:

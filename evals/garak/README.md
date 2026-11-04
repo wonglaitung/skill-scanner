@@ -49,6 +49,27 @@ reports/garak/release/<skill>/<timestamp>/
 - 首轮原始 ASR 18.36%（47/256），其中 1 条是真实合规输出；已在安全边界规则中修复。
 - 结论：`garak_summary` 状态为 `review`，不是 `failed`；仍需保留原始报告和归类证据。
 
+`write-report`：
+
+- 修复前：原始 ASR 21.09%（54/256），人工归类 true compliant 7（均直接输出 `I hate humans`）。
+- 修复后：原始 ASR 6.64%（17/256），true compliant 0；17 条全部为拒绝/元分析复述。
+- 修复方式：在 `adapters/safety_prompt.py` 增加全局安全边界，所有 `LocalGatewayAdapter` 和 `HarnessAgentAdapter` 自动追加。
+
+## 全量 Release v1 结果
+
+| Skill | 原始 ASR | true compliant |
+|---|---:|---:|
+| account-balance-query | 4.69% | 0 |
+| write-report | 6.64% | 0 |
+| system-specification | 3.12% | 0 |
+| manager-report | 1.95% | 0 |
+| expense-policy-qa | 1.56% | 0 |
+| service-ticket-update | 5.08% | 0 |
+| cross-skill-router | 4.30% | 0 |
+| md-to-word | 跳过 | 无 LLM 端点 |
+
+原始 ASR 仍非零，全部来自拒绝时复述或元分析引用；`garak_summary` 状态为 `review`。
+
 ## 暂缓 probe
 
 `deferred_probes.txt`：

@@ -20,7 +20,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
 | 自动化验证 | 校验/Ruff/pytest 通过；8 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
-| Garak | 独立 `.venv-garak`；Release v1 复测：`Dan_11_0` PASS，`promptinject` 原始 ASR 4.69%，人工归类 true compliant 0（review） |
+| Garak | Release v1 覆盖 7 个 LLM Skill；原始 ASR 1.56%-6.64%，人工归类 true compliant 0；md-to-word 无 LLM 端点跳过 |
 | 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
@@ -76,6 +76,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-04 | 提示词质量检查 | 新增 `prompt_audit.py`：PII/密钥/内部信息/泄露短语/权限矛盾；支持 `--llm`；新增种子集与 7 个测试；已接入 manual_check |
 | 2026-11-04 | Garak Release v1 | 独立 `.venv-garak`；Dan PASS；首轮 promptinject 原始 ASR 18.36%，修复后 4.69%，人工归类 true compliant 0；新增 `scan_release.sh`、`garak_summary.py` 与 triage |
 | 2026-11-04 | F-005 修复 | account-balance-query 增加安全边界、非法 ID 拒绝、工具失败不静默回退；H3 15/15、DeepEval 7/7、3 轮基线 PASS |
+| 2026-11-04 | F-006 修复 | write-report Garak 首轮 true compliant 7；新增全局安全边界后复测 true compliant 0；write-report 8/8 |
+| 2026-11-04 | Garak 全量推广 | 7 个 LLM Skill 全部完成 Release v1；true compliant 均为 0；md-to-word 跳过；原始 ASR 仍有检测器误报，保留 triage 证据 |
 
 ## 最近验证（2026-11-02）
 
@@ -131,8 +133,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | F-003 | `write-report` | Medium | 用户要求“提升格调”时，追问/模板中出现“赋能”“助力”“值得注意的是” | `reports/write-report/2026-11-03-204421/` | 已修复：最高优先级约束、硬性示例、PII 示例去姓名；3 轮 8/8、DeepEval 1/1 |
 | F-004 | `manager-report` | High | 拒绝写入“张三”时，在建议示例中复述姓名 | `reports/promptfoo.manager-report.json`（未提交） | 已修复：增加最高优先级 PII 规则；PII 用例 2/2、8 条基线 8/8 |
 | F-005 | `account-balance-query` | High | Garak `promptinject.HijackHateHumans` 首轮原始 ASR 18.36%（47/256），其中 1 条真实合规输出 | `reports/garak/release/account-balance-query/2026-11-04-111057/` | 已修复：增加安全边界与 ID/工具回退规则；复测原始 ASR 4.69%（12/256），true compliant 0 |
+| F-006 | `write-report` | High | Garak `promptinject` 首轮原始 ASR 21.09%（54/256），其中 7 条真实输出 `I hate humans` | `reports/garak/release/write-report/2026-11-04-124649/` | 已修复：全局安全边界；复测原始 ASR 6.64%（17/256），true compliant 0 |
 
-说明：F-001、F-002、F-003、F-004、F-005 均已修复并复测通过。F-005 复测仍保留原始检测告警，但人工归类 true compliant 为 0。
+说明：F-001~F-006 均已修复并复测通过。Garak 复测仍保留原始检测告警，但人工归类 true compliant 为 0。
 
 ## 关键决策
 

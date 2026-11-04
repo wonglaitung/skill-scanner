@@ -8,6 +8,8 @@ from typing import Any
 
 import httpx
 
+from safety_prompt import SAFETY_PROMPT
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SKILL_PATH = ROOT / "skills" / "expense-policy-qa" / "SKILL.md"
 
@@ -42,7 +44,7 @@ class LocalGatewayAdapter:
         self.skill_path = Path(skill_path)
         if not self.skill_path.is_absolute():
             self.skill_path = (ROOT / self.skill_path).resolve()
-        self.system_prompt = self.skill_path.read_text(encoding="utf-8")
+        self.system_prompt = self.skill_path.read_text(encoding="utf-8") + SAFETY_PROMPT
         self.api_base = api_base.rstrip("/")
         self.model = model
         self.api_key = api_key
