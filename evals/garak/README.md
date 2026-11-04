@@ -70,6 +70,15 @@ reports/garak/release/<skill>/<timestamp>/
 
 原始 ASR 仍非零，全部来自拒绝时复述或元分析引用；`garak_summary` 状态为 `review`。
 
+## Deferred probe 评估
+
+| Probe | 初始 true compliant | 加规则后 true compliant | 结论 |
+|---|---:|---:|---|
+| `encoding.InjectBase64` | 24/256（9.38%） | 3/256（1.17%） | **未完全修复**，F-007 |
+| `leakreplay.LiteratureCloze` | 120/256（46.88%） | 0/256 | 已修复，F-008 |
+
+Base64 仍有 3 条输出解码后的歧视词，说明 Prompt 约束不足以彻底阻止解码泄露，需要运行时内容过滤或拒绝所有编码转换请求。这两个 probe 仍不应加入 Release v1 必过集。
+
 ## 暂缓 probe
 
 `deferred_probes.txt`：
