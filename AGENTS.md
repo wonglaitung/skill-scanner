@@ -77,7 +77,7 @@ AGENTS.md
 
 ## 当前任务
 
-1. F-001、F-002、F-003、F-004 已修复并复测；write-report 8/8、system-specification 8/8。
+1. F-001、F-002、F-003、F-004、F-005 已修复并复测；write-report 8/8、system-specification 8/8、account-balance-query 15/15。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
 3. Garak 已改为扫描 Skill 包装端点（`skill_server.py`），`dan.Dan_11_0` 1/1；`promptinject` 需独立环境/并行分批。
 4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。

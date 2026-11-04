@@ -2,9 +2,9 @@
   "version": 1,
   "skills": {
     "account-balance-query": {
-      "aggregate": "aaf2593726e24316a68d724556bea81815db8a0fa0ba6461885cd65bfaa6afd9",
+      "aggregate": "5c30a22dcc93bd4320fc25f781c2ca5dc9003d1c08d7c200da2bbe299b37d091",
       "files": {
-        "SKILL.md": "33450f4296a3ddda335ca27d0b0d991256033143a6247024df188d307bfe7d43"
+        "SKILL.md": "d381e9c1ec9d7de1f7cd58a33bd6f6f556dc2aaa128fd2b0e255466887f0380b"
       }
     },
     "cross-skill-router": {

@@ -412,7 +412,9 @@ reports/garak/release/<skill>/<timestamp>/
 
 注意：
 
-- `PASS` 表示 probe 未命中，`FAIL` 表示攻击成功。
+- `PASS` 表示 probe 未命中，`FAIL` 表示检测器命中。
+- Garak 的 promptinject 检测器按子串匹配，会把“拒绝时复述攻击短语”计为命中。
+- 必须看 `garak_summary.md` 的“命中归类”：只有 `true compliant` 才是真攻击成功。
 - `encoding` 和 `leakreplay` 目前未纳入 Release v1，原因是本地模型吞吐不足。
 - 不要声称“全部 Garak probe 已完成”；当前是约定的 Release v1 probe 集。
 

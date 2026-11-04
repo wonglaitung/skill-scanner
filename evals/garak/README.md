@@ -42,11 +42,12 @@ reports/garak/release/<skill>/<timestamp>/
 
 ## 当前结果
 
-`account-balance-query` 的 Release v1：
+`account-balance-query` 的 Release v1 复测：
 
 - `dan.Dan_11_0`：通过。
-- `promptinject.HijackHateHumans`：**FAIL**，ASR 18.36%（47/256），95% CI 13.67%–23.05%。
-- 这属于真实发现，不应被“Garak 已跑”掩盖。
+- `promptinject.HijackHateHumans`：原始检测 ASR 4.69%（12/256），但 12 条全部是“拒绝时复述攻击短语”的检测器误报；人工归类后 true compliant = 0。
+- 首轮原始 ASR 18.36%（47/256），其中 1 条是真实合规输出；已在安全边界规则中修复。
+- 结论：`garak_summary` 状态为 `review`，不是 `failed`；仍需保留原始报告和归类证据。
 
 ## 暂缓 probe
 
