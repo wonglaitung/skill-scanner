@@ -96,6 +96,70 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 - L1/L2 已包含 L0，不需要单独再跑 L0。
 - 发布前还应满足 3 轮基线和 Delta Gate；这是发布附加要求，不改变最低检查矩阵。
 
+### 4.1 当前工具支持情况
+
+矩阵已经文档化；执行层目前是“手工选择 L”，尚未做到按 S 自动选 L 或强制拦截。
+
+| 矩阵项 | 工具支持 | 现有样例 | 主要缺口 |
+|---|---|---|---|
+| S0/S1 纯提示词 → L1 | 可用 | 暂无 S0/S1 样例 | 需要 Promptfoo 配置；缺配置时可能跳过 |
+| S2 纯提示词 → L2 | 可用 | write-report、system-specification、manager-report、expense-policy-qa | 新 Skill 需登记 DeepEval 映射或用例 |
+| S3 纯提示词 → L3 | 部分可用 | 暂无 S3 样例 | `manual_check L3` 默认只跑 Dan；Release v2 需单独跑 |
+| 工具型 → L2 + Agent | 可用 | account-balance-query、service-ticket-update、cross-skill-router | 新工具 Skill 需补工具集、权限声明、Agent 配置和测试 |
+| 高风险工具型 → L2 + Agent + L3 | 部分可用 | 3 个工具 Skill 已跑 L2+Agent | Garak L3 只扫端点，不能替代工具级检查 |
+| 脚本型 → L1 | 可用 | md-to-word | 需 provider、Promptfoo 配置和契约测试 |
+
+横向缺口：
+
+| 能力 | 状态 |
+|---|---|
+| 按 S 自动选择最低 L | 未实现 |
+| 传入 L 低于最低矩阵时拦截 | 未实现 |
+| 缺 Promptfoo/DeepEval 配置时强提醒 | 未实现，可能显示 skipped |
+| 批量运行所有 Skill | 未实现 |
+| 发布结论自动汇总 | 未实现 |
+
+### 4.2 运行前必须手工完成
+
+所有 Skill 通用：
+
+1. 确定 S 等级，写入 `metadata.risk-level`；
+2. 补齐 `SKILL.md` 的 `name`、`description`、`license`、`allowed-tools`、`metadata.owner/risk-level/version`；
+3. 生成并验证完整性锁：
+   ```bash
+   python scripts/skill_lock.py generate
+   python scripts/skill_lock.py verify
+   ```
+4. 通过结构校验：
+   ```bash
+   python ci/validate_skill.py --skill my-skill
+   ```
+5. 准备本地模型网关和依赖；
+6. 准备合成测试数据，禁止真实 PII、密钥、生产凭证。
+
+按矩阵补充：
+
+| 矩阵项 | 运行前还要完成 |
+|---|---|
+| S0/S1 纯提示词 → L1 | 新建 `evals/promptfooconfig.<skill>.yaml`，补正常、拒绝、PII/泄露用例 |
+| S2 纯提示词 → L2 | 在 L1 基础上，登记 DeepEval 映射或新增测试，补相关性/忠实度/幻觉用例 |
+| S3 纯提示词 → L3 | 在 L2 基础上，确认端点可启动，准备 `.venv-garak`，单独跑 `scan_release.sh` |
+| 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`，创建 `.venv-harness` |
+| 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查 |
+| 脚本型 → L1 | 补 provider、Promptfoo 配置和契约测试（如 `ci/test_<skill>_contract.py`） |
+
+运行前检查清单：
+
+- [ ] `metadata.risk-level` 已确定
+- [ ] 目标 L 符合最低矩阵
+- [ ] Promptfoo 配置存在
+- [ ] L2 的 DeepEval 目标存在
+- [ ] 工具型有 `tool-set`、`tool-permissions`、Agent 配置和测试
+- [ ] Agent 模式已创建 `.venv-harness`
+- [ ] L3 已准备 `.venv-garak`
+- [ ] 测试数据为合成数据
+- [ ] 缺配置导致的 `skipped` 不被当作 `passed`
+
 ---
 
 ## 5. 命令示例
