@@ -2,7 +2,7 @@
 
 Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段，不依赖 CI。
 
-- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.9）
+- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.10）
 - 当前进度：`progress.md`
 - Agent 工作约定：`AGENTS.md`
 
@@ -180,22 +180,52 @@ SKILL=write-report ./evals/garak/scan.sh
 python adapters/skill_server.py --skill write-report --port 8090
 ```
 
-## 检查分级
+## 分级模型
 
-统一用两个维度，不再使用 H3：
+完整说明见 [`docs/Skill 分级与检查使用指南.md`](docs/Skill%20分级与检查使用指南.md)。
 
 - **S0-S3**：业务风险等级
 - **L0-L3**：检查深度
 - **`--agent`**：Agent 执行标志，不是等级
 
-| 级别 | 内容 | 适用 |
-|---|---|---|
-| L0 | 结构、Ruff、Semgrep、密钥、依赖、权限与提示词审计 | 每次改动快速自检 |
-| L1 | L0 + Promptfoo 确定性回归 | 发布前基线 |
-| L2 | L1 + DeepEval 指标评分 | 高风险 Skill 评测 |
-| L3 | L2 + Garak + 人工复核 | 发布前独立扫描 |
+### S：风险等级
 
-工具型 Skill 在 L1/L2 加 `--agent`，执行多步工具调用、Trace、Gate 与录制回放。
+| 等级 | 含义 |
+|---|---|
+| S0 | 无风险/纯展示 |
+| S1 | 低风险 |
+| S2 | 中高风险，默认重点检查 |
+| S3 | 高风险，必须完整检查 |
+
+### L：检查深度
+
+L1 包含 L0，L2 包含 L1，L3 包含 L2。
+
+| 级别 | 查什么 |
+|---|---|
+| L0 | 结构、完整性锁、静态检查、供应链、权限审计、提示词审计 |
+| L1 | L0 + Promptfoo 回归 |
+| L2 | L1 + DeepEval 指标 |
+| L3 | L2 + Garak 独立扫描 |
+
+### Agent：执行方式
+
+```bash
+python scripts/manual_check.py --skill account-balance-query --level L2 --agent
+```
+
+Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
+
+### 最低检查
+
+| Skill 类型 | 最低检查 |
+|---|---|
+| S0/S1 纯提示词 | L1 |
+| S2 纯提示词 | L2 |
+| S3 纯提示词 | L3 |
+| 工具型 Skill | L2 + Agent |
+| 高风险工具型 | L2 + Agent，发布前 L3 |
+| 脚本型 | L1 |
 
 ## 已有 Skill
 

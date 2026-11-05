@@ -6,13 +6,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
 - 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`
-- 当前版本：v2.9
+- 当前版本：v2.10
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.9 |
+| 方案文档 | 已完成 v2.10 |
 | 代码实现 | 最小骨架已建立（6 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |

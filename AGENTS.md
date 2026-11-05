@@ -5,7 +5,7 @@
 Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行、准备试点」阶段，代码尚未开始。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.4）
+- 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.10）
 - 当前进度：`progress.md`
 
 ## 开始工作前必读
@@ -14,6 +14,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 2. `progress.md`：当前阶段、已完成事项、待办与风险。
 3. `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI。
 4. `docs/如何扫描Skill.md`：手工扫描步骤、命令与常见问题。
+5. `docs/Skill 分级与检查使用指南.md`：S 风险、L 深度、Agent 标志与最低检查矩阵。
 6. `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md` 与 `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`：背景资料，若与主方案冲突以主方案为准。
 
 ## 当前阶段
@@ -74,6 +75,27 @@ AGENTS.md
 - 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt`；优先项目本地 `.venv-harness/`，禁止污染全局环境；禁止浮动版本，保留 MIT 许可声明。
 - 未经明确要求，不要提交（commit）或推送（push）。
 - 人工模式技术底座完整前，不引入 CI；先完善 `manual_check`、`baseline`、Agent 模式与 SOP。
+
+## 分级模型
+
+统一使用 **S + L + Agent**，详见 `docs/Skill 分级与检查使用指南.md`。
+
+- **S0-S3**：业务风险等级
+- **L0-L3**：检查深度
+- **`--agent`**：Agent 执行标志，不是等级
+
+最低检查：
+
+| Skill 类型 | 最低检查 |
+|---|---|
+| S0/S1 纯提示词 | L1 |
+| S2 纯提示词 | L2 |
+| S3 纯提示词 | L3 |
+| 工具型 Skill | L2 + Agent |
+| 高风险工具型 | L2 + Agent，发布前 L3 |
+| 脚本型 | L1 |
+
+工具越权、参数注入、数据外泄靠 `L2 + Agent`；L3 不能替代。不要再使用 H3 作为用户侧分级名称。
 
 ## 当前任务
 
