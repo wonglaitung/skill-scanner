@@ -388,7 +388,7 @@ python scripts/manual_check.py --skill account-balance-query \
 ```bash
 RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 \
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
-./scripts/with_harness.sh python -m pytest ci/test_h3_recording.py -q
+./scripts/with_harness.sh python -m pytest ci/test_agent_recording.py -q
 ```
 
 ### 6.4 L3：Garak 独立复查
@@ -708,7 +708,7 @@ python scripts/baseline.py gate my-skill
 ## 当前限制
 
 - CI 仍不启用；当前只做人工检查和告警。
-- H3 C4 已完成：Gate、录制、回放；harness pin 为 `c4cf29f`。
+- Agent 阶段 4 已完成：Gate、录制、回放；harness pin 为 `c4cf29f`。
 - Garak `promptinject` 受本地模型速度限制，建议独立环境、分批执行。
 - 模型网关尚未按 Skill 分配独立凭证/配额。
 - 签名私钥托管与轮换流程待定。

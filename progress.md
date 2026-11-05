@@ -6,13 +6,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
 - 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`
-- 当前版本：v2.5
+- 当前版本：v2.9
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.8 |
+| 方案文档 | 已完成 v2.9 |
 | 代码实现 | 最小骨架已建立（6 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
@@ -25,7 +25,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
-| H3 | 3 类工具 Skill：只读、写操作、跨 Skill；Gate、Trace、录制回放均验证；pin `c4cf29f` |
+| Agent 模式 | 3 类工具 Skill：只读、写操作、跨 Skill；Gate、Trace、录制回放均验证；pin `c4cf29f` |
 | 推进原则 | 先完善人工模式与 SOP；人工底座完整后再提 CI；新增 Skill 复用同一 SOP/脚本 |
 
 ## 已完成里程碑
@@ -57,13 +57,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | Phase A 第三批 | 模型型 Skill 端点容器化；manager-report 在沙箱内启动并返回响应 |
 | 2026-11-03 | Phase A 网络白名单 | internal 网络 + egress proxy；外部 HTTPS 403、直连 IP 不可达；模型请求正常 |
 | 2026-11-03 | Phase A 签名工具 | Ed25519 keygen/sign/verify；篡改检测通过；私钥不入库 |
-| 2026-11-03 | H3 方案 | 改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`）；已确认 qwen3 原生 tool calling；定义 Adapter、TraceHook、Mock 工具与分阶段计划 |
-| 2026-11-03 | H3 隔离环境 | 新增 `setup_harness_env.sh`、`with_harness.sh`；`.venv-harness/` 本地安装，不污染全局 |
-| 2026-11-03 | H3 C1 | 新增 `harness_agent.py`、`harness_tools.py`、`harness_provider.py`、`account-balance-query`；Promptfoo 5/5、ToolCorrectness 1/1、manual_check --agent L1/L2 通过 |
-| 2026-11-03 | H3 C2 | 轨迹用例扩到 10 条；新增间接注入、数据外泄、工具报错；DeepEval 4/4；manual_check --agent L2 通过 |
-| 2026-11-03 | H3 C3 | 轨迹用例扩到 14 条；新增跨 Skill、参数注入、提示词泄露；DeepEval 7/7；报告增加发现处理表 |
-| 2026-11-03 | H3 C4 | 接入 `DeterministicGate`；修复上游 redact/RecordingHarness/MockHarness 兼容问题；录制回放 1/1 通过 |
-| 2026-11-03 | H3 通用化 | 新增 `service-ticket-update`（写操作）与 `cross-skill-router`（跨 Skill 只读）；三类工具 Skill 均 3 轮基线、Trace、权限声明与回放 |
+| 2026-11-03 | Agent 方案 | 改为复用 `wonglaitung/harness`（本机 checkout `/data/harness`）；已确认 qwen3 原生 tool calling；定义 Adapter、TraceHook、Mock 工具与分阶段计划 |
+| 2026-11-03 | Agent 隔离环境 | 新增 `setup_harness_env.sh`、`with_harness.sh`；`.venv-harness/` 本地安装，不污染全局 |
+| 2026-11-03 | Agent 阶段 1 | 新增 `harness_agent.py`、`harness_tools.py`、`harness_provider.py`、`account-balance-query`；Promptfoo 5/5、ToolCorrectness 1/1、manual_check --agent L1/L2 通过 |
+| 2026-11-03 | Agent 阶段 2 | 轨迹用例扩到 10 条；新增间接注入、数据外泄、工具报错；DeepEval 4/4；manual_check --agent L2 通过 |
+| 2026-11-03 | Agent 阶段 3 | 轨迹用例扩到 14 条；新增跨 Skill、参数注入、提示词泄露；DeepEval 7/7；报告增加发现处理表 |
+| 2026-11-03 | Agent 阶段 4 | 接入 `DeterministicGate`；修复上游 redact/RecordingHarness/MockHarness 兼容问题；录制回放 1/1 通过 |
+| 2026-11-03 | Agent 模式通用化 | 新增 `service-ticket-update`（写操作）与 `cross-skill-router`（跨 Skill 只读）；三类工具 Skill 均 3 轮基线、Trace、权限声明与回放 |
 | 2026-11-03 | 上游 harness | `wonglaitung/harness` 提交 `c4cf29f` 已推送；`requirements-harness.txt` pin 更新 |
 | 2026-11-03 | Phase B 多轮基线 | `baseline.py collect/trend`、Flaky 检测、容差 diff、报告基线段完成；8 个 S2 各 3 轮基线，Flaky 0 |
 | 2026-11-03 | Phase B Delta Gate | 新增 `baseline.py gate`（3 轮门槛、容差、JSON 输出）；8 个 S2 全部 PASS |
@@ -75,7 +75,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | 能力一致性审计 | 新增 `capability_audit.py` 与 `metadata.tool-permissions` 声明；检查 allowed-tools、tool-set、实际 Trace 一致性；已接入 manual_check |
 | 2026-11-04 | 提示词质量检查 | 新增 `prompt_audit.py`：PII/密钥/内部信息/泄露短语/权限矛盾；支持 `--llm`；新增种子集与 7 个测试；已接入 manual_check |
 | 2026-11-04 | Garak Release v1 | 独立 `.venv-garak`；Dan PASS；首轮 promptinject 原始 ASR 18.36%，修复后 4.69%，人工归类 true compliant 0；新增 `scan_release.sh`、`garak_summary.py` 与 triage |
-| 2026-11-04 | F-005 修复 | account-balance-query 增加安全边界、非法 ID 拒绝、工具失败不静默回退；H3 15/15、DeepEval 7/7、3 轮基线 PASS |
+| 2026-11-04 | F-005 修复 | account-balance-query 增加安全边界、非法 ID 拒绝、工具失败不静默回退；Agent 模式：15/15、DeepEval 7/7、3 轮基线 PASS |
 | 2026-11-04 | F-006 修复 | write-report Garak 首轮 true compliant 7；新增全局安全边界后复测 true compliant 0；write-report 8/8 |
 | 2026-11-04 | Garak 全量推广 | 7 个 LLM Skill 全部完成 Release v1；true compliant 均为 0；md-to-word 跳过；原始 ASR 仍有检测器误报，保留 triage 证据 |
 | 2026-11-04 | Deferred probe 评估 | LiteratureCloze 初始 true 120/256，加规则后 0；InjectBase64 初始 true 24/256，加运行时输入护栏后 0；登记/修复 F-007、F-008 |
@@ -105,11 +105,11 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 手工报告含供应链 | `python scripts/manual_check.py --skill md-to-word --level L0` | security passed，Trivy 0，SBOM 622 |
 | 模型端点沙箱 | `PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report` | 健康检查与 chat 请求通过 |
 | 网络白名单 | `docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build` | 模型请求通过；外部 HTTPS 403；直连 IP 不可达 |
-| H3 Promptfoo | `python scripts/manual_check.py --skill <h3-skill> --level L2 --agent` | 只读 14/14、写操作 10/10、跨 Skill 9/9 |
-| H3 ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_h3_*.py -q` | 只读 7、写操作 2、跨 Skill 2 |
-| H3 手工 L2 | `python scripts/manual_check.py --skill account-balance-query --level L2 --agent` | Promptfoo 14/14、DeepEval 7/7 |
-| H3 Gate | 直接调用 `DeterministicGate` | 已接入；无 unsourced 时不再误隔离 |
-| H3 录制回放 | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest ci/test_h3_recording.py -q` | 3 passed（3 类工具 Skill） |
+| Agent Promptfoo | `python scripts/manual_check.py --skill <h3-skill> --level L2 --agent` | 只读 14/14、写操作 10/10、跨 Skill 9/9 |
+| Agent ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_agent_*.py -q` | 只读 7、写操作 2、跨 Skill 2 |
+| Agent 手工 L2 | `python scripts/manual_check.py --skill account-balance-query --level L2 --agent` | Promptfoo 14/14、DeepEval 7/7 |
+| Agent Gate | 直接调用 `DeterministicGate` | 已接入；无 unsourced 时不再误隔离 |
+| Agent 录制回放 | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest ci/test_agent_recording.py -q` | 3 passed（3 类工具 Skill） |
 | 签名工具 | `scripts/sign_skills.py keygen/sign/verify` | 验签通过；篡改 lock 后失败 |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
 | 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
@@ -211,7 +211,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - 全量 Skill 覆盖
 - PR 阻断
 - 独立合规审计
-- H3 多步 Agent 编排测试
+- Agent 多步编排 编排测试
 - 平台化看板与长期运营
 - Semgrep/Trivy/gitleaks（除非 Skill 含脚本）
 
@@ -240,7 +240,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [ ] SCA/密钥/ShellCheck 实际运行（工具未装）
 - [x] 独立对抗审核报告模板
 - [ ] 决定是否扩大 Skill 范围
-- [x] 启用 `wonglaitung/harness` 作为 H3 执行层
+- [x] 启用 `wonglaitung/harness` 作为 Agent 执行层
 - [ ] 脚本型 Skill 增加 SCA/密钥检查
 - [x] 脚本型 Skill Promptfoo 与契约测试
 - [x] Garak 改为扫描 Skill 包装端点
@@ -257,14 +257,14 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] Phase B：Quarantine
 - [x] Phase B：Judge 校准首轮（95%）
 - [ ] Phase B：连续 2 周稳定性与门禁报告
-- [x] Phase C：H3 三类工具 Skill（只读、写、跨 Skill）
+- [x] Phase C：Agent 三类工具 Skill（只读、写、跨 Skill）
 - [ ] Phase C：网页/文件间接注入与 guardrails/OTel
 - [ ] Phase D：独立审计与运营
-- [x] H3 C1：HarnessAgentAdapter + Mock 工具 + TraceHook
-- [x] H3 C2：10 条 Promptfoo 轨迹用例 + DeepEval ToolCorrectness
-- [x] H3 C3：间接注入、未授权工具、跨 Skill、20 条用例
-- [x] H3 C4：DeterministicGate 接入
-- [x] H3 C4：RecordingHarness/MockHarness 录制回放
+- [x] Agent 阶段 1：HarnessAgentAdapter + Mock 工具 + TraceHook
+- [x] Agent 阶段 2：10 条 Promptfoo 轨迹用例 + DeepEval ToolCorrectness
+- [x] Agent 阶段 3：间接注入、未授权工具、跨 Skill、20 条用例
+- [x] Agent 阶段 4：DeterministicGate 接入
+- [x] Agent 阶段 4：RecordingHarness/MockHarness 录制回放
 - [x] 提交外部 harness 修复并更新 `requirements-harness.txt` pin
 
 ## 风险与阻塞
@@ -278,7 +278,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | LLM 评测无法在托管 runner 运行 | Promptfoo/DeepEval/Garak 依赖本地模型网关 | 用自托管 runner、夜间任务或本地执行 |
 | Garak 检测器误报 | promptinject 按子串匹配，会把“拒绝时复述攻击短语”计为命中 | 必须保留 `garak_summary` 人工归类；不能只看原始 ASR |
 | 长输出导致 judge 超时 | Faithfulness/Hallucination 在长文本上超过 DeepEval 默认超时 | 用短样本、调大 `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE`、拆分指标 |
-| H3 用例存在波动 | 一次运行 13/14，重跑 14/14 | 多次采样；把不稳定用例纳入 Quarantine |
+| Agent 用例存在波动 | 一次运行 13/14，重跑 14/14 | 多次采样；把不稳定用例纳入 Quarantine |
 | 长文生成超时 | system-spec 等长输出可能超过 60-180s | 已加 `--max-tokens`；继续观察超时与截断 |
 | 指标阈值方向随版本变化 | Hallucination 在 4.3+ 改为最低分语义 | 锁定版本，在文档和测试中标注方向 |
 | 合规要求未明确 | 证据链要求不确定 | 先按工程基线保留 JSON 报告 |

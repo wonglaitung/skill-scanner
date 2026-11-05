@@ -26,7 +26,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 - 安全团队主导。
 - 先告警，不阻断 PR。
 - 使用本地 OpenAI-compatible 模型网关（`http://localhost:8086/v1`，模型 `qwen3`）。
-- H3 已覆盖 3 类工具 Skill：只读查询、写操作、跨 Skill 只读路由。
+- Agent 模式已覆盖 3 类工具 Skill：只读查询、写操作、跨 Skill 只读路由。
 
 ## 目录约定
 
@@ -73,18 +73,18 @@ AGENTS.md
 - 测试数据默认使用合成数据，禁止真实 PII、密钥、生产凭证。
 - 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt`；优先项目本地 `.venv-harness/`，禁止污染全局环境；禁止浮动版本，保留 MIT 许可声明。
 - 未经明确要求，不要提交（commit）或推送（push）。
-- 人工模式技术底座完整前，不引入 CI；先完善 `manual_check`、`baseline`、H3 与 SOP。
+- 人工模式技术底座完整前，不引入 CI；先完善 `manual_check`、`baseline`、Agent 模式与 SOP。
 
 ## 当前任务
 
-1. F-001~F-006 已修复并复测；write-report 8/8、system-specification 8/8、account-balance-query 15/15。
+1. F-001~F-009 已修复并复测；write-report 8/8、system-specification 8/8、account-balance-query 15/15。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
 3. Garak Release v2 已通过：4 个 probe 覆盖 7 个 LLM Skill，true compliant 均为 0；输入护栏覆盖 Base64、编码解码、训练数据复述；md-to-word 跳过。
 4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. H3 复用 `wonglaitung/harness`：C4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill；全局安全边界已追加到 Skill 提示词。
+8. Agent 模式复用 `wonglaitung/harness`：Agent 阶段 4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill；全局安全边界已追加到 Skill 提示词。
 
 ## 命令（部分已可用）
 
@@ -140,7 +140,7 @@ python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals
 python scripts/sign_skills.py sign --key /secure/skills.pem
 python scripts/sign_skills.py verify --public evals/keys/public.pem
 
-# H3 本地隔离环境
+# Agent 本地隔离环境
 ./scripts/setup_harness_env.sh
 ./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
 

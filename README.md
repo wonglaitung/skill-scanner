@@ -2,7 +2,7 @@
 
 Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段，不依赖 CI。
 
-- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.8）
+- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.9）
 - 当前进度：`progress.md`
 - Agent 工作约定：`AGENTS.md`
 
@@ -59,7 +59,7 @@ python scripts/manual_check.py --skill manager-report --level L3
 # Garak 发布前复查（独立 venv + 约定 probe 集）
 SKILL=account-balance-query ./evals/garak/scan_release.sh
 
-# H3 Agent 模式
+# Agent 模式
 python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 ```
 
@@ -182,12 +182,20 @@ python adapters/skill_server.py --skill write-report --port 8090
 
 ## 检查分级
 
+统一用两个维度，不再使用 H3：
+
+- **S0-S3**：业务风险等级
+- **L0-L3**：检查深度
+- **`--agent`**：Agent 执行标志，不是等级
+
 | 级别 | 内容 | 适用 |
 |---|---|---|
-| L0 | 结构、Ruff、Semgrep、密钥、依赖 | 每次改动快速自检 |
+| L0 | 结构、Ruff、Semgrep、密钥、依赖、权限与提示词审计 | 每次改动快速自检 |
 | L1 | L0 + Promptfoo 确定性回归 | 发布前基线 |
 | L2 | L1 + DeepEval 指标评分 | 高风险 Skill 评测 |
 | L3 | L2 + Garak + 人工复核 | 发布前独立扫描 |
+
+工具型 Skill 在 L1/L2 加 `--agent`，执行多步工具调用、Trace、Gate 与录制回放。
 
 ## 已有 Skill
 
@@ -198,7 +206,7 @@ python adapters/skill_server.py --skill write-report --port 8090
 | `manager-report` | 纯提示词 | 算力申请汇报 |
 | `expense-policy-qa` | 纯提示词 | 费用报销问答（示例） |
 | `md-to-word` | 提示词 + 脚本 | Markdown 转 Word |
-| `account-balance-query` | 提示词 + 工具 | H3 工具调用测试 Skill |
+| `account-balance-query` | 提示词 + 工具 | Agent 工具调用测试 Skill |
 
 ## 目录结构
 
@@ -218,39 +226,30 @@ AGENTS.md             Agent 工作约定
 
 | 检查 | 结果 |
 |---|---|
-| SKILL.md 结构校验 | 5 个全部通过 |
-| S2 Promptfoo | 23/24 通过（F-003 待处理） |
-| S2 DeepEval 相关性 | 3/3 |
-| Faithfulness / Hallucination | 通过 |
-| md-to-word Promptfoo | 5/5 |
-| md-to-word 契约测试 | 4/4 |
-| Garak `dan.Dan_11_0` | 1/1（Skill 端点） |
-| Semgrep | 0 findings |
+| SKILL.md 结构校验 | 8 个全部通过 |
+| 多轮基线 | 8 个 S2 各 3 轮，Delta Gate 全部 PASS |
+| Promptfoo | write-report 8/8、system-specification 8/8、manager-report 8/8、expense-policy-qa 5/5、md-to-word 5/5、account-balance-query 15/15、service-ticket-update 10/10、cross-skill-router 9/9 |
+| DeepEval | account 7/7；write/system/ticket/cross 均通过 |
+| Garak Release v2 | 7 个 LLM Skill，4 个 probe，true compliant 0 |
+| Judge 校准 | 20 条，一致率 95% |
+| Semgrep / Ruff | 0 findings / 0 errors |
 | gitleaks | 0 leaks |
-| npm audit | 0 vulnerabilities（通过 overrides 修复） |
-| Trivy | 0 findings |
+| npm audit / Trivy | 0 vulnerabilities / 0 findings |
 | SBOM | 622 components（CycloneDX） |
-| 沙箱 | md-to-word 转换通过（network none、read-only） |
-| 沙箱逃逸检查 | 通过（非 root、只读、无网络、无 Docker socket） |
-| 模型型 Skill 沙箱 | manager-report 容器内启动并返回响应 |
-| 网络白名单 | 外部访问被阻断，仅允许本地模型网关 |
-| Skill 完整性锁 | 5 个 Skill 全部匹配 |
-| 密码学签名 | Ed25519 签名/验签通过，篡改检测失败符合预期 |
-| H3 Promptfoo | 14/14 |
-| H3 DeepEval | 7/7 |
-| pytest | 7 passed，6 skipped（LLM 用例需显式开启） |
+| 沙箱 | 脚本转换、逃逸检查、模型端点沙箱通过 |
+| Skill 完整性锁 | 8 个全部匹配 |
+| 密码学签名 | Ed25519 签名/验签通过，篡改检测符合预期 |
 
 ## 已知限制
 
-- F-003：`write-report` 在追问/模板中仍可能出现 AI 腔。
-- Garak `promptinject` 有 256 条，本地 qwen3 速度不足，尚未跑完。
-- gitleaks、Trivy、ShellCheck 尚未安装。
-- H3 工具调用 / 多步 Agent 尚未实现。
-- 目前是单轮基线，不足以支撑 PR 阻断。
-- 纯脚本 Skill 不适用 DeepEval/Garak，其质量由确定性断言和契约测试保证。
-- 模型型 Skill 严格沙箱依赖 Docker Compose；外部域名白名单目前只允许 `host.docker.internal:8086`。
-- 沙箱网络策略是 `network none`；需要外网的 Skill 尚未接入域名白名单代理。
-- 密码学签名工具已实现，但私钥托管、轮换和第三方公钥分发流程尚未落地。
+- Garak Release v2 仍是约定的 4 个 probe，不是全部 Garak probe。
+- 每个 S2 只有 3 轮基线，尚未累计 2-4 周稳定性数据。
+- Agent 模式使用 Mock 工具，真实工具权限、副作用、回滚尚未验证。
+- 网页/文件/RAG/记忆注入尚未覆盖。
+- 输入护栏会拒绝编码/解码和训练数据复述请求；未来合法场景需要白名单。
+- 私钥托管/轮换、模型网关按 Skill 隔离、可观测性、报告签名/归档仍未闭环。
+- 全流程默认不在沙箱内执行；Docker/gVisor 脚本是独立能力。
+- 目前是人工/半自动检查，不单独作为自动发布审批依据。
 
 ## 依赖锁定
 
@@ -261,7 +260,7 @@ AGENTS.md             Agent 工作约定
   ./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
   ```
 - 禁止使用浮动分支或 `latest`。
-- 升级 harness 时重新跑 H3 用例并更新基线。
+- 升级 harness 时重新跑 Agent 用例并更新基线。
 
 ## 安全约束
 

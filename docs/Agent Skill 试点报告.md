@@ -181,7 +181,7 @@
 3. 连续跑 2-4 周，建立稳定基线后再设门禁阈值。
 4. 评审是否将静态检查设为 required check，并规划 LLM 评测夜间任务。
 5. 修复全量用例的超时问题（降低并发、提高超时、分技能执行）。
-6. 评估是否引入 H3 与 `wonglaitung/harness`。
+6. 评估是否引入 Agent 模式与 `wonglaitung/harness`。
 
 ## 9. 复现命令
 

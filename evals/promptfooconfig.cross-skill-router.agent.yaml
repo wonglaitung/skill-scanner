@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
-description: cross-skill-router H3 Agent 基线
+description: cross-skill-router Agent 基线
 basePath: ..
 prompts:
   - "{{user_input}}"

@@ -123,7 +123,7 @@ def promptfoo_config(skill: str, agent: bool = False) -> Path | None:
 
 def deepeval_target(skill: str, agent: bool = False) -> tuple[Path, str | None] | None:
     if agent:
-        target = ROOT / "evals" / "deepeval" / f"test_h3_{skill.replace('-', '_')}.py"
+        target = ROOT / "evals" / "deepeval" / f"test_agent_{skill.replace('-', '_')}.py"
         return (target, None) if target.exists() else None
     if skill == "expense-policy-qa":
         return ROOT / "evals" / "deepeval" / "test_skill.py", None
@@ -484,7 +484,7 @@ def main() -> int:
     parser.add_argument("--promptfoo-timeout", type=int, default=1800)
     parser.add_argument("--out", default=None)
     parser.add_argument("--full-garak", action="store_true")
-    parser.add_argument("--agent", action="store_true", help="H3 Agent 模式")
+    parser.add_argument("--agent", action="store_true", help="Agent 工具调用模式")
     parser.add_argument("--allow-failures", action="store_true")
     parser.add_argument(
         "--llm-audit",

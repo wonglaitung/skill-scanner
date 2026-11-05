@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.8 |
+| 文档版本 | v2.9 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
@@ -574,11 +574,11 @@ Harness（测试适配层）是让 Skill 能被测试工具统一调用的包装
 
 | 方式 | 适用 | 实现 |
 |---|---|---|
-| H1 HTTP 目标 | Skill 已提供 HTTP 服务 | 暴露 OpenAI-compatible（兼容 OpenAI 接口协议）的 `/v1/chat/completions`，Garak 用 REST（基于 HTTP 的接口风格）generator |
-| H2 Prompt 目标 | 只有提示词，无工具 | Promptfoo 直接读取 `SKILL.md`，或 Python provider（适配器） |
-| H3 Agent 目标 | 含工具调用/多步编排 | Mock（模拟）工具 + Agent runner（执行器），固定工具返回，记录调用轨迹 |
+| A1 HTTP 目标 | Skill 已提供 HTTP 服务 | 暴露 OpenAI-compatible（兼容 OpenAI 接口协议）的 `/v1/chat/completions`，Garak 用 REST（基于 HTTP 的接口风格）generator |
+| A2 Prompt 目标 | 只有提示词，无工具 | Promptfoo 直接读取 `SKILL.md`，或 Python provider（适配器） |
+| A3 Agent 目标 | 含工具调用/多步编排 | Mock（模拟）工具 + Agent runner（执行器），固定工具返回，记录调用轨迹 |
 
-H1/H2/H3 为三种接入方式，复杂度依次递增；建议按 H1 → H2 → H3 逐步建设。
+A1/A2/A3 为三种接入方式，复杂度依次递增；建议按 A1 → A2 → A3 逐步建设。
 
 Harness 统一要求：
 
@@ -590,11 +590,11 @@ Harness 统一要求：
 
 #### 7.2.1 复用现有 Agent harness SDK
 
-如果团队已有 Agent 运行时 SDK（`wonglaitung/harness`，本机 checkout 在 `/data/harness`，设计理念是 `Agent = Model + Harness`），不需要从零重写执行层。H3 具体实施见《生产级演进路线》Phase C。按职责复用：
+如果团队已有 Agent 运行时 SDK（`wonglaitung/harness`，本机 checkout 在 `/data/harness`，设计理念是 `Agent = Model + Harness`），不需要从零重写执行层。A3 具体实施见《生产级演进路线》Phase C。按职责复用：
 
 | 方案需求 | 可复用组件 | 用途 |
 |---|---|---|
-| H3 执行器 | `harness.AgentHarness` | 执行 prompt + 工具 + 多步编排 |
+| A3 执行器 | `harness.AgentHarness` | 执行 prompt + 工具 + 多步编排 |
 | 确定性 Mock | `harness.testing.MockHarness`、`MockResponse` | 固定 LLM 回复与工具返回 |
 | 轨迹录制/回放 | `harness.testing.RecordingHarness` | 生产录制、CI 回放 |
 | 确定性 Gate | `harness.gate` | 格式、事实溯源、逻辑一致性校验 |
@@ -1210,7 +1210,7 @@ deepeval test run evals/deepeval/test_skill.py
 
 - 落地 SKILL.md Schema、目录规范、权限一致性检查；
 - 接入 gitleaks、Ruff、Semgrep、ShellCheck、Trivy；
-- 只建设 H1（HTTP）与 H2（Prompt）两类接入，H3 延后；
+- 只建设 A1（HTTP）与 A2（Prompt）两类接入，A3 延后；
 - 接入 PR 流水线，先告警 2 周再开启阻断。
 
 验收：L0 覆盖率 100%，PR 静态检查稳定，p95 < 2 分钟。
@@ -1227,7 +1227,7 @@ deepeval test run evals/deepeval/test_skill.py
 
 ### Phase 3：对抗测试与运行时（第 13-20 周）
 
-- H3（Agent Mock）试点并覆盖间接注入、工具参数注入；
+- A3（Agent Mock）试点并覆盖间接注入、工具参数注入；
 - 接入 Promptfoo redteam（L2）与 Garak 发布前独立扫描（L3）；
 - 建立跨 Skill 提权、越权调用场景；
 - 接入沙箱、最小权限、配额、审计日志；
@@ -1298,7 +1298,7 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | 只测已知攻击 | 新型攻击漏检 | 人工红队、业务场景用例、季度复测 |
 | 测试数据泄露 | 合规风险 | 合成数据、脱敏、访问控制 |
 | 扫描未授权目标 | 法律与合规风险 | endpoint 白名单、书面授权 |
-| Harness 维护成本高 | Mock（模拟对象）/Stub（测试桩）随编排频繁失效 | 优先 H1/H2，H3 延后；Mock 契约化 |
+| Harness 维护成本高 | Mock（模拟对象）/Stub（测试桩）随编排频繁失效 | 优先 A1/A2，A3 延后；Mock 契约化 |
 | 开发者用例门槛高 | 用例质量参差、覆盖不足 | 公共用例底座、模板化、培训 |
 | Judge 评分漂移 | 夜间频繁误报，团队信任下降 | 固定版本、月度人工校准、双 judge |
 | 初期 Flaky 偏高 | 阻塞研发，门禁被绕过 | 首月只告警不阻断，积累基线后收紧 |
@@ -1308,7 +1308,7 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 ### 14.1 渐进式推进原则
 
 - **首月只告警不阻断**：L1 先以报告形式运行，收集 2-4 周基线后再开启阻断。
-- **Harness 由简到繁**：Phase 1 只做 H1/H2，H3 在 Phase 3 全面铺开。
+- **Harness 由简到繁**：Phase 1 只做 A1/A2，A3 在 Phase 3 全面铺开。
 - **用例先复用后自研**：新 Skill 先引用公共底座，再补业务边界。
 - **门禁先确定性后语义**：PR 只跑确定性断言，语义评测留在夜间。
 - **每季度复盘一次阈值**：根据真实 flaky 率、误报率、漏报案例调整。
@@ -1434,3 +1434,4 @@ R=负责执行，A=最终问责，C=需咨询，I=需知会。
 | v2.6 | 2026-11-02 | Garak rest 配置改为 JSON；补充 `request_timeout`、绝对报告路径与 `-G` 格式说明 |
 | v2.7 | 2026-11-02 | 补充 DeepEval 扩展指标实践：Hallucination 4.3+ 阈值方向、长文本超时、ToolCorrectness wiring |
 | v2.8 | 2026-11-03 | 补齐脚本型 Skill 架构：Promptfoo provider、契约测试、Garak Skill 包装端点与 `skill_server.py` |
+| v2.9 | 2026-11-04 | 统一术语：S 风险 + L 检查深度 + Agent 标志；A1/A2/A3 表示接入方式；移除 H3 用户概念；Agent 测试文件统一命名 |
