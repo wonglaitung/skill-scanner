@@ -139,16 +139,22 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 
 按矩阵补充：
 
-| 矩阵项 | 运行前还要完成 | 预计用时（含准备） |
-|---|---|---|
-| S0/S1 纯提示词 → L1 | 新建 `evals/promptfooconfig.<skill>.yaml`，补正常、拒绝、PII/泄露用例 | 15-30 分钟 |
-| S2 纯提示词 → L2 | 在 L1 基础上，登记 DeepEval 映射或新增测试，补相关性/忠实度/幻觉用例 | 30-60 分钟 |
-| S3 纯提示词 → L3 | 在 L2 基础上，确认端点可启动，准备 `.venv-garak`，单独跑 `scan_release.sh` | 1-2 小时；首次 2-4 小时 |
-| 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`，创建 `.venv-harness` | 1-2 小时 |
-| 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查 | 1.5-3 小时 |
-| 脚本型 → L1 | 补 provider、Promptfoo 配置和契约测试（如 `ci/test_<skill>_contract.py`） | 20-40 分钟 |
+| 矩阵项 | 运行前还要完成 | 预计用时（含准备） | 仅运行测试 |
+|---|---|---|---|
+| S0/S1 纯提示词 → L1 | 新建 `evals/promptfooconfig.<skill>.yaml`，补正常、拒绝、PII/泄露用例 | 15-30 分钟 | 3-5 分钟 |
+| S2 纯提示词 → L2 | 在 L1 基础上，登记 DeepEval 映射或新增测试，补相关性/忠实度/幻觉用例 | 30-60 分钟 | 5-10 分钟 |
+| S3 纯提示词 → L3 | 在 L2 基础上，确认端点可启动，准备 `.venv-garak`，单独跑 `scan_release.sh` | 1-2 小时；首次 2-4 小时 | 25-35 分钟 |
+| 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`，创建 `.venv-harness` | 1-2 小时 | 5-10 分钟 |
+| 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查 | 1.5-3 小时 | 25-35 分钟 |
+| 脚本型 → L1 | 补 provider、Promptfoo 配置和契约测试（如 `ci/test_<skill>_contract.py`） | 20-40 分钟 | 1-2 分钟 |
 
-> 时间为按当前本地 qwen3、现有脚本和已有配置的估算，包含首次准备与单次检查，不含 3 轮基线；3 轮基线约为单次运行时间 × 3。
+> 时间为按当前本地 qwen3、现有脚本和已有配置的估算。
+>
+> “仅运行测试”指配置、用例、依赖和环境均已就绪，不包含首次准备和 3 轮基线。
+>
+> 3 轮基线约为单次运行时间 × 3。
+>
+> S3 的“仅运行测试”包含 L2 + Garak Release v2；如果只跑 `manual_check --level L3` 的默认 Dan probe，时间会短很多，但不等于完整 L3。
 
 运行前检查清单：
 
