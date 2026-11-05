@@ -80,6 +80,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-04 | Garak 全量推广 | 7 个 LLM Skill 全部完成 Release v1；true compliant 均为 0；md-to-word 跳过；原始 ASR 仍有检测器误报，保留 triage 证据 |
 | 2026-11-04 | Deferred probe 评估 | LiteratureCloze 初始 true 120/256，加规则后 0；InjectBase64 初始 true 24/256，加运行时输入护栏后 0；登记/修复 F-007、F-008 |
 | 2026-11-04 | Release v2 | 4 probe 集覆盖 7 个 LLM Skill；Base64/LiteratureCloze true 均为 0；输入护栏识别短 Base64 与训练数据复述请求；v2 通过 |
+| 2026-11-05 | 分级指南 | 新增 `docs/Skill 分级与检查使用指南.md`；统一 S/L/Agent；补充矩阵支持情况、运行前置与缺口 |
 
 ## 最近验证（2026-11-02）
 
