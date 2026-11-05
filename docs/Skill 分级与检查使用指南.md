@@ -168,6 +168,82 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 - [ ] 测试数据为合成数据
 - [ ] 缺配置导致的 `skipped` 不被当作 `passed`
 
+### 4.3 用 preflight.py 自动检查前置条件
+
+运行前先跑：
+
+```bash
+python scripts/preflight.py --skill my-skill --risk S2 --level L2
+```
+
+工具型 Skill：
+
+```bash
+python scripts/preflight.py --skill account-balance-query --risk S2 --level L2 --agent
+```
+
+发布前检查：
+
+```bash
+python scripts/preflight.py --skill my-skill --risk S3 --level L3 --agent --release
+```
+
+它会检查：
+
+- `SKILL.md`、Owner、风险等级；
+- 目标 L 是否满足最低矩阵；
+- 工具型是否加了 `--agent`；
+- `validate`、完整性锁、提示词审计、权限审计；
+- Promptfoo 配置、DeepEval 目标、Agent 测试；
+- 本地模型网关、`.venv-harness`、`.venv-garak`；
+- 基线轮数；`--release` 时要求至少 3 轮；
+- Docker 是否可用。
+
+输出：
+
+```text
+[OK]   skill: skills/write-report/SKILL.md
+[OK]   level: L2 满足最低要求
+[OK]   promptfoo-config: evals/promptfooconfig.write-report.yaml
+[OK]   deepeval-target: evals/deepeval/test_s2_skills.py
+[FAIL] agent: 工具型 Skill 必须加 --agent
+
+status: failed  failures=1  warnings=0
+```
+
+退出码：
+
+- `0`：通过，可能有 warning；
+- `1`：存在 FAIL，不能开始检查；
+- `2`：参数错误。
+
+它不负责：
+
+- 判断 S 等级；
+- 生成业务测试用例；
+- 运行 `manual_check`；
+- 批准发布。
+
+离线环境可加 `--skip-network`，只跳过网关探测。
+
+### 4.4 可选：用 Agent Skill 包装 preflight
+
+可以做一个内部 Agent Skill，只负责：
+
+1. 调用 `preflight.py`；
+2. 解释缺失项；
+3. 生成 Promptfoo/DeepEval/Agent 测试骨架；
+4. 提示下一步命令。
+
+它不得：
+
+- 自行确定 S 等级或 Owner；
+- 自行批准发布；
+- 把 `skipped` 当 `passed`；
+- 替代 `manual_check` 和 Garak。
+
+建议把它当作“准备助手”，不要当作“发布审批人”。
+
 ---
 
 ## 5. 命令示例

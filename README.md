@@ -44,6 +44,9 @@ http://localhost:8086/v1
 ### 3. 一键手工检查
 
 ```bash
+# 运行前检查：配置、权限、环境、基线是否齐全
+python scripts/preflight.py --skill write-report --risk S2 --level L2
+
 # L0：结构 + 静态检查
 python scripts/manual_check.py --skill write-report --level L0
 

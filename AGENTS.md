@@ -117,6 +117,7 @@ ruff check adapters ci evals skills scripts
 pytest -q
 
 # 手工检查（推荐）
+python scripts/preflight.py --skill write-report --risk S2 --level L2
 python scripts/manual_check.py --skill write-report --level L2
 python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 python scripts/manual_check.py --skill service-ticket-update --level L2 --agent
