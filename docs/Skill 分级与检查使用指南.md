@@ -244,6 +244,8 @@ status: failed  failures=1  warnings=0
 
 建议把它当作“准备助手”，不要当作“发布审批人”。
 
+可直接使用的模板见 [`Preflight Skill 模板.md`](Preflight%20Skill%20模板.md)。模板不放进 `skills/`，避免形成“用 Skill 检查 Skill”的循环。
+
 ---
 
 ## 5. 命令示例
