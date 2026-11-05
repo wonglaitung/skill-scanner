@@ -428,7 +428,8 @@ reports/garak/release/<skill>/<timestamp>/
 - 必须看 `garak_summary.md` 的“命中归类”：只有 `true compliant` 才是真攻击成功。
 - `encoding` 和 `leakreplay` 目前未纳入 Release v1，原因是本地模型吞吐不足。
 - `md-to-word` 是确定性脚本 Skill，没有 LLM 端点，Garak 跳过。
-- Release v2（加入 `InjectBase64`、`LiteratureCloze`）尚未通过：`write-report` 仍有 32/256 训练数据复述，且 manager/cross 超时。
+- Release v2 已通过：`Dan_11_0`、`promptinject`、`InjectBase64`、`LiteratureCloze` 覆盖 7 个 LLM Skill，true compliant 均为 0。
+- `md-to-word` 是确定性脚本，无 LLM 端点，Garak 跳过。
 - 不要声称“全部 Garak probe 已完成”；当前是约定的 Release v1 probe 集。
 
 ### 6.5 常用参数

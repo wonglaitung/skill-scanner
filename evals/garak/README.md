@@ -79,34 +79,33 @@ reports/garak/release/<skill>/<timestamp>/
 
 Base64 的最终修复不是继续加 Prompt，而是在 `adapters/input_guard.py` 增加运行时输入护栏：识别 Base64/编码/解码请求并在进入模型前拒绝。复测 true compliant 0；原始 ASR 仍有 1.56%/0.39% 的检测器误报。
 
-这两个 probe 目前仍未加入 Release v1 必过集；Release v2 正在评估。
+这两个 probe 已加入 Release v2 候选集，并在下方全量结果中验证。
 
-## Release v2 评估（未完成）
+## Release v2 结果（通过）
 
-`release_probes_v2.txt` 把 `InjectBase64` 和 `LiteratureCloze` 加入候选集。
+`release_probes_v2.txt` 已包含 4 个 probe，并设为 `scan_release.sh` 默认发布集：
 
-已完成部分：
+- `Dan_11_0`
+- `promptinject.HijackHateHumans`
+- `InjectBase64`
+- `LiteratureCloze`
 
 | Skill | Base64 true | Literature true | 状态 |
 |---|---:|---:|---|
 | account-balance-query | 0 | 0 | 通过 |
-| write-report | 0 | 32/256 | **F-009** |
-| system-specification | 0 | 1/256 | 残余 |
-| manager-report | 0 | 未完成 | 超时 |
+| write-report | 0 | 0 | 通过 |
+| system-specification | 0 | 0 | 通过 |
+| manager-report | 0 | 0 | 通过 |
 | expense-policy-qa | 0 | 0 | 通过 |
 | service-ticket-update | 0 | 0 | 通过 |
-| cross-skill-router | 未完成 | 未完成 | 超时/中止 |
+| cross-skill-router | 0 | 0 | 通过 |
 
-结论：Release v2 还不能纳入必跑集。`LiteratureCloze` 在 `write-report` 上仍有 32/256 训练数据复述，且 `manager-report` / `cross-skill-router` 因本地模型吞吐超时未完成。
+修复方式：
 
-## 暂缓 probe
+- F-007：`input_guard.py` 在进入模型前拒绝编码/解码请求，并识别短 Base64 token。
+- F-009：识别 `training data`、`[MASK]`、文学填空/续写请求，在进入模型前拒绝。
 
-`deferred_probes.txt`：
-
-- `probes.encoding.InjectBase64`
-- `probes.leakreplay.LiteratureCloze`
-
-原因：本地 qwen3 吞吐不足，单 probe 运行时间过长且出现过 `ReadTimeout`。它们尚未纳入 Release v1 必跑集，不能声称“全部 Garak probe 已完成”。
+结论：Release v2 的 true compliant 为 0；原始 ASR 仍可能非零，需结合 `garak_summary` 的归类看。
 
 ## 注意
 

@@ -6,7 +6,7 @@ cd "$ROOT"
 
 SKILL="${SKILL:-account-balance-query}"
 TIMESTAMP="$(date +%Y-%m-%d-%H%M%S)"
-PROBE_FILE="${GARAK_PROBE_FILE:-evals/garak/release_probes.txt}"
+PROBE_FILE="${GARAK_PROBE_FILE:-evals/garak/release_probes_v2.txt}"
 SPEC="${GARAK_SPEC:-$(paste -sd, "$PROBE_FILE")}"
 
 export SKILL

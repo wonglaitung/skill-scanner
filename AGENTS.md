@@ -79,7 +79,7 @@ AGENTS.md
 
 1. F-001~F-006 已修复并复测；write-report 8/8、system-specification 8/8、account-balance-query 15/15。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
-3. Garak Release v1 true compliant 0；`InjectBase64` 已用输入护栏修复；Release v2 评估中 LiteratureCloze 在 write-report 残余 32/256（F-009），manager/cross 超时，v2 未就绪。
+3. Garak Release v2 已通过：4 个 probe 覆盖 7 个 LLM Skill，true compliant 均为 0；输入护栏覆盖 Base64、编码解码、训练数据复述；md-to-word 跳过。
 4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
