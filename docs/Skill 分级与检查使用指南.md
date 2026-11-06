@@ -188,7 +188,14 @@ python scripts/preflight.py --targets targets --skill account-balance-query --ri
 python scripts/preflight.py --skill my-skill --risk S3 --level L3 --agent --release
 ```
 
-它会检查：
+执行完整检查：
+
+```bash
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
+python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
+```
+
+`preflight` 会检查：
 
 - 目标包 `manifest.yaml`；
 - `SKILL.md`、Owner、风险等级；
