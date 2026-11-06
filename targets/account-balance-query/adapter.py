@@ -41,7 +41,14 @@ class TraceHook(LifecycleHook):
         return HookResult.continue_()
 
 
-def run_agent(user_input: str, tool_set: str = "query") -> dict:
+def default_tool_set() -> str:
+    data = yaml.safe_load((ROOT / "tools.yaml").read_text(encoding="utf-8"))
+    return str(data.get("tool_set") or "query")
+
+
+def run_agent(user_input: str, tool_set: str | None = None) -> dict:
+    if tool_set is None:
+        tool_set = default_tool_set()
     trace = TraceHook()
     agent = AgentHarness(
         config=HarnessConfig(
@@ -90,7 +97,7 @@ def registry() -> dict:
 def call_api(prompt: str, options: dict, context: dict) -> dict:
     del context
     config = (options or {}).get("config", {}) or {}
-    result = run_agent(prompt, config.get("toolSet", "query"))
+    result = run_agent(prompt, config.get("toolSet"))
     return {"output": result["output"], "metadata": {"tool_calls": result["tool_calls"]}}
 
 

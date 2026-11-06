@@ -6,7 +6,7 @@ level: L2
 agent: true
 skill: SKILL.md
 promptfoo: evals/promptfoo.yaml
-deepeval: evals/test_agent.py
+deepeval: evals/test_account_balance.py
 baseline: evals/baseline.json
 tools: tools.yaml
 adapter: adapter.py

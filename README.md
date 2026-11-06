@@ -47,8 +47,10 @@ http://localhost:8086/v1
 # 运行前检查：配置、权限、环境、基线是否齐全
 python scripts/preflight.py --skill write-report --risk S2 --level L2
 
-# 目标包试点
+# 目标包
 python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
+python scripts/manual_check.py --targets targets --skill write-report --level L2
+python scripts/scan_all.py --targets targets
 
 # L0：结构 + 静态检查
 python scripts/manual_check.py --skill write-report --level L0
@@ -249,7 +251,7 @@ Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
 ```text
 docs/                 方案、分级指南、扫描指南、模板
 skills/               旧布局试点 Skill（迁移中）
-targets/              目标包试点（3 个）
+targets/              目标包（8 个）
 adapters/             Promptfoo/Garak/DeepEval 适配器
 evals/                用例、配置、基线
 ci/                   校验、静态检查、测试

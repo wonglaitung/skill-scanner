@@ -1,12 +1,17 @@
 # targets 目标包
 
-当前是迁移试点，只包含 3 个自包含目标包：
+所有 8 个 Skill 已迁移为自包含目标包。
 
-| 目标 | 类型 | 状态 |
-|---|---|---|
-| `write-report` | prompt | Promptfoo 3/3，DeepEval 1/1 |
-| `md-to-word` | script | Promptfoo 5/5，adapter 可用 |
-| `account-balance-query` | tool | Promptfoo 15/15，adapter 可用 |
+| 目标 | 类型 |
+|---|---|
+| `write-report` | prompt |
+| `system-specification` | prompt |
+| `manager-report` | prompt |
+| `expense-policy-qa` | prompt |
+| `md-to-word` | script |
+| `account-balance-query` | tool |
+| `service-ticket-update` | tool |
+| `cross-skill-router` | tool |
 
 ## 目标包结构
 
@@ -18,7 +23,7 @@ targets/<skill>/
 ├── tools.yaml              # 工具型才有
 ├── evals/
 │   ├── promptfoo.yaml
-│   ├── test_deepeval.py    # 按需
+│   ├── test_*.py           # 按需
 │   └── baseline.json
 └── fixtures/
 ```
@@ -33,15 +38,38 @@ python scripts/preflight.py --targets targets --skill md-to-word --risk S2 --lev
 python scripts/preflight.py --targets targets --skill account-balance-query --risk S2 --level L2 --agent
 ```
 
+扫描器执行：
+
+```bash
+python scripts/manual_check.py --targets targets --skill write-report --level L2
+python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
+```
+
+批量运行：
+
+```bash
+python scripts/scan_all.py --targets targets
+python scripts/scan_all.py --targets targets --mode check
+```
+
 目标包内部测试：
 
 ```bash
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
   npx promptfoo eval -c targets/write-report/evals/promptfoo.yaml --max-concurrency 1
 
-RUN_LLM_EVALS=1 python -m pytest targets/account-balance-query/evals/test_agent.py -q
+RUN_LLM_EVALS=1 python -m pytest targets/account-balance-query/evals/test_account_balance.py -q
 ```
 
-## 剩余迁移
+## 当前结果
 
-`system-specification`、`manager-report`、`expense-policy-qa`、`service-ticket-update`、`cross-skill-router` 仍留在旧 `skills/` 布局，待这 3 个样板稳定后迁移。
+| 目标 | Promptfoo | 测试 |
+|---|---|---|
+| write-report | 3/3 | DeepEval 1/1 |
+| system-specification | 8/8 | DeepEval 1/1 |
+| manager-report | 8/8 | DeepEval 1/1 |
+| expense-policy-qa | 6/6 | DeepEval 1/1 |
+| md-to-word | 5/5 | adapter 可用 |
+| account-balance-query | 15/15 | 工具测试 1/1 |
+| service-ticket-update | 10/10 | 工具测试 1/1 |
+| cross-skill-router | 9/9 | 工具测试 1/1 |

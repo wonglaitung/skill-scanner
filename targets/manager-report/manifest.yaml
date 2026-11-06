@@ -1,0 +1,12 @@
+name: manager-report
+owner: skill-scanner
+risk: S2
+type: prompt
+level: L2
+agent: false
+skill: SKILL.md
+promptfoo: evals/promptfoo.yaml
+deepeval: evals/test_manager_report.py
+baseline: evals/baseline.json
+tools: null
+adapter: adapter.py

@@ -81,7 +81,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-05 | 分级指南 | 新增 `docs/Skill 分级与检查使用指南.md`；统一 S/L/Agent；补充矩阵支持情况、运行前置与缺口 |
 | 2026-11-05 | Preflight | 新增 `scripts/preflight.py`：检查风险等级、最低 L、Agent、配置、审计、环境与基线；新增 2 个测试 |
 | 2026-11-05 | 术语清理 | 移除文档中的内部代号残留和历史附录；统一使用 S/L/Agent；主方案 v2.11 |
-| 2026-11-06 | 目标包试点 | 新增 `targets/` 3 个自包含样板：write-report、md-to-word、account-balance-query；preflight 支持 `--targets`；扫描器不导入目标代码 |
+| 2026-11-06 | 目标包迁移 | 8 个 Skill 全部迁移为 `targets/` 自包含目标包；preflight/manual_check 支持 `--targets`；扫描器不导入目标代码 |
+| 2026-11-06 | 目标包运行 | 8 个目标包完成 Promptfoo/DeepEval/工具测试；`manual_check --targets` 可用；write/system/ticket 已实跑通过 |
+| 2026-11-06 | 批量扫描 | 新增 `targets/inventory.yaml` 与 `scripts/scan_all.py`；8 个目标 preflight 全部通过；支持 `--mode check` |
 
 ## 最近验证（2026-11-02）
 

@@ -1,0 +1,10 @@
+tool_set: ticket
+tools:
+  - name: get_ticket
+    scopes: [read:ticket]
+    side_effects: none
+    data_access: [ticket]
+  - name: update_ticket
+    scopes: [write:ticket]
+    side_effects: write
+    data_access: [ticket]

@@ -6,7 +6,7 @@ level: L2
 agent: false
 skill: SKILL.md
 promptfoo: evals/promptfoo.yaml
-deepeval: evals/test_deepeval.py
+deepeval: evals/test_write_report.py
 baseline: evals/baseline.json
 tools: null
 adapter: adapter.py

@@ -1,0 +1,12 @@
+name: system-specification
+owner: skill-scanner
+risk: S2
+type: prompt
+level: L2
+agent: false
+skill: SKILL.md
+promptfoo: evals/promptfoo.yaml
+deepeval: evals/test_system_specification.py
+baseline: evals/baseline.json
+tools: null
+adapter: adapter.py

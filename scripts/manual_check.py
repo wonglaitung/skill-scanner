@@ -13,6 +13,8 @@ import sys
 import time
 import urllib.request
 from datetime import datetime
+
+import yaml
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -290,7 +292,14 @@ def load_baseline(skill: str) -> dict | None:
         return None
 
 
-def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[dict]) -> None:
+def write_report(
+    skill: str,
+    level: str,
+    out: Path,
+    summary: dict,
+    steps: list[dict],
+    baseline_path: Path | None = None,
+) -> None:
     lines = [
         f"# Skill 手工检查报告：{skill}",
         "",
@@ -345,7 +354,11 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
             ]
         )
 
-    baseline = load_baseline(skill)
+    baseline = (
+        json.loads(baseline_path.read_text(encoding="utf-8"))
+        if baseline_path and baseline_path.exists()
+        else load_baseline(skill)
+    )
     if baseline and baseline.get("schema_version") == 2:
         aggregate = baseline.get("aggregate", {})
         pf = aggregate.get("promptfoo", {}).get("pass_rate", {})
@@ -470,9 +483,152 @@ def write_report(skill: str, level: str, out: Path, summary: dict, steps: list[d
     (out / "report.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def run_target_check(args: argparse.Namespace) -> int:
+    root = args.targets.expanduser().resolve()
+    target_dir = root / args.skill
+    manifest_path = target_dir / "manifest.yaml"
+    if not manifest_path.exists():
+        print(f"[FAIL] target manifest not found: {manifest_path}")
+        return 2
+    try:
+        manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        print(f"[FAIL] invalid manifest: {exc}")
+        return 2
+
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    out = Path(args.out) if args.out else REPORTS_DIR / args.skill / f"target-{timestamp}"
+    out.mkdir(parents=True, exist_ok=True)
+    env = build_env(args)
+    steps: list[dict] = []
+    selected = LEVELS[args.level]
+
+    preflight_cmd = [
+        sys.executable,
+        "scripts/preflight.py",
+        "--targets",
+        str(root),
+        "--skill",
+        args.skill,
+        "--level",
+        args.level,
+    ]
+    if args.agent:
+        preflight_cmd.append("--agent")
+    steps.append(run_step("preflight", preflight_cmd, env, timeout=240))
+
+    skill_path = (target_dir / str(manifest.get("skill", "SKILL.md"))).resolve()
+    steps.append(
+        run_step(
+            "prompt-audit",
+            [
+                sys.executable,
+                "scripts/prompt_audit.py",
+                "--path",
+                str(skill_path),
+                "--json",
+            ],
+            env,
+            timeout=120,
+        )
+    )
+
+    semgrep_path = tool("semgrep")
+    steps.append(
+        run_step(
+            "semgrep",
+            [semgrep_path, "--config", "p/python", "--config", "p/owasp-top-ten",
+             str(target_dir), "--error"]
+            if semgrep_path
+            else None,
+            env,
+            timeout=600,
+        )
+    )
+
+    summary = {
+        "skill": args.skill,
+        "level": args.level,
+        "timestamp": timestamp,
+        "model": args.model,
+        "api_base": args.api_base,
+        "agent": args.agent,
+        "steps": [],
+        "metrics": {},
+    }
+
+    if selected >= 1 and manifest.get("promptfoo"):
+        config = (target_dir / str(manifest["promptfoo"])).resolve()
+        npx = tool("npx")
+        step = run_step(
+            "promptfoo",
+            [npx, "-y", "promptfoo@latest", "eval", "-c", str(config),
+             "-o", str(out / "promptfoo.json"), "--max-concurrency", "1"]
+            if npx
+            else None,
+            env,
+            timeout=args.promptfoo_timeout,
+        )
+        steps.append(step)
+        summary["metrics"]["promptfoo"] = parse_promptfoo(out / "promptfoo.json")
+
+    if selected >= 2 and manifest.get("deepeval"):
+        target = (target_dir / str(manifest["deepeval"])).resolve()
+        step = run_step(
+            "deepeval",
+            [sys.executable, "-m", "pytest", str(target), "-q"],
+            env,
+            timeout=args.promptfoo_timeout,
+        )
+        steps.append(step)
+        summary["metrics"]["deepeval"] = parse_deepeval(
+            step.get("stdout", "") + step.get("stderr", ""),
+            step.get("returncode", 1),
+        )
+
+    if selected >= 3:
+        steps.append(
+            {
+                "name": "garak",
+                "status": "skipped",
+                "required": False,
+                "reason": "target L3 not wired yet",
+            }
+        )
+
+    summary["steps"] = steps
+    (out / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    (out / "run.log").write_text(
+        "\n".join(
+            f"===== {step['name']} ({step['status']}) =====\n{step.get('stdout', '')}\n{step.get('stderr', '')}"
+            for step in steps
+        ),
+        encoding="utf-8",
+    )
+    baseline = (target_dir / str(manifest.get("baseline") or "")).resolve()
+    write_report(args.skill, args.level, out, summary, steps, baseline_path=baseline)
+
+    hard_failures = [
+        step
+        for step in steps
+        if step.get("required", True)
+        and step["status"] in {"failed", "error", "timeout"}
+    ]
+    print(f"报告：{out / 'report.md'}")
+    print(f"固定摘要：{out / 'summary.json'}")
+    if hard_failures:
+        print("失败/超时：" + ", ".join(step["name"] for step in hard_failures))
+        return 0 if args.allow_failures else 1
+    print("全部必需步骤通过")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="手工触发 Skill 检查")
-    parser.add_argument("--skill", required=True, help="skills/ 下的目录名")
+    parser.add_argument("--skill", required=True, help="skills/ 或 targets/ 下的目录名")
+    parser.add_argument("--targets", type=Path, default=None, help="目标包仓库或 targets 目录")
     parser.add_argument("--level", choices=LEVELS, default="L1")
     parser.add_argument("--model", default="qwen3")
     parser.add_argument("--api-base", default="http://localhost:8086/v1")
@@ -496,6 +652,8 @@ def main() -> int:
     if not re.fullmatch(r"[a-z0-9-]+", args.skill):
         print(f"[FAIL] invalid skill name: {args.skill}")
         return 2
+    if args.targets is not None:
+        return run_target_check(args)
     if not args.api_base.startswith(("http://", "https://")):
         print(f"[FAIL] invalid api base: {args.api_base}")
         return 2

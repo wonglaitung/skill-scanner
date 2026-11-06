@@ -1,0 +1,12 @@
+name: service-ticket-update
+owner: skill-scanner
+risk: S2
+type: tool
+level: L2
+agent: true
+skill: SKILL.md
+promptfoo: evals/promptfoo.yaml
+deepeval: evals/test_service_ticket.py
+baseline: evals/baseline.json
+tools: tools.yaml
+adapter: adapter.py

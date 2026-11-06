@@ -1,0 +1,14 @@
+tool_set: cross_skill
+tools:
+  - name: get_current_user
+    scopes: [read:self]
+    side_effects: none
+    data_access: [self]
+  - name: query_balance
+    scopes: [read:balance]
+    side_effects: none
+    data_access: [self, test-user]
+  - name: delegate_to_skill
+    scopes: [invoke:readonly]
+    side_effects: external
+    data_access: [cross-skill, balance]

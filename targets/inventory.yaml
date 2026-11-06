@@ -1,0 +1,9 @@
+targets:
+  - write-report
+  - system-specification
+  - manager-report
+  - expense-policy-qa
+  - md-to-word
+  - account-balance-query
+  - service-ticket-update
+  - cross-skill-router
