@@ -6,13 +6,13 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
 - 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`
-- 当前版本：v2.10
+- 当前版本：v2.11
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.10 |
+| 方案文档 | 已完成 v2.11 |
 | 代码实现 | 最小骨架已建立（6 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
 | CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`skills/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
@@ -82,6 +82,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-04 | Release v2 | 4 probe 集覆盖 7 个 LLM Skill；Base64/LiteratureCloze true 均为 0；输入护栏识别短 Base64 与训练数据复述请求；v2 通过 |
 | 2026-11-05 | 分级指南 | 新增 `docs/Skill 分级与检查使用指南.md`；统一 S/L/Agent；补充矩阵支持情况、运行前置与缺口 |
 | 2026-11-05 | Preflight | 新增 `scripts/preflight.py`：检查风险等级、最低 L、Agent、配置、审计、环境与基线；新增 2 个测试 |
+| 2026-11-05 | 术语清理 | 移除文档中的内部代号残留和历史附录；统一使用 S/L/Agent；主方案 v2.11 |
 
 ## 最近验证（2026-11-02）
 
@@ -292,5 +293,5 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 - **随时更新**：完成任务、做出决策、发现风险、改变计划或结束会话前，立即更新本文件，不等里程碑。
 - 每个里程碑额外记录版本号与提交号。
-- 方案变更同步更新 `docs/Agent Skill 工程化检查落地方案.md` 的修订记录。
+- 方案变更同步更新 `docs/Agent Skill 工程化检查落地方案.md` 的版本号与正文。
 - 代码实现后，在本文件记录命令、覆盖率与试点结果。

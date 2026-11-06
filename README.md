@@ -2,7 +2,7 @@
 
 Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段，不依赖 CI。
 
-- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.10）
+- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.11）
 - 当前进度：`progress.md`
 - Agent 工作约定：`AGENTS.md`
 
