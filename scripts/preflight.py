@@ -106,6 +106,25 @@ def target_preflight(args: argparse.Namespace) -> int:
     if str(manifest["type"]) != "tool" and manifest["agent"]:
         add("WARN", "agent", "non-tool target does not need agent")
 
+    proc = subprocess.run(  # nosemgrep
+        [  # nosemgrep
+            sys.executable,
+            "scripts/skill_lock.py",
+            "verify",
+            "--skill",
+            args.skill,
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=120,
+    )
+    add(
+        "OK" if proc.returncode == 0 else "FAIL",
+        "skill-lock",
+        proc.stdout.strip() or proc.stderr.strip(),
+    )
+
     for key in ["skill", "promptfoo", "deepeval", "baseline"]:
         value = manifest.get(key)
         if value is None:
