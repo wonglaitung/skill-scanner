@@ -30,6 +30,14 @@ targets/<skill>/
 
 `manifest.yaml` 是扫描器唯一事实源。扫描器不 import 目标代码。
 
+## 单入口
+
+```bash
+python scripts/release_assistant.py init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
+python scripts/release_assistant.py check --targets targets --skill my-skill
+python scripts/release_assistant.py run --targets targets --skill my-skill --runs 3
+```
+
 ## 运行
 
 ```bash

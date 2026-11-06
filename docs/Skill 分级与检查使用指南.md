@@ -254,6 +254,29 @@ status: failed  failures=1  warnings=0
 
 可直接使用的模板见 [`Preflight Skill 模板.md`](Preflight%20Skill%20模板.md)。模板不放进 `targets/`，避免形成“用 Skill 检查 Skill”的循环。
 
+### 4.5 单入口发布助手
+
+```bash
+python scripts/release_assistant.py init \
+  --source /path/to/skill --name my-skill \
+  --owner my-team --risk S2 --type prompt --level L2 --targets targets
+
+python scripts/release_assistant.py check --targets targets --skill my-skill
+
+python scripts/release_assistant.py run \
+  --targets targets --skill my-skill --runs 3 --l3
+```
+
+`run` 会串联：
+
+- 完整性锁
+- preflight
+- 3 轮 manual_check
+- 基线采集
+- Delta Gate
+- 可选 target L3
+- `reports/<skill>/release-<timestamp>/summary.md`
+
 ---
 
 ## 5. 命令示例

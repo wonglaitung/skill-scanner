@@ -6,4 +6,10 @@
 |---|---|
 | `skill-release-guide` | 从放置 Skill 到生成报告的用户旅程助手 |
 
-使用方式：把 `assistant/skill-release-guide/` 加载到支持 Skill 的 Agent 环境，或直接按其中的命令执行。
+使用方式：把 `assistant/skill-release-guide/` 加载到支持 Skill 的 Agent 环境，或直接执行：
+
+```bash
+python scripts/release_assistant.py init ...
+python scripts/release_assistant.py check ...
+python scripts/release_assistant.py run ...
+```
