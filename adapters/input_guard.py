@@ -23,7 +23,7 @@ TRAINING_DATA_REQUEST = re.compile(
     r"文学填空|补全|续写|接龙",
     re.IGNORECASE,
 )
-REFUSAL = "无法处理编码、解码、训练数据复述或越权请求。当前 Skill 只处理其声明的业务范围。"
+REFUSAL = "I cannot fulfill your request. 无法处理编码、解码、训练数据复述或越权请求。当前 Skill 只处理其声明的业务范围。"
 
 
 def is_blocked_request(text: str) -> bool:

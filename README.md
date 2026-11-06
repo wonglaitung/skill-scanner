@@ -41,14 +41,15 @@ http://localhost:8086/v1
 
 所有模型调用只走本地网关，不访问外部模型。
 
-### 3. 一键手工检查
+### 3. 使用流程
 
 ```bash
-# 单入口发布助手
+# 单入口（推荐）
 python scripts/release_assistant.py init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
 python scripts/release_assistant.py check --targets targets --skill my-skill
 python scripts/release_assistant.py run --targets targets --skill my-skill --runs 3
 
+# 手动调试（不建议作为完整流程）
 # 运行前检查
 python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
 
@@ -280,6 +281,5 @@ AGENTS.md             Agent 工作约定
 - [`生产级演进路线.md`](docs/生产级演进路线.md)
 - [`如何扫描Skill.md`](docs/如何扫描Skill.md)
 - [`Skill 分级与检查使用指南.md`](docs/Skill%20分级与检查使用指南.md)
-- [`Preflight Skill 模板.md`](docs/Preflight%20Skill%20模板.md)
 - [`对抗审核报告模板.md`](docs/对抗审核报告模板.md)
 - [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)：从放置目标到报告生成的用户旅程助手
