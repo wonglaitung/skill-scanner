@@ -11,7 +11,9 @@ from harness import AgentHarness, HarnessConfig, HookContext, HookPoint, HookRes
 from harness.gate import DeterministicGate
 
 from safety import SAFETY_PROMPT
-from tools import build_tools
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "fixtures"))
+from tools import build_tools  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 SYSTEM_PROMPT = (ROOT / "SKILL.md").read_text(encoding="utf-8") + SAFETY_PROMPT
