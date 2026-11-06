@@ -9,7 +9,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = ROOT / "skills"
+TARGETS_DIR = ROOT / "targets"
 REFERENCE_PATTERN = re.compile(r"`((?:references|scripts)/[^`]+)`")
 
 
@@ -65,16 +65,16 @@ def validate_skill(path: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--skill", help="Skill directory name under skills/")
+    parser.add_argument("--skill", help="Skill directory name under targets/")
     args = parser.parse_args()
 
     if args.skill:
-        paths = [SKILLS_DIR / args.skill / "SKILL.md"]
+        paths = [TARGETS_DIR / args.skill / "SKILL.md"]
     else:
-        paths = sorted(SKILLS_DIR.glob("*/SKILL.md"))
+        paths = sorted(TARGETS_DIR.glob("*/SKILL.md"))
 
     if not paths or not all(path.exists() for path in paths):
-        print(f"[FAIL] no skills found under {SKILLS_DIR}")
+        print(f"[FAIL] no skills found under {TARGETS_DIR}")
         return 1
 
     failed = False

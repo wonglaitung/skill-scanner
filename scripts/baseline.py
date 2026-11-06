@@ -16,6 +16,12 @@ BASELINES_DIR = ROOT / "evals" / "baselines"
 SCHEMA_VERSION = 2
 
 
+def target_baseline(skill: str, targets: Path | None) -> Path | None:
+    if targets is None:
+        return None
+    return (targets.expanduser().resolve() / skill / "evals" / "baseline.json")
+
+
 def latest_summary(skill: str) -> Path:
     candidates = sorted((REPORTS_DIR / skill).glob("*/summary.json"))
     if not candidates:
@@ -156,6 +162,7 @@ def collect(
     level: str | None,
     agent: bool | None,
     report: Path | None,
+    targets: Path | None = None,
 ) -> int:
     selected, _ = matching_summaries(skill, runs, level, agent, report)
     if not selected:
@@ -236,8 +243,8 @@ def collect(
         "flaky": flaky,
     }
 
-    BASELINES_DIR.mkdir(parents=True, exist_ok=True)
-    target = BASELINES_DIR / f"{skill}.json"
+    target = target_baseline(skill, targets) or (BASELINES_DIR / f"{skill}.json")
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(baseline, ensure_ascii=False, indent=2), encoding="utf-8")
 
     pf = baseline["aggregate"]["promptfoo"]["pass_rate"]
@@ -250,7 +257,7 @@ def collect(
     return 0
 
 
-def save(skill: str, report: Path | None) -> int:
+def save(skill: str, report: Path | None, targets: Path | None = None) -> int:
     summary_path = report or latest_summary(skill)
     data = load_json(summary_path)
     slim = {
@@ -261,8 +268,8 @@ def save(skill: str, report: Path | None) -> int:
         "api_base": data.get("api_base"),
         "metrics": data.get("metrics", {}),
     }
-    BASELINES_DIR.mkdir(parents=True, exist_ok=True)
-    target = BASELINES_DIR / f"{skill}.json"
+    target = target_baseline(skill, targets) or (BASELINES_DIR / f"{skill}.json")
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(slim, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"baseline saved: {target}")
     return 0
@@ -279,8 +286,14 @@ def baseline_metric(baseline: dict, metric: str) -> tuple[float | None, dict | N
     return value, None
 
 
-def diff(skill: str, report: Path | None, fail_on_regression: bool, tolerance: float) -> int:
-    baseline_path = BASELINES_DIR / f"{skill}.json"
+def diff(
+    skill: str,
+    report: Path | None,
+    fail_on_regression: bool,
+    tolerance: float,
+    targets: Path | None = None,
+) -> int:
+    baseline_path = target_baseline(skill, targets) or (BASELINES_DIR / f"{skill}.json")
     if not baseline_path.exists():
         print(f"no baseline for {skill}; run: python scripts/baseline.py collect {skill}")
         return 2
@@ -351,8 +364,9 @@ def gate(
     tolerance: float,
     min_runs: int,
     as_json: bool,
+    targets: Path | None = None,
 ) -> int:
-    baseline_path = BASELINES_DIR / f"{skill}.json"
+    baseline_path = target_baseline(skill, targets) or (BASELINES_DIR / f"{skill}.json")
     if not baseline_path.exists():
         print(f"no baseline for {skill}; run: python scripts/baseline.py collect {skill}")
         return 2
@@ -437,8 +451,8 @@ def gate(
     return 0 if passed else 1
 
 
-def trend(skill: str) -> int:
-    baseline_path = BASELINES_DIR / f"{skill}.json"
+def trend(skill: str, targets: Path | None = None) -> int:
+    baseline_path = target_baseline(skill, targets) or (BASELINES_DIR / f"{skill}.json")
     if not baseline_path.exists():
         print(f"no baseline for {skill}; run: python scripts/baseline.py collect {skill}")
         return 2
@@ -479,6 +493,7 @@ def list_baselines() -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="保存、采集与对比手工检查基线")
+    parser.add_argument("--targets", type=Path, default=None)
     sub = parser.add_subparsers(dest="command", required=True)
 
     collect_parser = sub.add_parser("collect")
@@ -512,15 +527,15 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.command == "collect":
-        return collect(args.skill, args.runs, args.level, args.agent, args.report)
+        return collect(args.skill, args.runs, args.level, args.agent, args.report, args.targets)
     if args.command == "save":
-        return save(args.skill, args.report)
+        return save(args.skill, args.report, args.targets)
     if args.command == "diff":
-        return diff(args.skill, args.report, args.fail_on_regression, args.tolerance)
+        return diff(args.skill, args.report, args.fail_on_regression, args.tolerance, args.targets)
     if args.command == "trend":
-        return trend(args.skill)
+        return trend(args.skill, args.targets)
     if args.command == "gate":
-        return gate(args.skill, args.report, args.tolerance, args.min_runs, args.json)
+        return gate(args.skill, args.report, args.tolerance, args.min_runs, args.json, args.targets)
     return list_baselines()
 
 

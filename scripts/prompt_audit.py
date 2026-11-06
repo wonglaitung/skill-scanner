@@ -12,7 +12,7 @@ import httpx
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = ROOT / "skills"
+SKILLS_DIR = ROOT / "targets"
 
 PATTERNS = [
     (

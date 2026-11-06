@@ -262,7 +262,7 @@ class SkillFrontmatter(BaseModel):
 ### 4.2 目录结构规范
 
 ```text
-skills/<skill-name>/
+targets/<skill-name>/
 ├── SKILL.md              # 必需：说明、边界、使用方式
 ├── scripts/              # 可选：可执行脚本
 ├── references/           # 可选：按需加载的参考资料
@@ -348,9 +348,9 @@ L0 元数据检查产出：不合规项列表、修复建议、门禁结论。�
 ### 5.3 执行命令
 
 ```bash
-ruff check skills/
-semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
-shellcheck skills/**/*.sh
+ruff check targets/
+semgrep --config p/python --config p/javascript --config p/owasp-top-ten targets/ --error
+shellcheck targets/**/*.sh
 gitleaks detect --source . --no-git
 trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
 trivy fs --format cyclonedx --output reports/sbom.cdx.json .
@@ -421,14 +421,14 @@ tests:
 
 说明：
 
-- provider 负责把 `SKILL.md` 作为 system prompt 注入，`prompts` 只传用户输入；若 Skill 没有可调用服务、只有提示词，可直接写 `- file://./skills/my_skill/SKILL.md`，但需自行保证用户输入被拼接进 prompt。
+- provider 负责把 `SKILL.md` 作为 system prompt 注入，`prompts` 只传用户输入；若 Skill 没有可调用服务、只有提示词，可直接写 `- file://./targets/my_skill/SKILL.md`，但需自行保证用户输入被拼接进 prompt。
 - 断言应针对 mock 数据中的哨兵值或明确的越权结果，避免使用「余额」这类正常拒绝话术也会出现的词，降低误报。
 - 哨兵值（如 `BALANCE_SENTINEL`）由 mock 工具在越权成功时返回，便于稳定判断攻击是否真正生效。
 
 运行：
 
 ```bash
-npx promptfoo@latest eval -c evals/promptfooconfig.yaml
+npx promptfoo@latest eval -c targets/<skill>/evals/promptfoo.yaml
 npx promptfoo@latest view
 ```
 
@@ -544,7 +544,7 @@ def test_skill_output():
 #### 6.3.4 运行与报告
 
 ```bash
-deepeval test run evals/deepeval/test_skill.py
+deepeval test run targets/<skill>/evals/test_*.py
 ```
 
 在测试 fixture 中将每个指标的 `score`、`reason`、用例 id、模型版本写入 `reports/deepeval.json`，用于趋势看板与 Delta Gate。不要只依赖 pass/fail，必须保留分数。
@@ -752,7 +752,7 @@ python -m garak \
 - `request_timeout` 建议设为 120 秒以上，本地小模型单次响应可能超过默认 20 秒。
 - `--report_prefix` 使用绝对路径，避免 Garak 把报告写到其运行目录下。
 - `promptinject` 等探针条目多，本地模型应分批或并行执行（`--parallel_attempts`），并放到独立 venv/容器。
-- **Garak 应扫描 Skill 包装端点，而不是裸模型**。`evals/garak/rest_config.json` 只用于模型级快速检查；Skill 级扫描使用 `adapters/skill_server.py`，或直接运行 `SKILL=write-report ./evals/garak/scan.sh`。`manual_check.py --level L3` 会自动启动该端点。
+- Garak 当前只保留模型级/历史 Release 脚本；`targets/` 目标包的 L3 尚未接入。
 
 要点：
 
@@ -1023,7 +1023,7 @@ def decide(report, baseline):
 ```text
 skill-scanner/
 ├── docs/
-├── skills/
+├── targets/
 │   └── my_skill/
 │       ├── SKILL.md
 │       ├── scripts/
@@ -1129,9 +1129,9 @@ jobs:
           python-version: "3.12"
       - run: pip install ruff semgrep pyyaml jsonschema
       - run: python ci/validate_skill.py
-      - run: ruff check skills/
-      - run: semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
-      - run: shellcheck skills/**/*.sh
+      - run: ruff check targets/
+      - run: semgrep --config p/python --config p/javascript --config p/owasp-top-ten targets/ --error
+      - run: shellcheck targets/**/*.sh
       # gitleaks / trivy 通过官方 action 或预装二进制提供
       - run: gitleaks detect --source . --no-git
       - run: trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
@@ -1144,7 +1144,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npx promptfoo@latest eval -c evals/promptfooconfig.yaml -o reports/promptfoo.json
+      - run: npx promptfoo@latest eval -c targets/<skill>/evals/promptfoo.yaml -o reports/promptfoo.json
       - run: python ci/gate.py --report reports/promptfoo.json --level pr
 
   nightly:
@@ -1157,7 +1157,7 @@ jobs:
           python-version: "3.12"
       - run: pip install deepeval
       - run: npx promptfoo@latest redteam run -c evals/redteam.yaml -o reports/redteam.json
-      - run: deepeval test run evals/deepeval/test_skill.py
+      - run: deepeval test run targets/<skill>/evals/test_*.py
       - run: python ci/gate.py --report reports/redteam.json --level nightly
 
   release-scan:
@@ -1166,7 +1166,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install garak
-      - run: ./evals/garak/scan.sh
+      - run: echo "target L3 pending"
       - run: python ci/gate.py --report reports/garak.report.jsonl --level release
 ```
 
@@ -1179,9 +1179,9 @@ jobs:
 python ci/validate_skill.py
 
 # 2. 代码与依赖检查
-ruff check skills/
-semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
-shellcheck skills/**/*.sh
+ruff check targets/
+semgrep --config p/python --config p/javascript --config p/owasp-top-ten targets/ --error
+shellcheck targets/**/*.sh
 gitleaks detect --source . --no-git
 trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
 trivy fs --format cyclonedx --output reports/sbom.cdx.json .
@@ -1192,16 +1192,16 @@ export SKILL_MODEL=local-skill-model
 export SKILL_API_KEY=local-placeholder
 
 # 4. Prompt 回归（L1）
-npx promptfoo@latest eval -c evals/promptfooconfig.yaml
+npx promptfoo@latest eval -c targets/<skill>/evals/promptfoo.yaml
 
 # 5. Promptfoo redteam（L2）
 npx promptfoo@latest redteam run -c evals/redteam.yaml
 
 # 6. DeepEval 指标化评分（L2）
-deepeval test run evals/deepeval/test_skill.py
+deepeval test run targets/<skill>/evals/test_*.py
 
 # 7. Garak 发布前独立扫描（L3）
-./evals/garak/scan.sh
+# target L3 pending
 ```
 
 ---

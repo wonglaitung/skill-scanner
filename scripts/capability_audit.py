@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = ROOT / "skills"
+SKILLS_DIR = ROOT / "targets"
 ALLOWED_SIDE_EFFECTS = {"none", "read", "write", "external", "destructive"}
 
 

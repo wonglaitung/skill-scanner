@@ -2,7 +2,7 @@
 
 这是一个**内部准备助手**模板，不是发布审批器。
 
-不要直接放进生产 Skill 清单；需要时复制到 `skills/`，并先通过自身检查。
+不要直接放进生产 Skill 清单；需要时复制到 `targets/`，并先通过自身检查。
 
 ```markdown
 ---
@@ -25,7 +25,7 @@ metadata:
 
 1. 运行：
    ```bash
-   python scripts/preflight.py --skill <skill> --risk <S> --level <L> [--agent] [--release]
+   python scripts/preflight.py --targets targets --skill <skill> --risk <S> --level <L> [--agent] [--release]
    ```
 2. 把 preflight 输出翻译成用户能执行的下一步。
 3. 可以生成 Promptfoo、DeepEval、Agent 测试骨架。
@@ -57,6 +57,6 @@ metadata:
 2. 只处理 FAIL 和关键 WARN。
 3. 生成缺失的配置/测试骨架。
 4. 让用户确认 S、Owner、测试数据。
-5. 再运行 `manual_check` / `scan_release.sh`。
+5. 再运行 `manual_check`；target L3 尚未接入。
 6. 结果交人工复核，不由 Skill 宣布发布通过。
 ```

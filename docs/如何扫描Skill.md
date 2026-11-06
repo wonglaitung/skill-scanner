@@ -89,14 +89,14 @@ Docker 不可用时，`security` 步骤会跳过，并在报告里写明原因�
 ### 2.1 放对目录
 
 ```text
-skills/<skill-name>/
+targets/<skill-name>/
 ├── SKILL.md
 ├── scripts/          # 可选
 └── references/       # 可选
 ```
 
 ```bash
-cp -r /path/to/my-skill skills/my-skill
+cp -r /path/to/my-skill targets/my-skill
 ```
 
 ### 2.2 写清楚 SKILL.md
@@ -189,7 +189,7 @@ L1 包含 L0，L2 包含 L1，L3 包含 L2。
 ## 第 4 步：第一次先跑 L0
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L0
+python scripts/manual_check.py --targets targets --skill my-skill --level L0
 ```
 
 你要看到：
@@ -213,7 +213,7 @@ L0 不通过，不要继续跑 L1/L2。
 
 ### 5.1 纯提示词 Skill：加 Promptfoo 配置
 
-新建 `evals/promptfooconfig.my-skill.yaml`：
+新建 `targets/my-skill/evals/promptfoo.yaml`：
 
 ```yaml
 # yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
@@ -225,7 +225,7 @@ providers:
   - id: file://./adapters/promptfoo_provider.py:call_api
     label: my-skill
     config:
-      skillPath: skills/my-skill/SKILL.md
+      skillPath: targets/my-skill/SKILL.md
 tests:
   - vars:
       user_input: "你的测试问题"
@@ -246,12 +246,12 @@ tests:
 需要两个文件：
 
 - `adapters/<skill>_provider.py`
-- `evals/promptfooconfig.<skill>.yaml`
+- `targets/<skill>/evals/promptfoo.yaml`
 
 参考 `md-to-word`：
 
 - `adapters/md_to_word_provider.py`
-- `evals/promptfooconfig.md-to-word.yaml`
+- `targets/md-to-word/evals/promptfoo.yaml`
 - `ci/test_md_to_word_contract.py`
 
 ### 5.3 工具型 Agent：准备 Mock 工具和 Agent 配置
@@ -264,9 +264,9 @@ tests:
 
 对应文件：
 
-- `skills/<skill>/SKILL.md`
+- `targets/<skill>/SKILL.md`
 - `adapters/harness_tools.py`
-- `evals/promptfooconfig.<skill>.agent.yaml`
+- `targets/<skill>/evals/promptfoo.yaml`
 
 运行方式见第 6 步。
 
@@ -354,7 +354,7 @@ python scripts/prompt_audit.py --skill my-skill --llm
 或让 `manual_check` 一并执行：
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L2 --llm-audit
+python scripts/manual_check.py --targets targets --skill my-skill --level L2 --llm-audit
 ```
 
 确定性规则无法覆盖所有语义矛盾，LLM 审查也可能误报；高影响结论仍需人工确认。
@@ -364,7 +364,7 @@ python scripts/manual_check.py --skill my-skill --level L2 --llm-audit
 `system-specification` 这类会生成长文档的 Skill，建议加：
 
 ```bash
-python scripts/manual_check.py --skill system-specification \
+python scripts/manual_check.py --targets targets --skill system-specification \
   --level L2 --max-tokens 1024
 ```
 
@@ -377,20 +377,20 @@ python scripts/manual_check.py --skill system-specification \
 ### 6.1 纯提示词 Skill
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L1
-python scripts/manual_check.py --skill my-skill --level L2
+python scripts/manual_check.py --targets targets --skill my-skill --level L1
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
 ```
 
 发布前再跑：
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L3
+python scripts/manual_check.py --targets targets --skill my-skill --level L3
 ```
 
 ### 6.2 脚本型 Skill
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L1
+python scripts/manual_check.py --targets targets --skill my-skill --level L1
 pytest -q ci/test_md_to_word_contract.py
 ```
 
@@ -401,7 +401,7 @@ pytest -q ci/test_md_to_word_contract.py
 先确认 `.venv-harness/` 已创建，然后：
 
 ```bash
-python scripts/manual_check.py --skill account-balance-query \
+python scripts/manual_check.py --targets targets --skill account-balance-query \
   --level L2 --agent
 ```
 
@@ -425,7 +425,7 @@ uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
 运行发布前复查：
 
 ```bash
-SKILL=account-balance-query ./evals/garak/scan_release.sh
+# target L3/Garak 尚未接入，当前发布前 L3 暂不可用
 ```
 
 Release v1 包含：
@@ -530,7 +530,7 @@ reports/<skill>/<timestamp>/
 只想先出报告：
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L1 --allow-failures
+python scripts/manual_check.py --targets targets --skill my-skill --level L1 --allow-failures
 ```
 
 ---
@@ -572,9 +572,9 @@ python scripts/manual_check.py --skill my-skill --level L1 --allow-failures
 ### 9.1 连续跑 3 轮
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L2
-python scripts/manual_check.py --skill my-skill --level L2
-python scripts/manual_check.py --skill my-skill --level L2
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
 ```
 
 长输出 Skill 加上同样的 `--max-tokens`。
@@ -582,7 +582,7 @@ python scripts/manual_check.py --skill my-skill --level L2
 ### 9.2 采集基线
 
 ```bash
-python scripts/baseline.py collect my-skill --runs 3
+python scripts/baseline.py --targets targets collect my-skill --runs 3
 ```
 
 它会记录：
@@ -595,25 +595,25 @@ python scripts/baseline.py collect my-skill --runs 3
 ### 9.3 看趋势
 
 ```bash
-python scripts/baseline.py trend my-skill
+python scripts/baseline.py --targets targets trend my-skill
 ```
 
 ### 9.4 和当前结果比较
 
 ```bash
-python scripts/baseline.py diff my-skill --tolerance 0.05
+python scripts/baseline.py --targets targets diff my-skill --tolerance 0.05
 ```
 
 ### 9.5 跑 Delta Gate
 
 ```bash
-python scripts/baseline.py gate my-skill --tolerance 0.05
+python scripts/baseline.py --targets targets gate my-skill --tolerance 0.05
 ```
 
 机器可读输出：
 
 ```bash
-python scripts/baseline.py gate my-skill --json
+python scripts/baseline.py --targets targets gate my-skill --json
 ```
 
 Gate 规则：
@@ -666,11 +666,11 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
 ```bash
 python ci/validate_skill.py --skill my-skill
 python scripts/skill_lock.py generate
-python scripts/manual_check.py --skill my-skill --level L0
-python scripts/manual_check.py --skill my-skill --level L1
-python scripts/manual_check.py --skill my-skill --level L2
-python scripts/baseline.py collect my-skill --runs 3
-python scripts/baseline.py gate my-skill
+python scripts/manual_check.py --targets targets --skill my-skill --level L0
+python scripts/manual_check.py --targets targets --skill my-skill --level L1
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
+python scripts/baseline.py --targets targets collect my-skill --runs 3
+python scripts/baseline.py --targets targets gate my-skill
 ```
 
 ### 脚本型 Skill
@@ -678,11 +678,11 @@ python scripts/baseline.py gate my-skill
 ```bash
 python ci/validate_skill.py --skill my-skill
 python scripts/skill_lock.py generate
-python scripts/manual_check.py --skill my-skill --level L0
-python scripts/manual_check.py --skill my-skill --level L1
+python scripts/manual_check.py --targets targets --skill my-skill --level L0
+python scripts/manual_check.py --targets targets --skill my-skill --level L1
 pytest -q ci/test_<my-skill>_contract.py
-python scripts/baseline.py collect my-skill --runs 3
-python scripts/baseline.py gate my-skill
+python scripts/baseline.py --targets targets collect my-skill --runs 3
+python scripts/baseline.py --targets targets gate my-skill
 ```
 
 ### 工具型 Agent Skill
@@ -691,9 +691,9 @@ python scripts/baseline.py gate my-skill
 ./scripts/setup_harness_env.sh
 python ci/validate_skill.py --skill my-skill
 python scripts/skill_lock.py generate
-python scripts/manual_check.py --skill my-skill --level L2 --agent
-python scripts/baseline.py collect my-skill --runs 3
-python scripts/baseline.py gate my-skill
+python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
+python scripts/baseline.py --targets targets collect my-skill --runs 3
+python scripts/baseline.py --targets targets gate my-skill
 ```
 
 ---
@@ -711,7 +711,7 @@ python scripts/baseline.py gate my-skill
 | 长文生成超时 | 加 `--max-tokens 1024` |
 | Garak 很慢 | 只跑 `Dan_11_0`；`promptinject` 放独立环境/分批 |
 | 脚本型 Skill 没有 DeepEval/Garak | 预期行为，用 Promptfoo + 契约测试 |
-| 不知道怎么写配置 | 复制现有 `evals/promptfooconfig.*.yaml`，改 `skillPath` 和用例 |
+| 不知道怎么写配置 | 复制现有 `targets/<skill>/evals/promptfoo.yaml`，改 `skillPath` 和用例 |
 | Gate 说基线不足 | 先 `collect --runs 3`，单轮基线不能做 Gate |
 
 ---

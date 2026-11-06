@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = ROOT / "skills"
+SKILLS_DIR = ROOT / "targets"
 DEEPEVAL_SKILLS = {"write-report", "system-specification", "manager-report"}
 MIN_PROMPT_LEVEL = {"S0": 1, "S1": 1, "S2": 2, "S3": 3}
 LEVELS = {"L0": 0, "L1": 1, "L2": 2, "L3": 3}
@@ -218,7 +218,7 @@ def target_preflight(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="检查 Skill 运行前是否满足分级矩阵")
     parser.add_argument("--skill", required=True)
-    parser.add_argument("--targets", type=Path, default=None, help="目标仓库或 targets 目录")
+    parser.add_argument("--targets", type=Path, required=True, help="目标仓库或 targets 目录")
     parser.add_argument("--risk", choices=["S0", "S1", "S2", "S3"], default=None)
     parser.add_argument("--level", choices=list(LEVELS), required=True)
     parser.add_argument("--agent", action="store_true")
