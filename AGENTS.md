@@ -35,7 +35,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 ```text
 docs/
-skills/                 # 试点 Skill
+skills/                 # 旧布局试点 Skill（迁移中）
+targets/                # 目标包试点：write-report、md-to-word、account-balance-query
 adapters/               # Promptfoo/Garak/DeepEval 适配层
 evals/                  # 用例、配置、基线
 ci/                     # 校验与门禁脚本
@@ -118,6 +119,7 @@ pytest -q
 
 # 手工检查（推荐）
 python scripts/preflight.py --skill write-report --risk S2 --level L2
+python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
 python scripts/manual_check.py --skill write-report --level L2
 python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 python scripts/manual_check.py --skill service-ticket-update --level L2 --agent

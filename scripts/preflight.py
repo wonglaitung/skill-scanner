@@ -59,9 +59,141 @@ def run_json(cmd: list[str]) -> tuple[int, dict]:
     return proc.returncode, data
 
 
+def target_preflight(args: argparse.Namespace) -> int:
+    checks: list[dict] = []
+
+    def add(status: str, name: str, message: str) -> None:
+        checks.append({"status": status, "name": name, "message": message})
+
+    root = args.targets.expanduser().resolve()
+    target_dir = root / args.skill
+    if not target_dir.exists():
+        add("FAIL", "target", f"not found: {target_dir}")
+        return finish(checks, args.json)
+
+    manifest_path = target_dir / "manifest.yaml"
+    if not manifest_path.exists():
+        add("FAIL", "manifest", f"not found: {manifest_path}")
+        return finish(checks, args.json)
+    try:
+        manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        add("FAIL", "manifest", str(exc))
+        return finish(checks, args.json)
+
+    required = ["name", "owner", "risk", "type", "level", "agent", "skill"]
+    missing = [key for key in required if key not in manifest]
+    if missing:
+        add("FAIL", "manifest", f"missing fields: {', '.join(missing)}")
+        return finish(checks, args.json)
+    if manifest["name"] != args.skill:
+        add("FAIL", "manifest", "name does not match skill argument")
+    if manifest["risk"] not in MIN_PROMPT_LEVEL:
+        add("FAIL", "risk", "manifest.risk must be S0-S3")
+    if manifest["type"] not in {"prompt", "tool", "script"}:
+        add("FAIL", "type", "manifest.type must be prompt/tool/script")
+    if manifest["level"] not in LEVELS:
+        add("FAIL", "level", "manifest.level must be L0-L3")
+    min_level = minimum_level(str(manifest["risk"]), str(manifest["type"]))
+    selected = LEVELS[str(manifest["level"])]
+    if selected < min_level:
+        add("FAIL", "minimum", f"needs L{min_level}, manifest has {manifest['level']}")
+    else:
+        add("OK", "minimum", f"{manifest['risk']} {manifest['type']} L{min_level}+")
+
+    if str(manifest["type"]) == "tool" and not manifest["agent"]:
+        add("FAIL", "agent", "tool target must set agent: true")
+    if str(manifest["type"]) != "tool" and manifest["agent"]:
+        add("WARN", "agent", "non-tool target does not need agent")
+
+    for key in ["skill", "promptfoo", "deepeval", "baseline"]:
+        value = manifest.get(key)
+        if value is None:
+            if key == "promptfoo" and selected < 1:
+                continue
+            if key == "deepeval" and (selected < 2 or manifest["type"] == "script"):
+                continue
+            add("FAIL", key, "missing manifest path")
+            continue
+        path = (target_dir / str(value)).resolve()
+        try:
+            path.relative_to(target_dir)
+        except ValueError:
+            add("FAIL", key, "path escapes target directory")
+            continue
+        add("OK" if path.exists() else "FAIL", key, str(path.relative_to(target_dir)))
+
+    if str(manifest["type"]) == "tool":
+        for key in ["tools", "adapter"]:
+            value = manifest.get(key)
+            if not value:
+                add("FAIL", key, "tool target requires this field")
+                continue
+            path = (target_dir / str(value)).resolve()
+            try:
+                path.relative_to(target_dir)
+            except ValueError:
+                add("FAIL", key, "path escapes target directory")
+                continue
+            add("OK" if path.exists() else "FAIL", key, str(path.relative_to(target_dir)))
+
+    skill_path = (target_dir / str(manifest["skill"])).resolve()
+    if skill_path.exists():
+        proc = subprocess.run(  # nosemgrep
+            [  # nosemgrep
+                sys.executable,
+                "scripts/prompt_audit.py",
+                "--path",
+                str(skill_path),
+                "--json",
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=120,
+        )
+        try:
+            prompt_data = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            prompt_data = {}
+        if prompt_data.get("errors", 0):
+            add("FAIL", "prompt-audit", f"{prompt_data['errors']} errors")
+        else:
+            add("OK", "prompt-audit", f"{prompt_data.get('warnings', 0)} warnings")
+
+    if not args.skip_network:
+        try:
+            with urllib.request.urlopen("http://localhost:8086/v1/models", timeout=2):
+                add("OK", "gateway", "http://localhost:8086/v1")
+        except Exception as exc:  # noqa: BLE001
+            add("FAIL", "gateway", str(exc))
+
+    if manifest["agent"]:
+        harness = ROOT / ".venv-harness" / "bin" / "python"
+        add("OK" if harness.exists() else "FAIL", "harness", str(harness.relative_to(ROOT)))
+
+    if selected >= 3:
+        garak = ROOT / ".venv-garak" / "bin" / "python"
+        add("OK" if garak.exists() else "FAIL", "garak", str(garak.relative_to(ROOT)))
+
+    baseline = (target_dir / str(manifest.get("baseline") or "")).resolve()
+    if baseline.exists():
+        try:
+            data = json.loads(baseline.read_text(encoding="utf-8"))
+            runs = data.get("aggregate", {}).get("run_count", 0) or len(data.get("runs", []))
+        except json.JSONDecodeError:
+            runs = 0
+        add("OK" if runs >= 3 else "WARN", "baseline", f"{runs} runs")
+    else:
+        add("WARN", "baseline", "missing baseline")
+
+    return finish(checks, args.json)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="检查 Skill 运行前是否满足分级矩阵")
     parser.add_argument("--skill", required=True)
+    parser.add_argument("--targets", type=Path, default=None, help="目标仓库或 targets 目录")
     parser.add_argument("--risk", choices=["S0", "S1", "S2", "S3"], default=None)
     parser.add_argument("--level", choices=list(LEVELS), required=True)
     parser.add_argument("--agent", action="store_true")
@@ -72,6 +204,8 @@ def main() -> int:
     if not re.fullmatch(r"[a-z0-9-]+", args.skill):
         print(f"[FAIL] invalid skill name: {args.skill}")
         return 2
+    if args.targets is not None:
+        return target_preflight(args)
 
     checks: list[dict] = []
 

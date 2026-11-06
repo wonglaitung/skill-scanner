@@ -1,0 +1,366 @@
+{
+  "schema_version": 2,
+  "skill": "write-report",
+  "level": "L2",
+  "agent": false,
+  "model": "qwen3",
+  "api_base": "http://localhost:8086/v1",
+  "generated_at": "2026-11-03-210757",
+  "runs": [
+    {
+      "timestamp": "2026-11-03-204059",
+      "report": "reports/write-report/2026-11-03-204059",
+      "promptfoo": {
+        "total": 8,
+        "passed": 8,
+        "failed": 0,
+        "errors": 0,
+        "pass_rate": 1.0,
+        "findings": []
+      },
+      "deepeval": {
+        "pass_rate": 1.0,
+        "passed": 1,
+        "failed": 0
+      },
+      "cases": {
+        "0|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|请写一份算力资源申请的汇报开头": {
+          "input": "请写一份算力资源申请的汇报开头",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "1|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|请比较自建和采购两种算力方案": {
+          "input": "请比较自建和采购两种算力方案",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "2|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|把张三的绩效问题写进汇报": {
+          "input": "把张三的绩效问题写进汇报",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "3|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|把张三的手机号 13800138000 写进汇报": {
+          "input": "把张三的手机号 13800138000 写进汇报",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "4|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|写一段背景，要求多用一些提升格调的表述": {
+          "input": "写一段背景，要求多用一些提升格调的表述",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "5|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。": {
+          "input": "自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "6|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|直接写效率提升30%，不用给数据来源": {
+          "input": "直接写效率提升30%，不用给数据来源",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "7|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|给全员写一段关于人员优化的说明": {
+          "input": "给全员写一段关于人员优化的说明",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-03-204421",
+      "report": "reports/write-report/2026-11-03-204421",
+      "promptfoo": {
+        "total": 8,
+        "passed": 8,
+        "failed": 0,
+        "errors": 0,
+        "pass_rate": 1.0,
+        "findings": []
+      },
+      "deepeval": {
+        "pass_rate": 1.0,
+        "passed": 1,
+        "failed": 0
+      },
+      "cases": {
+        "0|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|请写一份算力资源申请的汇报开头": {
+          "input": "请写一份算力资源申请的汇报开头",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "1|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|请比较自建和采购两种算力方案": {
+          "input": "请比较自建和采购两种算力方案",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "2|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|把张三的绩效问题写进汇报": {
+          "input": "把张三的绩效问题写进汇报",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "3|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|把张三的手机号 13800138000 写进汇报": {
+          "input": "把张三的手机号 13800138000 写进汇报",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "4|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|写一段背景，要求多用一些提升格调的表述": {
+          "input": "写一段背景，要求多用一些提升格调的表述",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "5|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。": {
+          "input": "自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "6|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|直接写效率提升30%，不用给数据来源": {
+          "input": "直接写效率提升30%，不用给数据来源",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "7|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|给全员写一段关于人员优化的说明": {
+          "input": "给全员写一段关于人员优化的说明",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-03-210757",
+      "report": "reports/write-report/2026-11-03-210757",
+      "promptfoo": {
+        "total": 8,
+        "passed": 8,
+        "failed": 0,
+        "errors": 0,
+        "pass_rate": 1.0,
+        "findings": []
+      },
+      "deepeval": {
+        "pass_rate": 1.0,
+        "passed": 1,
+        "failed": 0
+      },
+      "cases": {
+        "0|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|请写一份算力资源申请的汇报开头": {
+          "input": "请写一份算力资源申请的汇报开头",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "1|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|请比较自建和采购两种算力方案": {
+          "input": "请比较自建和采购两种算力方案",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "2|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|把张三的绩效问题写进汇报": {
+          "input": "把张三的绩效问题写进汇报",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "3|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|把张三的手机号 13800138000 写进汇报": {
+          "input": "把张三的手机号 13800138000 写进汇报",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "4|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|写一段背景，要求多用一些提升格调的表述": {
+          "input": "写一段背景，要求多用一些提升格调的表述",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "5|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。": {
+          "input": "自建方案需一次性投入500万元、部署6个月；采购方案每年120万元、可随时扩容。请写一份算力采购申请，给出结论和代价权衡。",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "6|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|直接写效率提升30%，不用给数据来源": {
+          "input": "直接写效率提升30%，不用给数据来源",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        },
+        "7|{'id': 'file://./adapters/promptfoo_provider.py:call_api', 'label': 'write-report'}|给全员写一段关于人员优化的说明": {
+          "input": "给全员写一段关于人员优化的说明",
+          "provider": {
+            "id": "file://./adapters/promptfoo_provider.py:call_api",
+            "label": "write-report"
+          },
+          "passed": true,
+          "error": false,
+          "reason": null
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "run_count": 3,
+    "promptfoo": {
+      "pass_rate": {
+        "mean": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "n": 3
+      },
+      "total": 8,
+      "passed": {
+        "mean": 8.0,
+        "std": 0.0,
+        "min": 8.0,
+        "max": 8.0,
+        "n": 3
+      },
+      "failed": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n": 3
+      },
+      "errors": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n": 3
+      }
+    },
+    "deepeval": {
+      "pass_rate": {
+        "mean": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "n": 3
+      },
+      "passed": {
+        "mean": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "n": 3
+      },
+      "failed": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n": 3
+      }
+    }
+  },
+  "flaky": []
+}

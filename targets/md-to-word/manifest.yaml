@@ -1,0 +1,12 @@
+name: md-to-word
+owner: bank-services
+risk: S2
+type: script
+level: L1
+agent: false
+skill: SKILL.md
+promptfoo: evals/promptfoo.yaml
+deepeval: null
+baseline: evals/baseline.json
+tools: null
+adapter: adapter.py

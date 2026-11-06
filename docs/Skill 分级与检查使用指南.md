@@ -173,13 +173,13 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 运行前先跑：
 
 ```bash
-python scripts/preflight.py --skill my-skill --risk S2 --level L2
+python scripts/preflight.py --targets targets --skill my-skill --risk S2 --level L2
 ```
 
 工具型 Skill：
 
 ```bash
-python scripts/preflight.py --skill account-balance-query --risk S2 --level L2 --agent
+python scripts/preflight.py --targets targets --skill account-balance-query --risk S2 --level L2 --agent
 ```
 
 发布前检查：
@@ -190,6 +190,7 @@ python scripts/preflight.py --skill my-skill --risk S3 --level L3 --agent --rele
 
 它会检查：
 
+- 目标包 `manifest.yaml`；
 - `SKILL.md`、Owner、风险等级；
 - 目标 L 是否满足最低矩阵；
 - 工具型是否加了 `--agent`；

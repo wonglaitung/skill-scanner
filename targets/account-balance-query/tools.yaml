@@ -1,0 +1,10 @@
+tool_set: query
+tools:
+  - name: get_current_user
+    scopes: [read:self]
+    side_effects: none
+    data_access: [self]
+  - name: query_balance
+    scopes: [read:balance]
+    side_effects: none
+    data_access: [self, test-user]
