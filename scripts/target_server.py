@@ -12,6 +12,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "adapters"))
+from input_guard import REFUSAL, is_blocked_request  # noqa: E402
 
 
 def load_adapter(target_dir: Path):
@@ -84,7 +86,10 @@ def main() -> int:
                     ),
                     "",
                 )
-                result = invoke(module, user_text)
+                if is_blocked_request(user_text):
+                    result = {"output": REFUSAL, "metadata": {"blocked": True}}
+                else:
+                    result = invoke(module, user_text)
             except Exception as exc:  # noqa: BLE001
                 self._send(500, {"error": str(exc)})
                 return

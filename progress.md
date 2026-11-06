@@ -84,6 +84,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-06 | 目标包迁移 | 8 个 Skill 全部迁移为 `targets/` 自包含目标包；preflight/manual_check 支持 `--targets`；扫描器不导入目标代码 |
 | 2026-11-06 | 目标包运行 | 8 个目标包完成 Promptfoo/DeepEval/工具测试；`manual_check --targets` 可用；write/system/ticket 已实跑通过 |
 | 2026-11-06 | 批量扫描 | 新增 `targets/inventory.yaml` 与 `scripts/scan_all.py`；8 个目标 preflight 全部通过；支持 `--mode check` |
+| 2026-11-06 | Target L3 | 新增 `scripts/target_server.py`；7 个 LLM 目标完成 Garak Release v2，true compliant 全为 0；md-to-word 跳过 |
 
 ## 当前验证（2026-11-06）
 
@@ -97,7 +98,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 目标权限审计 | `capability_audit.py --targets targets` | 工具型目标通过 |
 | Semgrep | `semgrep ... adapters ci scripts targets` | 0 findings |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 |
-| target L3/Garak | `TARGETS=targets SKILL=write-report ./evals/garak/scan_release.sh` | 已接入；Dan smoke 通过 |
+| target L3/Garak | `TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh` | 7 个 LLM 目标 Release v2 完成，true compliant 全为 0 |
 
 说明：真实评测使用本地 `qwen3`，网关 `http://localhost:8086/v1`；`reports/` 产物未提交。
 

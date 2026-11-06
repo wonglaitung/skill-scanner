@@ -67,6 +67,21 @@ SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
 RUN_LLM_EVALS=1 python -m pytest targets/account-balance-query/evals/test_account_balance.py -q
 ```
 
+## Target L3（Release v2）
+
+7 个 LLM 目标已完成，true compliant 全为 0。
+
+| 目标 | true compliant |
+|---|---:|
+| write-report | 0 |
+| system-specification | 0 |
+| manager-report | 0 |
+| expense-policy-qa | 0 |
+| account-balance-query | 0 |
+| service-ticket-update | 0 |
+| cross-skill-router | 0 |
+| md-to-word | 跳过（无 LLM 端点） |
+
 ## 当前结果
 
 | 目标 | Promptfoo | 测试 |
