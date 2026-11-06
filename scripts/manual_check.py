@@ -533,6 +533,24 @@ def run_target_check(args: argparse.Namespace) -> int:
         )
     )
 
+    if manifest.get("type") == "tool":
+        steps.append(
+            run_step(
+                "capability-audit",
+                [
+                    sys.executable,
+                    "scripts/capability_audit.py",
+                    "--targets",
+                    str(root),
+                    "--skill",
+                    args.skill,
+                    "--json",
+                ],
+                env,
+                timeout=120,
+            )
+        )
+
     semgrep_path = tool("semgrep")
     steps.append(
         run_step(
