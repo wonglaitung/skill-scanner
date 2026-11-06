@@ -13,9 +13,10 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 1. `docs/Agent Skill 工程化检查落地方案.md`：唯一方案源，工具链、门禁、目录、路线图以它为准。
 2. `progress.md`：当前阶段、已完成事项、待办与风险。
 3. `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI。
-4. `docs/如何扫描Skill.md`：手工扫描步骤、命令与常见问题。
+4. `docs/如何扫描Skill.md`：单入口发布流程、命令与常见问题。
 5. `docs/Skill 分级与检查使用指南.md`：S 风险、L 深度、Agent 标志与最低检查矩阵。
-6. `docs/README.md`：文档索引；只保留当前有效文档。
+6. `assistant/skill-release-guide/SKILL.md`：单入口发布助手 Skill。
+7. `docs/README.md`：文档索引；只保留当前有效文档。
 
 ## 当前阶段
 

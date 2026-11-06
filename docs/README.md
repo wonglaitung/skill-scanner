@@ -8,13 +8,13 @@
 | [`生产级演进路线.md`](生产级演进路线.md) | Phase A-D、验收标准、KPI、人工模式底座标准 | Owner、安全团队 | 排期和验收时 |
 | [`如何扫描Skill.md`](如何扫描Skill.md) | 手工扫描的步骤、命令、报告阅读、常见问题 | Skill 作者、审核人 | 第一次扫描或排查问题时 |
 | [`Skill 分级与检查使用指南.md`](Skill%20分级与检查使用指南.md) | S 风险、L 深度、Agent 标志、最低检查矩阵、运行前置 | Skill 作者、Owner、审核人 | 决定检查级别和准备运行前 |
-| [`Preflight Skill 模板.md`](Preflight%20Skill%20模板.md) | 可复制的准备助手模板，只做检查和解释，不批准发布 | Skill 作者、安全工程 | 想用 Agent 辅助准备时 |
 | [`对抗审核报告模板.md`](对抗审核报告模板.md) | 独立对抗审核报告模板 | 安全审核人 | 输出人工审核报告时 |
+| [`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md) | 内部单入口发布助手 Skill | Skill 作者、安全工程 | 想用 Agent 走完整发布流程时 |
 
 ## 阅读顺序
 
 1. 先读 [`Skill 分级与检查使用指南.md`](Skill%20分级与检查使用指南.md)，确定 S 和 L。
-2. 按 [`如何扫描Skill.md`](如何扫描Skill.md) 执行。
+2. 按 [`如何扫描Skill.md`](如何扫描Skill.md) 使用 `release_assistant.py` 走完整流程。
 3. 需要理解设计取舍时读 [`Agent Skill 工程化检查落地方案.md`](Agent%20Skill%20工程化检查落地方案.md)。
 4. 需要排期或验收时读 [`生产级演进路线.md`](生产级演进路线.md)。
 5. 输出独立审核报告时使用 [`对抗审核报告模板.md`](对抗审核报告模板.md)。

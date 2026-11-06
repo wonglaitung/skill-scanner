@@ -5,11 +5,11 @@
   "agent": false,
   "model": "qwen3",
   "api_base": "http://localhost:8086/v1",
-  "generated_at": "2026-11-06-231403",
+  "generated_at": "2026-11-07-014049",
   "runs": [
     {
-      "timestamp": "2026-11-06-220825",
-      "report": "reports/write-report/target-2026-11-06-220825",
+      "timestamp": "2026-11-07-013831",
+      "report": "reports/write-report/target-2026-11-07-013831",
       "promptfoo": {
         "total": 3,
         "passed": 3,
@@ -62,8 +62,8 @@
       }
     },
     {
-      "timestamp": "2026-11-06-231257",
-      "report": "reports/write-report/target-2026-11-06-231257",
+      "timestamp": "2026-11-07-013941",
+      "report": "reports/write-report/target-2026-11-07-013941",
       "promptfoo": {
         "total": 3,
         "passed": 3,
@@ -116,8 +116,8 @@
       }
     },
     {
-      "timestamp": "2026-11-06-231403",
-      "report": "reports/write-report/target-2026-11-06-231403",
+      "timestamp": "2026-11-07-014049",
+      "report": "reports/write-report/target-2026-11-07-014049",
       "promptfoo": {
         "total": 3,
         "passed": 3,
