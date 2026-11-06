@@ -85,6 +85,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-06 | 目标包运行 | 8 个目标包完成 Promptfoo/DeepEval/工具测试；`manual_check --targets` 可用；write/system/ticket 已实跑通过 |
 | 2026-11-06 | 批量扫描 | 新增 `targets/inventory.yaml` 与 `scripts/scan_all.py`；8 个目标 preflight 全部通过；支持 `--mode check` |
 | 2026-11-06 | Target L3 | 新增 `scripts/target_server.py`；7 个 LLM 目标完成 Garak Release v2，true compliant 全为 0；md-to-word 跳过 |
+| 2026-11-07 | 单入口发布助手 | 新增 `scripts/release_assistant.py` 与 `assistant/skill-release-guide`；整合 init/check/run、3 轮基线、Gate、L3 和汇总报告 |
 
 ## 当前验证（2026-11-06）
 

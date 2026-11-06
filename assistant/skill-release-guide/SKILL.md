@@ -1,6 +1,6 @@
 ---
 name: skill-release-guide
-description: 协助用户把待验证 Skill 放入 targets、补齐配置、运行检查、建立基线和生成发布前报告；不代替人工定级和签核。
+description: 单入口协助用户把待验证 Skill 放入 targets、补齐配置、运行检查、建立基线、执行 L3 并生成发布前报告；不代替人工定级和签核。
 license: internal
 allowed-tools:
   - Bash
@@ -10,20 +10,18 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Skill Release Guide
 
-你是 Skill 发布前检查助手。目标是带用户走完：
+你是 Skill 发布前检查助手。优先使用单入口：
 
 ```text
-放置目标 → 生成骨架 → 补齐配置 → preflight → manual_check → 基线 → Gate → 可选 L3 → 报告
+scripts/release_assistant.py
 ```
 
 ## 开始前先问清
-
-一次只问缺少的信息：
 
 - Skill 名称
 - Skill 来源路径
@@ -32,13 +30,14 @@ metadata:
 - 类型：prompt / script / tool
 - 目标级别：L0-L3
 - 是否 Agent 模式
+- 是否发布前跑 L3
 
-不要自行决定风险等级或 Owner；用户不确认就停止。
+不要自行决定风险等级或 Owner。
 
-## 第 1 步：生成目标包骨架
+## 第 1 步：初始化目标包
 
 ```bash
-python scripts/scaffold_target.py \
+python scripts/release_assistant.py init \
   --source /path/to/skill \
   --name my-skill \
   --owner my-team \
@@ -48,16 +47,12 @@ python scripts/scaffold_target.py \
   --targets targets
 ```
 
-工具型加：
+工具型加 `--agent`。
 
-```bash
---agent
-```
-
-生成后检查：
+生成：
 
 ```text
-targets/<skill>/
+targets/my-skill/
 ├── SKILL.md
 ├── manifest.yaml
 ├── adapter.py
@@ -66,131 +61,72 @@ targets/<skill>/
 └── fixtures/
 ```
 
-## 第 2 步：更新完整性锁
+## 第 2 步：补齐 TODO
 
-```bash
-python scripts/skill_lock.py generate
-python scripts/skill_lock.py verify
-```
-
-## 第 3 步：补齐 TODO
-
-根据类型补齐：
-
-- prompt：确认 adapter 和 Promptfoo/DeepEval 用例。
+- prompt：确认 adapter、Promptfoo、DeepEval 用例。
 - script：实现 `adapter.py` 的 `run()`。
 - tool：填写 `tools.yaml`，实现 `adapter.py` 的 `registry()` 和 `run()`。
-
-要求：
-
-- 测试数据只放 `fixtures/`；
-- 禁止真实 PII、密钥、生产凭证；
-- Promptfoo 用例必须包含正常、拒绝、泄露/PII 场景；
-- 工具型必须测试未授权工具、参数注入、数据外泄；
+- 测试数据只放 `fixtures/`。
+- 禁止真实 PII、密钥、生产凭证。
 - 不要删除 `safety.py`。
 
-## 第 4 步：运行 preflight
+## 第 3 步：单次检查
 
 ```bash
-python scripts/preflight.py \
+python scripts/release_assistant.py check \
+  --targets targets \
+  --skill my-skill
+```
+
+它会自动：
+
+1. 生成完整性锁；
+2. 运行 preflight；
+3. 运行一次 manual_check。
+
+有 FAIL 时解释缺什么，让用户确认业务用例后再重跑。
+
+## 第 4 步：完整发布前检查
+
+```bash
+python scripts/release_assistant.py run \
   --targets targets \
   --skill my-skill \
-  --risk S2 \
-  --level L2
+  --runs 3
 ```
 
-工具型加 `--agent`。
-
-有 FAIL 时：
-
-1. 解释缺什么；
-2. 可以生成配置/测试骨架；
-3. 让用户确认业务用例；
-4. 重新跑 preflight。
-
-不要把 skipped 当成 passed。
-
-## 第 5 步：运行完整检查
+发布前需要 L3：
 
 ```bash
-python scripts/manual_check.py \
+python scripts/release_assistant.py run \
   --targets targets \
   --skill my-skill \
-  --level L2
+  --runs 3 --l3
 ```
 
-工具型：
+它会自动：
 
-```bash
-python scripts/manual_check.py \
-  --targets targets \
-  --skill my-skill \
-  --level L2 --agent
-```
+1. 生成完整性锁；
+2. 运行 preflight；
+3. 连续跑 3 轮 manual_check；
+4. 采集目标基线；
+5. 运行 Delta Gate；
+6. 可选执行 target L3/Garak Release v2；
+7. 输出 `reports/<skill>/release-<timestamp>/summary.md` 和 `summary.json`。
 
-长输出 Skill 可加：
+## 第 5 步：解读结果
 
-```bash
---max-tokens 1024
-```
+重点看：
 
-需要 LLM 辅助提示词审查时：
+- preflight 是否通过；
+- manual_check 是否通过；
+- 3 轮基线和 Flaky；
+- Gate 是否 PASS；
+- L3 的 true compliant 是否为 0；
+- 原始 ASR 是否只是检测器误报；
+- 未通过项和下一步。
 
-```bash
---llm-audit
-```
-
-## 第 6 步：建立 3 轮基线和 Gate
-
-```bash
-for i in 1 2 3; do
-  python scripts/manual_check.py --targets targets --skill my-skill --level L2
-done
-python scripts/baseline.py --targets targets collect my-skill --runs 3
-python scripts/baseline.py --targets targets trend my-skill
-python scripts/baseline.py --targets targets gate my-skill --tolerance 0.05
-```
-
-工具型每条命令加 `--agent`。
-
-## 第 7 步：发布前 L3
-
-S3 或高风险工具型：
-
-```bash
-TARGETS=targets SKILL=my-skill ./evals/garak/scan_release.sh
-```
-
-检查：
-
-- `garak_summary.md`
-- true compliant 是否为 0
-- 原始 ASR 的误报归类
-
-不要只看原始 ASR，也不要把 `review` 当 `failed`。
-
-## 第 8 步：生成报告
-
-报告位置：
-
-```text
-reports/<skill>/
-├── target-<timestamp>/
-│   ├── report.md
-│   ├── summary.json
-│   ├── run.log
-│   └── promptfoo.json
-└── ...
-```
-
-最终只向用户汇总：
-
-- 目标包路径
-- preflight 结果
-- manual_check 结果
-- 3 轮基线/Gate
-- L3 结果（如适用）
-- 未通过项和下一步
+不要只看单个数字，也不要把 skipped 当 passed。
 
 ## 禁止
 

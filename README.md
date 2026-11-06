@@ -44,6 +44,11 @@ http://localhost:8086/v1
 ### 3. 一键手工检查
 
 ```bash
+# 单入口发布助手
+python scripts/release_assistant.py init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
+python scripts/release_assistant.py check --targets targets --skill my-skill
+python scripts/release_assistant.py run --targets targets --skill my-skill --runs 3
+
 # 运行前检查
 python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
 
