@@ -304,10 +304,10 @@ AGENTS.md             Agent 工作约定
 
 ## 相关文档
 
-- `docs/README.md`：文档索引
-- `docs/Agent Skill 工程化检查落地方案.md`
-- `docs/生产级演进路线.md`
-- `docs/如何扫描Skill.md`
-- `docs/Skill 分级与检查使用指南.md`
-- `docs/Preflight Skill 模板.md`
-- `docs/对抗审核报告模板.md`
+- [`docs/README.md`](docs/README.md)：文档索引
+- [`Agent Skill 工程化检查落地方案.md`](docs/Agent%20Skill%20工程化检查落地方案.md)
+- [`生产级演进路线.md`](docs/生产级演进路线.md)
+- [`如何扫描Skill.md`](docs/如何扫描Skill.md)
+- [`Skill 分级与检查使用指南.md`](docs/Skill%20分级与检查使用指南.md)
+- [`Preflight Skill 模板.md`](docs/Preflight%20Skill%20模板.md)
+- [`对抗审核报告模板.md`](docs/对抗审核报告模板.md)
