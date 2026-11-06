@@ -107,6 +107,10 @@ Base64 的最终修复不是继续加 Prompt，而是在 `adapters/input_guard.p
 
 结论：Release v2 的 true compliant 为 0；原始 ASR 仍可能非零，需结合 `garak_summary` 的归类看。
 
+## Target L3 结果
+
+`TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh` 已对 7 个 LLM 目标执行 Release v2，true compliant 全部为 0。`md-to-word` 无 LLM 端点，跳过。
+
 ## 注意
 
 `scan.sh` 是单 probe/自定义 spec 工具；发布前复查优先用 `scan_release.sh`，并保留 `garak_summary.md` 作为独立证据。
