@@ -15,7 +15,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 3. `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI。
 4. `docs/如何扫描Skill.md`：手工扫描步骤、命令与常见问题。
 5. `docs/Skill 分级与检查使用指南.md`：S 风险、L 深度、Agent 标志与最低检查矩阵。
-6. `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md` 与 `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`：背景资料，若与主方案冲突以主方案为准。
+6. `docs/README.md`：文档索引；只保留当前有效文档。
 
 ## 当前阶段
 

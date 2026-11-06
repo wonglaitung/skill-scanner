@@ -21,7 +21,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 自动化验证 | 校验/Ruff/pytest 通过；8 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
 | 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
 | Garak | Release v2 通过：7 个 LLM Skill 的 4 个 probe true compliant 均为 0；md-to-word 跳过 |
-| 试点报告 | 已完成 v1.0：`docs/Agent Skill 试点报告.md` |
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
 | 生产级演进 | Phase A 进行中：沙箱、供应链、完整性锁、签名工具、逃逸检查、模型沙箱、网络白名单已落地；密钥托管/网关隔离待做 |
@@ -43,7 +42,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-02 | 试点骨架 | 建立示例 Skill、Adapter、校验脚本、Promptfoo/DeepEval/Garak 配置；Ruff/pytest 通过；对本地 `qwen3` 跑 Promptfoo 6/6、DeepEval 1/1 |
 | 2026-11-02 | 真实 Skill 导入 | 导入 `write-report`、`system-specification`、`manager-report`，补齐 S2 元数据；S2 小样本 Promptfoo 4/5，发现 `write-report` 未拒绝复述人名 |
 | 2026-11-02 | F-001 修复 | `write-report` 增加 PII 硬规则与自检项；PII 用例 2/2、S2 smoke 6/6；S2 DeepEval 3/3 |
-| 2026-11-02 | 试点报告 | 输出 v1.0：范围、方法、结果、F-001 修复、限制与下一步 |
 | 2026-11-02 | S2 指标扩展 | 接入 Faithfulness / Hallucination / ToolCorrectness；短样本 AnswerRelevancy 0.6，发现 F-002 |
 | 2026-11-02 | 用例扩充 | 每个 S2 Skill 扩到 8 条并拆分配置；write-report 7/8、system-specification 8/8、manager-report 8/8 |
 | 2026-11-02 | Garak 轻量扫描 | `dan.Dan_11_0` 1/1 通过（6.6s）；`promptinject.HijackHateHumans` 256 条超时；修正 `-G` 需 JSON、超时与报告路径 |
@@ -194,7 +192,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - 增加 Promptfoo redteam：直接注入、越狱、敏感信息套取。
 - 可选跑一次轻量 Garak（`promptinject`、`dan`、`leakreplay`）。
 - 对发现的问题分级、修复、复测。
-- 输出试点报告：覆盖率、基线分、ASR、问题清单、下一阶段建议。
 - 复盘是否扩大范围、是否接入 CI 告警。
 
 ### 成功标准
@@ -207,7 +204,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | Faithfulness | ≥ 0.7 |
 | Hallucination | ≤ 0.5 |
 | 直接注入 ASR | ≤ 5%（仅基线，不阻断） |
-| 试点报告 | 完成并评审 |
 
 ### 首期不做
 
@@ -231,7 +227,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] 修复 F-002（`system-specification` 简单问题过度展开）并复测
 - [x] 处理 F-003（`write-report` 追问/模板中的 AI 腔）
 - [x] 可选运行轻量 Garak（`dan.Dan_11_0` 1/1；`promptinject` 待分批/并行）
-- [x] 输出试点报告
 - [x] 接入 CI 静态告警（validate / Ruff / pytest，不阻断）
 - [x] S2 用例扩至 24 条并拆分执行
 - [x] 将 LLM 评测接入自托管 runner 或夜间任务（骨架）
@@ -241,7 +236,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 - [x] 基线保存/对比 `scripts/baseline.py`
 - [x] 脚本型 Skill `md-to-word` 导入与转换测试
 - [ ] SCA/密钥/ShellCheck 实际运行（工具未装）
-- [x] 独立对抗审核报告模板
 - [ ] 决定是否扩大 Skill 范围
 - [x] 启用 `wonglaitung/harness` 作为 Agent 执行层
 - [ ] 脚本型 Skill 增加 SCA/密钥检查

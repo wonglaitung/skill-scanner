@@ -244,7 +244,7 @@ Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
 ## 目录结构
 
 ```text
-docs/                 方案、试点报告、审核模板
+docs/                 方案、分级指南、扫描指南、模板
 skills/               试点 Skill
 adapters/             Promptfoo/Garak/DeepEval 适配器
 evals/                用例、配置、基线
@@ -304,9 +304,10 @@ AGENTS.md             Agent 工作约定
 
 ## 相关文档
 
+- `docs/README.md`：文档索引
 - `docs/Agent Skill 工程化检查落地方案.md`
-- `docs/Agent Skill 试点报告.md`
+- `docs/生产级演进路线.md`
 - `docs/如何扫描Skill.md`
+- `docs/Skill 分级与检查使用指南.md`
+- `docs/Preflight Skill 模板.md`
 - `docs/对抗审核报告模板.md`
-- `docs/针对 Agent Skill，业界标准的工程化检查怎么做.md`
-- `docs/解释Garak, Promptfoo, LLM-Eval的用法.md`

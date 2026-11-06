@@ -5,7 +5,7 @@
 | 文档版本 | v2.11 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
-| 关联文档 | 《针对 Agent Skill，业界标准的工程化检查怎么做》《解释 Garak, Promptfoo, LLM-Eval 的用法》 |
+| 关联文档 | `docs/README.md` |
 | 维护人 | 安全工程 / DevOps / Skill Owner |
 
 ---
