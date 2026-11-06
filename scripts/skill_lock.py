@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = ROOT / "skills"
-LOCK_PATH = ROOT / "evals" / "skills.lock.json"
+TARGETS_DIR = ROOT / "targets"
+LOCK_PATH = TARGETS_DIR / "skills.lock.json"
 EXCLUDED_SUFFIXES = {".pyc", ".log"}
 EXCLUDED_DIRS = {"__pycache__"}
 
@@ -56,7 +56,7 @@ def load_lock() -> dict:
 
 def generate() -> int:
     skills = {}
-    for skill_dir in sorted(SKILLS_DIR.iterdir()):
+    for skill_dir in sorted(TARGETS_DIR.iterdir()):
         if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").exists():
             continue
         skills[skill_dir.name] = build_skill(skill_dir)
@@ -77,7 +77,7 @@ def verify(skill: str | None) -> int:
 
     failed = False
     for name in names:
-        skill_dir = SKILLS_DIR / name
+        skill_dir = TARGETS_DIR / name
         if not skill_dir.exists():
             print(f"[FAIL] missing skill: {name}")
             failed = True

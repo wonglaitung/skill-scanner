@@ -52,7 +52,7 @@ def test_internal_path_is_warning() -> None:
 
 
 def test_current_skills_have_no_prompt_errors() -> None:
-    for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+    for path in sorted((ROOT / "targets").glob("*/SKILL.md")):
         frontmatter, body = prompt_audit.parse_skill(path)
         result = prompt_audit.audit_text(path.parent.name, frontmatter, body)
         assert result["errors"] == 0, (path, result["findings"])

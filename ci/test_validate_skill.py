@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_skill import validate_skill
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLE_SKILL = ROOT / "skills" / "expense-policy-qa" / "SKILL.md"
+EXAMPLE_SKILL = ROOT / "targets" / "expense-policy-qa" / "SKILL.md"
 
 
 def test_example_skill_is_valid() -> None:

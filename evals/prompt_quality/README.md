@@ -11,4 +11,4 @@
 | `permission_conflict` | 命中 `permission.contradiction` |
 | `internal_path` | 命中 `internal.path` 警告 |
 
-这些样本只用于测试规则，不要放进 `skills/`。
+这些样本只用于测试规则，不要放进 `targets/`。

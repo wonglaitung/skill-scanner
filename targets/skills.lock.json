@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "skills": {
+    "account-balance-query": {
+      "aggregate": "49c80360f2fc228660b4d8ff613c56518a860dc4b75081fa1f5a1e06d9e9afa5",
+      "files": {
+        "SKILL.md": "ddaffda824b350f9639fc1c3f09441cba6f164513056c4847f15e8fcddd39fc3",
+        "adapter.py": "9d22d4126b97df8fd22e0d90785d71e072f5f123d246231545fe8851eef16e6f",
+        "evals/baseline.json": "7bb0ae0e846f6d207077c2a1714bd0b059c7a2046cdd3fd7e0dd502257a7e950",
+        "evals/promptfoo.yaml": "6d9d9a2a4ffe24543df72092bae870c6c8c74105f1e191ce967dd63628035df2",
+        "evals/test_account_balance.py": "def7806b7587ddb9e503b29d06a85d6752b9cf2bab140736589c5feca69cbaff",
+        "fixtures/README.md": "2d38494a7c84b7588eac938bbb1da2e4bdd85cbd15e899d82c8235e236a5211d",
+        "fixtures/tools.py": "7c0cdac4f4d1e10a3657418a91f61ad5355d4436fdecb98c22269c382a03ca79",
+        "manifest.yaml": "7a4f216c03875aa3aa7da7ae89578f1aec50d7da05051957d136a7b0bb2c6697",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9",
+        "tools.yaml": "361fad0670e6eb522bee5446033d37e801717d36a68bdb6528d0ee1d10bdc15b"
+      }
+    },
+    "cross-skill-router": {
+      "aggregate": "02d2214d9dd7f2c8bada025e8b848adaf5c9b97e4fd1e632badbd4b61e41228c",
+      "files": {
+        "SKILL.md": "2e0d7a463ee70c2b112e7b2722fbde69915809b2d9c8d011d42848e8125bdc85",
+        "adapter.py": "9d22d4126b97df8fd22e0d90785d71e072f5f123d246231545fe8851eef16e6f",
+        "evals/baseline.json": "b692275bade38f60231c6926fbfc84a373121bc60266ebd3fb6b1db69f0c328a",
+        "evals/promptfoo.yaml": "d72464d495839d3f683f9af9575f7d4c5f7b7121356ca8fe22f70bf863ec1d0c",
+        "evals/test_cross_skill.py": "47e292a3b8f5da5190966e0787163cc477ca6e4d455b777a11664cec1fec82d3",
+        "fixtures/README.md": "2c68f884ea9692485e41d1f9cf0f9bea16ac0d463526dc90cc9b82ec180a0cab",
+        "fixtures/tools.py": "7c0cdac4f4d1e10a3657418a91f61ad5355d4436fdecb98c22269c382a03ca79",
+        "manifest.yaml": "c0bb2328084bf506cbcc009f43b2134393564ab28b4db739b68e0ec9e947f339",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9",
+        "tools.yaml": "2f38182d1ce1bfe56b80aa1df8990fa87d9c3657e84cb1a09d61884bda417acd"
+      }
+    },
+    "expense-policy-qa": {
+      "aggregate": "18a854bb93e567338d3f5993d81e1a65b9e7f00f566c5a4282b7f12847df3169",
+      "files": {
+        "SKILL.md": "49a8caa93f5cfa6c470459d5e1f413b54ded08739ac1a95d84cbd7903869b861",
+        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
+        "evals/baseline.json": "e901e274c65351935468c0ac34ef066102e8fe899eeb3d89040f9fbebe908d24",
+        "evals/promptfoo.yaml": "b1a4e429eed128dba60c9383e58f563441b438f1a499c07a876763613b02e6ef",
+        "evals/test_expense_policy_qa.py": "d1e70773caae54dbe6b3c1b0fecdff52192b5a636b26847c978984fc9c8a3637",
+        "fixtures/README.md": "c52f1a6417ba3f7eece3d8024a992d5fae746308988e5147a8df52732717d88f",
+        "manifest.yaml": "fb0ab6eb02fd9cb733c96f0893150c142a26c1d4f122ab6a94bb62472ca3c496"
+      }
+    },
+    "manager-report": {
+      "aggregate": "f96eea08988667f87b615494ddbc903c07b7083ac302648095f88e8919df681c",
+      "files": {
+        "SKILL.md": "ca74a78234bf0872b498cdd5a6a10b369d64fe29e9f9a2b25bddbec2002e4010",
+        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
+        "evals/baseline.json": "5d54aa8837e27ecfe0ee652d381971dd660eac76b4a8ca2b7000ca5527fd1032",
+        "evals/promptfoo.yaml": "9239c19cd52f8968d288a51733a4063df69c742db55bdb1030c59c13ea1c691a",
+        "evals/test_manager_report.py": "16b295de6ffd8cd21425d3c1d1d37d10fde2a79ad8257813e6d7e7c60fecf823",
+        "fixtures/README.md": "c52f1a6417ba3f7eece3d8024a992d5fae746308988e5147a8df52732717d88f",
+        "manifest.yaml": "21b313d36ca579995a8c6a0bf1f8894296f085725f5431a2c93961e2ce83b3f9"
+      }
+    },
+    "md-to-word": {
+      "aggregate": "27ddf3ea0e8e4daca1e380a91eaf91963c8cd3fbd5e25471a36577c3eef2fe15",
+      "files": {
+        "SKILL.md": "f3a110571a2ef8f3b375787f779144a90c7e06737b726c754ba86ce1cce39cee",
+        "adapter.py": "1fdb6b1fe760326fb6c3252827d6436da0773da17cfa86ba55ac6bdcddc4d6b3",
+        "evals/baseline.json": "7cd1927e1c79ea344e2d1f1e6294f9834d73640a9e3c3baf3bb47dc35330579c",
+        "evals/promptfoo.yaml": "65ed9364d7b93692e93ce7cd929af8d82a9254bf1ff4a3fac2427927f6b36156",
+        "fixtures/README.md": "5befb528cc1204abd20106f4fc28e80f15c0698d7f63669db581c09f79988a3b",
+        "manifest.yaml": "25e058f1d25143e6340b81da1480c3423cc78baa628e2bf8cdb098eaf0cbdb24",
+        "requirements.txt": "5b6c619c2c1ed0cff0ec5c107b2be0e42a9495e61bc59822f0f954210fe4f9e6",
+        "scripts/md_to_word.py": "8daa9ad222542cadeb5b6cefd6d83c08be5fd3e4347bbf478a9218330e590438"
+      }
+    },
+    "service-ticket-update": {
+      "aggregate": "31b6de439682b79e6a3a279eae2c13779979463aaf0759fb2cd122ad174708dc",
+      "files": {
+        "SKILL.md": "389e684ef0f75f7e39f3815dae0861bec15410a6a0a2e6cd5e2d59a7f1dce082",
+        "adapter.py": "9d22d4126b97df8fd22e0d90785d71e072f5f123d246231545fe8851eef16e6f",
+        "evals/baseline.json": "210f61b67744be90ceb4793711f7c9936eba953acdaab657d15f49dbf1b0422d",
+        "evals/promptfoo.yaml": "04c0f6d238249aea6b210667d52258f0db9e1baa87b97ed938a305aee1c47524",
+        "evals/test_service_ticket.py": "f98ce3763c42755ff0c195e16c869aa3c69d81d3a019521fe647aeacddfd5ab3",
+        "fixtures/README.md": "2c68f884ea9692485e41d1f9cf0f9bea16ac0d463526dc90cc9b82ec180a0cab",
+        "fixtures/tools.py": "7c0cdac4f4d1e10a3657418a91f61ad5355d4436fdecb98c22269c382a03ca79",
+        "manifest.yaml": "f78e8e0e540b78e084b6dffcaf513f3b21a160813610ff36b4610c91913f9720",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9",
+        "tools.yaml": "a352b7b9d6b9487f45caaf4ad601a6a7514a4b4f13a2531b4a49a1e0bbaf737c"
+      }
+    },
+    "system-specification": {
+      "aggregate": "9fc987220da62ddba2debe8b88f7e222895bfecb8fd09d3e0f863f9698806e92",
+      "files": {
+        "SKILL.md": "e99b5ffa7bb87a8528d6030347d5947dc5e7422b3af3e09a80e8cb413b69eb3b",
+        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
+        "evals/baseline.json": "b0bd58f2fb186d012b8498dde602492cf864f798afd54375d676c6c52aabfc75",
+        "evals/promptfoo.yaml": "9ef23652d72636f7b3683ea7c39a8d1f6e138f1054bf9ea8a73d13d504f5dcd7",
+        "evals/test_system_specification.py": "89fed237fc1395516a2b5a91a4bb8ab24ac380bfc385104e4e5589ee36b4fd32",
+        "fixtures/README.md": "c52f1a6417ba3f7eece3d8024a992d5fae746308988e5147a8df52732717d88f",
+        "manifest.yaml": "849ddc4ebafb5743d885f80051272c1c678e4e5b9260d8a4630c9db69cfd4d7f"
+      }
+    },
+    "write-report": {
+      "aggregate": "e7bddd6746fa30633e86c8d7edab0a25a1eb5452b150fe5ff36c00bc704bfb8f",
+      "files": {
+        "SKILL.md": "f612f2357f80a0f78e24a13830bb30f98aa766a486ac5af69de655fe8f5cf9ab",
+        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
+        "evals/baseline.json": "241177993bf12ca42bce7970d5a5f86ae4f03076996bfb17d04a8edf9a6e2efe",
+        "evals/promptfoo.yaml": "0626a1f8225d86f8417ebcad55d85f7be0532e5be785a8a8411da8fcf8f00e58",
+        "evals/test_write_report.py": "e8eb620c6b412f804edea1b63913d77e2b7cdf89660fce5ac0281486faa689b5",
+        "fixtures/README.md": "2f69076555b8328e43835d95b2e47896f36f0cdc3f16fd06dbb2cb3ee53f306e",
+        "manifest.yaml": "395112e59152c04b3280958101794046a329923635009650a379ae1f8c8e8c3f"
+      }
+    }
+  }
+}

@@ -55,7 +55,7 @@ L1 包含 L0，L2 包含 L1，L3 包含 L2。
 Agent 不是等级，是 L1/L2 的执行标志。
 
 ```bash
-python scripts/manual_check.py --skill account-balance-query --level L2 --agent
+python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
 ```
 
 含义：
@@ -141,9 +141,9 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 
 | 矩阵项 | 运行前还要完成 | 预计用时（含准备） | 仅运行测试 |
 |---|---|---|---|
-| S0/S1 纯提示词 → L1 | 新建 `evals/promptfooconfig.<skill>.yaml`，补正常、拒绝、PII/泄露用例 | 15-30 分钟 | 3-5 分钟 |
+| S0/S1 纯提示词 → L1 | 新建 `targets/<skill>/evals/promptfoo.yaml`，补正常、拒绝、PII/泄露用例 | 15-30 分钟 | 3-5 分钟 |
 | S2 纯提示词 → L2 | 在 L1 基础上，登记 DeepEval 映射或新增测试，补相关性/忠实度/幻觉用例 | 30-60 分钟 | 5-10 分钟 |
-| S3 纯提示词 → L3 | 在 L2 基础上，确认端点可启动，准备 `.venv-garak`，单独跑 `scan_release.sh` | 1-2 小时；首次 2-4 小时 | 25-35 分钟 |
+| S3 纯提示词 → L3 | 在 L2 基础上准备 target L3；当前 target L3 尚未接入，S3 暂不放行 | 待接入 | 待接入 |
 | 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`，创建 `.venv-harness` | 1-2 小时 | 5-10 分钟 |
 | 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查 | 1.5-3 小时 | 25-35 分钟 |
 | 脚本型 → L1 | 补 provider、Promptfoo 配置和契约测试（如 `ci/test_<skill>_contract.py`） | 20-40 分钟 | 1-2 分钟 |
@@ -185,7 +185,7 @@ python scripts/preflight.py --targets targets --skill account-balance-query --ri
 发布前检查：
 
 ```bash
-python scripts/preflight.py --skill my-skill --risk S3 --level L3 --agent --release
+python scripts/preflight.py --targets targets --skill my-skill --risk S3 --level L3 --agent --release
 ```
 
 执行完整检查：
@@ -210,10 +210,10 @@ python scripts/manual_check.py --targets targets --skill my-skill --level L2 --a
 输出：
 
 ```text
-[OK]   skill: skills/write-report/SKILL.md
+[OK]   skill: targets/write-report/SKILL.md
 [OK]   level: L2 满足最低要求
-[OK]   promptfoo-config: evals/promptfooconfig.write-report.yaml
-[OK]   deepeval-target: evals/deepeval/test_s2_skills.py
+[OK]   promptfoo-config: targets/write-report/evals/promptfoo.yaml
+[OK]   deepeval-target: targets/<skill>/evals/test_*.py
 [FAIL] agent: 工具型 Skill 必须加 --agent
 
 status: failed  failures=1  warnings=0
@@ -252,7 +252,7 @@ status: failed  failures=1  warnings=0
 
 建议把它当作“准备助手”，不要当作“发布审批人”。
 
-可直接使用的模板见 [`Preflight Skill 模板.md`](Preflight%20Skill%20模板.md)。模板不放进 `skills/`，避免形成“用 Skill 检查 Skill”的循环。
+可直接使用的模板见 [`Preflight Skill 模板.md`](Preflight%20Skill%20模板.md)。模板不放进 `targets/`，避免形成“用 Skill 检查 Skill”的循环。
 
 ---
 
@@ -261,38 +261,38 @@ status: failed  failures=1  warnings=0
 ### S0/S1 纯提示词
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L1
+python scripts/manual_check.py --targets targets --skill my-skill --level L1
 ```
 
 ### S2 纯提示词
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L2
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
 ```
 
 ### S3 纯提示词
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L3
+python scripts/manual_check.py --targets targets --skill my-skill --level L3
 ```
 
 ### 工具型 Skill
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L2 --agent
+python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
 ```
 
 ### 高风险工具型
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L2 --agent
-python scripts/manual_check.py --skill my-skill --level L3
+python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
+python scripts/manual_check.py --targets targets --skill my-skill --level L3
 ```
 
 ### 脚本型
 
 ```bash
-python scripts/manual_check.py --skill my-skill --level L1
+python scripts/manual_check.py --targets targets --skill my-skill --level L1
 pytest -q ci/test_<my-skill>_contract.py
 ```
 
@@ -310,8 +310,8 @@ pytest -q ci/test_<my-skill>_contract.py
 6. S3 发布前完成 L3。
 
 ```bash
-python scripts/baseline.py collect my-skill --runs 3
-python scripts/baseline.py gate my-skill --tolerance 0.05
+python scripts/baseline.py --targets targets collect my-skill --runs 3
+python scripts/baseline.py --targets targets gate my-skill --tolerance 0.05
 ```
 
 ---

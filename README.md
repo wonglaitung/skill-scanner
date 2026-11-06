@@ -44,31 +44,18 @@ http://localhost:8086/v1
 ### 3. 一键手工检查
 
 ```bash
-# 运行前检查：配置、权限、环境、基线是否齐全
-python scripts/preflight.py --skill write-report --risk S2 --level L2
-
-# 目标包
+# 运行前检查
 python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
+
+# 单目标检查
 python scripts/manual_check.py --targets targets --skill write-report --level L2
+
+# 批量检查
 python scripts/scan_all.py --targets targets
 
-# L0：结构 + 静态检查
-python scripts/manual_check.py --skill write-report --level L0
+# 工具型
+python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
 
-# L1：L0 + Promptfoo
-python scripts/manual_check.py --skill write-report --level L1
-
-# L2：L1 + DeepEval
-python scripts/manual_check.py --skill manager-report --level L2
-
-# L3：L2 + Garak（自动启动 Skill 端点）
-python scripts/manual_check.py --skill manager-report --level L3
-
-# Garak 发布前复查（独立 venv + 约定 probe 集）
-SKILL=account-balance-query ./evals/garak/scan_release.sh
-
-# Agent 模式
-python scripts/manual_check.py --skill account-balance-query --level L2 --agent
 ```
 
 输出：
@@ -85,10 +72,10 @@ reports/<skill>/<timestamp>/
 ### 4. 基线
 
 ```bash
-python scripts/baseline.py collect manager-report --runs 3
-python scripts/baseline.py trend manager-report
-python scripts/baseline.py diff manager-report --tolerance 0.05
-python scripts/baseline.py gate manager-report --tolerance 0.05
+python scripts/baseline.py --targets targets collect manager-report --runs 3
+python scripts/baseline.py --targets targets trend manager-report
+python scripts/baseline.py --targets targets diff manager-report --tolerance 0.05
+python scripts/baseline.py --targets targets gate manager-report --tolerance 0.05
 python scripts/capability_audit.py --skill account-balance-query
 python scripts/prompt_audit.py --skill write-report
 JUDGE_MODEL=qwen3 python scripts/judge_calibration.py
@@ -112,28 +99,7 @@ python scripts/baseline.py list
 - `adapters/sandbox/Dockerfile.model`：模型型 Skill 端点沙箱
 - `adapters/sandbox/docker-compose.yml`
 
-模型型 Skill 可在容器内启动：
-
-```bash
-./scripts/run_skill_server_sandboxed.sh manager-report
-```
-
-默认监听 `127.0.0.1:8090`，容器通过 `host.docker.internal` 访问本地模型网关。
-
-严格网络白名单模式：
-
-```bash
-docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build
-curl http://127.0.0.1:8090/health
-docker compose -f adapters/sandbox/docker-compose.model.yml down -v
-```
-
-该模式使用：
-
-- `internal` 网络：Skill 容器无外网
-- `egress_proxy.py`：只允许 `host.docker.internal:8086`
-- `ingress`：只负责把 8090 暴露到本机
-- 实测：外部 HTTPS 返回 403，直连 `1.1.1.1:80` 为 `Network is unreachable`
+模型型 Skill 端点沙箱待接入 `targets/` 目标包。
 
 ### 6. 供应链扫描
 
@@ -169,23 +135,14 @@ python ci/validate_skill.py
 python ci/validate_skill.py --skill write-report
 
 # 静态检查
-ruff check adapters ci evals skills scripts
+ruff check adapters ci evals scripts targets
 semgrep --config p/python --config p/owasp-top-ten adapters ci skills scripts --error
 
 # Promptfoo
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
-  npx promptfoo eval -c evals/promptfooconfig.write-report.yaml --max-concurrency 1
+  npx promptfoo eval -c targets/write-report/evals/promptfoo.yaml --max-concurrency 1
 
 # DeepEval
-RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
-  SKILL_MODEL=qwen3 DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300 \
-  deepeval test run evals/deepeval/test_s2_skills.py
-
-# Garak（Skill 级，建议在独立 venv/容器中安装）
-SKILL=write-report ./evals/garak/scan.sh
-
-# Skill 包装端点
-python adapters/skill_server.py --skill write-report --port 8090
 ```
 
 ## 分级模型
@@ -219,7 +176,7 @@ L1 包含 L0，L2 包含 L1，L3 包含 L2。
 ### Agent：执行方式
 
 ```bash
-python scripts/manual_check.py --skill account-balance-query --level L2 --agent
+python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
 ```
 
 Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
@@ -250,7 +207,7 @@ Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
 
 ```text
 docs/                 方案、分级指南、扫描指南、模板
-skills/               旧布局试点 Skill（迁移中）
+targets/               目标包（8 个）
 targets/              目标包（8 个）
 adapters/             Promptfoo/Garak/DeepEval 适配器
 evals/                用例、配置、基线

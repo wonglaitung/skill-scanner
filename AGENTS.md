@@ -35,7 +35,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 
 ```text
 docs/
-skills/                 # 旧布局试点 Skill（迁移中）
+targets/                 # 目标包（8 个）
 targets/                # 目标包：8 个 Skill
 adapters/               # Promptfoo/Garak/DeepEval 适配层
 evals/                  # 用例、配置、基线
@@ -114,23 +114,21 @@ AGENTS.md
 ```bash
 # 已可用
 python ci/validate_skill.py
-ruff check adapters ci evals skills scripts
+ruff check adapters ci evals scripts targets
 pytest -q
 
 # 手工检查（推荐）
-python scripts/preflight.py --skill write-report --risk S2 --level L2
 python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
 python scripts/manual_check.py --targets targets --skill write-report --level L2
 python scripts/scan_all.py --targets targets
-python scripts/manual_check.py --skill write-report --level L2
-python scripts/manual_check.py --skill account-balance-query --level L2 --agent
-python scripts/manual_check.py --skill service-ticket-update --level L2 --agent
-python scripts/manual_check.py --skill cross-skill-router --level L2 --agent
-python scripts/manual_check.py --skill system-specification --level L2 --max-tokens 1024
-python scripts/baseline.py collect write-report --runs 3
-python scripts/baseline.py trend write-report
-python scripts/baseline.py diff write-report --tolerance 0.05
-python scripts/baseline.py gate write-report --tolerance 0.05
+python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
+python scripts/manual_check.py --targets targets --skill service-ticket-update --level L2 --agent
+python scripts/manual_check.py --targets targets --skill cross-skill-router --level L2 --agent
+python scripts/manual_check.py --targets targets --skill system-specification --level L2 --max-tokens 1024
+python scripts/baseline.py --targets targets collect write-report --runs 3
+python scripts/baseline.py --targets targets trend write-report
+python scripts/baseline.py --targets targets diff write-report --tolerance 0.05
+python scripts/baseline.py --targets targets gate write-report --tolerance 0.05
 
 # Judge 校准（需本地 qwen3 网关）
 JUDGE_MODEL=qwen3 JUDGE_API_BASE=http://localhost:8086/v1 \
@@ -138,19 +136,14 @@ JUDGE_MODEL=qwen3 JUDGE_API_BASE=http://localhost:8086/v1 \
 
 # Promptfoo（需本地 qwen3 网关）
 SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
-  npx promptfoo eval -c evals/promptfooconfig.smoke.yaml --max-concurrency 1
+  npx promptfoo eval -c targets/write-report/evals/promptfoo.yaml --max-concurrency 1
 
 # DeepEval（需本地 qwen3 网关）
 RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
   DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300 \
-  deepeval test run evals/deepeval/test_s2_skills.py
+  pytest -q targets/write-report/evals/test_write_report.py
 
-# Garak（Skill 级；脚本会启动 skill_server，建议独立 venv/容器）
-SKILL=write-report ./evals/garak/scan.sh
-SKILL=account-balance-query ./evals/garak/scan_release.sh
-
-# Skill 包装端点（也可手动启动）
-python3 adapters/skill_server.py --skill write-report --port 8090
+# Garak target L3 尚未接入；当前只保留 Release 脚本，不纳入目标包命令行
 
 # 运行时沙箱
 ./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
@@ -171,8 +164,6 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
 ./scripts/setup_harness_env.sh
 ./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
 
-# 模型型 Skill 端点沙箱（基础版）
-PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report
 
 # 严格网络白名单（仅允许本地模型网关）
 docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build
@@ -181,8 +172,8 @@ docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build
 ./ci/run_security.sh
 
 # 尚未安装/接入
-semgrep --config p/python --config p/javascript --config p/owasp-top-ten skills/ --error
-shellcheck skills/**/*.sh
+semgrep --config p/python --config p/javascript --config p/owasp-top-ten targets/ --error
+shellcheck targets/**/*.sh
 ```
 
 ## 进度更新要求

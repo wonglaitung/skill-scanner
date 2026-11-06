@@ -646,7 +646,7 @@ def run_target_check(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="手工触发 Skill 检查")
     parser.add_argument("--skill", required=True, help="skills/ 或 targets/ 下的目录名")
-    parser.add_argument("--targets", type=Path, default=None, help="目标包仓库或 targets 目录")
+    parser.add_argument("--targets", type=Path, required=True, help="目标包仓库或 targets 目录")
     parser.add_argument("--level", choices=LEVELS, default="L1")
     parser.add_argument("--model", default="qwen3")
     parser.add_argument("--api-base", default="http://localhost:8086/v1")
