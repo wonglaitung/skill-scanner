@@ -143,7 +143,8 @@ RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
   DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300 \
   pytest -q targets/write-report/evals/test_write_report.py
 
-# Garak target L3 尚未接入；当前只保留 Release 脚本，不纳入目标包命令行
+# Garak target L3
+TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
 
 # 运行时沙箱
 ./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"

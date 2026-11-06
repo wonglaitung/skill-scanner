@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ from deepeval.models import LocalModel
 from deepeval.test_case import LLMTestCase
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 spec = importlib.util.spec_from_file_location(
     "write_report_adapter", ROOT / "adapter.py"
 )

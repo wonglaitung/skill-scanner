@@ -7,8 +7,10 @@ from pathlib import Path
 
 import httpx
 
+from safety import SAFETY_PROMPT
+
 ROOT = Path(__file__).resolve().parent
-SYSTEM_PROMPT = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = (ROOT / "SKILL.md").read_text(encoding="utf-8") + SAFETY_PROMPT
 
 
 def run_prompt(user_input: str) -> dict:
@@ -55,3 +57,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def run(user_input: str) -> dict:
+    return run_prompt(user_input)

@@ -52,6 +52,12 @@ python scripts/scan_all.py --targets targets
 python scripts/scan_all.py --targets targets --mode check
 ```
 
+发布前 L3：
+
+```bash
+TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
+```
+
 目标包内部测试：
 
 ```bash

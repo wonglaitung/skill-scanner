@@ -2,75 +2,79 @@
   "version": 1,
   "skills": {
     "account-balance-query": {
-      "aggregate": "6e243784698df1904428ccf9f353ff103a0e7253d948f9cca7b95008f004dd7c",
+      "aggregate": "d8b45e209d717d0c46d95c0a11be3cd34288fc06401d2f78040e038401789178",
       "files": {
         "SKILL.md": "ddaffda824b350f9639fc1c3f09441cba6f164513056c4847f15e8fcddd39fc3",
-        "adapter.py": "9d22d4126b97df8fd22e0d90785d71e072f5f123d246231545fe8851eef16e6f",
+        "adapter.py": "7e68a2e771772279fe4397a6c8fae8051e6cc59dd5b773358f16505197571a5f",
         "manifest.yaml": "7a4f216c03875aa3aa7da7ae89578f1aec50d7da05051957d136a7b0bb2c6697",
         "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9",
         "tools.yaml": "361fad0670e6eb522bee5446033d37e801717d36a68bdb6528d0ee1d10bdc15b"
       }
     },
     "cross-skill-router": {
-      "aggregate": "6fb137ceb79565f0841a314bd8308ed463ab518168a68fa1bb71984861234541",
+      "aggregate": "151b771e38345db747e8e9ac9fbc99d5a8c86e82a12cf9fcd502c8f0896860ac",
       "files": {
         "SKILL.md": "2e0d7a463ee70c2b112e7b2722fbde69915809b2d9c8d011d42848e8125bdc85",
-        "adapter.py": "9d22d4126b97df8fd22e0d90785d71e072f5f123d246231545fe8851eef16e6f",
+        "adapter.py": "7e68a2e771772279fe4397a6c8fae8051e6cc59dd5b773358f16505197571a5f",
         "manifest.yaml": "c0bb2328084bf506cbcc009f43b2134393564ab28b4db739b68e0ec9e947f339",
         "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9",
         "tools.yaml": "2f38182d1ce1bfe56b80aa1df8990fa87d9c3657e84cb1a09d61884bda417acd"
       }
     },
     "expense-policy-qa": {
-      "aggregate": "57460f7e160d2631faad9fd622e7b5661f8159c182be09f86a5a2898ed47ef3f",
+      "aggregate": "ce4fe4b4d710f8541da61cf7438970869a6e9e6acc88b1a27b12c07da1345566",
       "files": {
         "SKILL.md": "49a8caa93f5cfa6c470459d5e1f413b54ded08739ac1a95d84cbd7903869b861",
-        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
-        "manifest.yaml": "fb0ab6eb02fd9cb733c96f0893150c142a26c1d4f122ab6a94bb62472ca3c496"
+        "adapter.py": "bc4f797bae25a8d68d4052ec3b705772bd7a7df57bfc654e00ea54097b773834",
+        "manifest.yaml": "fb0ab6eb02fd9cb733c96f0893150c142a26c1d4f122ab6a94bb62472ca3c496",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9"
       }
     },
     "manager-report": {
-      "aggregate": "45d6552ac488099ba44ce2e50fe6e5b2ab29a79fa4f780b7320bb85a9a998edb",
+      "aggregate": "a20b32c7143c6ff45f90ae8250b39835ae0182fd3222912e517a1423f3e9cfeb",
       "files": {
         "SKILL.md": "ca74a78234bf0872b498cdd5a6a10b369d64fe29e9f9a2b25bddbec2002e4010",
-        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
-        "manifest.yaml": "21b313d36ca579995a8c6a0bf1f8894296f085725f5431a2c93961e2ce83b3f9"
+        "adapter.py": "bc4f797bae25a8d68d4052ec3b705772bd7a7df57bfc654e00ea54097b773834",
+        "manifest.yaml": "21b313d36ca579995a8c6a0bf1f8894296f085725f5431a2c93961e2ce83b3f9",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9"
       }
     },
     "md-to-word": {
-      "aggregate": "612b88a3ff680fde590756386d728288ca8b788cec23ceafc6c353859fce36c2",
+      "aggregate": "31f0fa54cdd8f212368d6badabb4b2990624da69dd4449035d154165eb993810",
       "files": {
         "SKILL.md": "f3a110571a2ef8f3b375787f779144a90c7e06737b726c754ba86ce1cce39cee",
-        "adapter.py": "1fdb6b1fe760326fb6c3252827d6436da0773da17cfa86ba55ac6bdcddc4d6b3",
+        "adapter.py": "d7cba7bd21a2512181a11eddddb61f22c0c5e172153320cdc3c0e6c95a026015",
         "manifest.yaml": "25e058f1d25143e6340b81da1480c3423cc78baa628e2bf8cdb098eaf0cbdb24",
         "requirements.txt": "5b6c619c2c1ed0cff0ec5c107b2be0e42a9495e61bc59822f0f954210fe4f9e6",
         "scripts/md_to_word.py": "8daa9ad222542cadeb5b6cefd6d83c08be5fd3e4347bbf478a9218330e590438"
       }
     },
     "service-ticket-update": {
-      "aggregate": "ec403bc715fc6481f7d0854c3ad5a40b2a7e915cc2febb2be91352e5877fa2e8",
+      "aggregate": "0fb7f23e2730e21720d36e5f9d2521056be38e614c42615d12f91fa82a454d4c",
       "files": {
         "SKILL.md": "389e684ef0f75f7e39f3815dae0861bec15410a6a0a2e6cd5e2d59a7f1dce082",
-        "adapter.py": "9d22d4126b97df8fd22e0d90785d71e072f5f123d246231545fe8851eef16e6f",
+        "adapter.py": "7e68a2e771772279fe4397a6c8fae8051e6cc59dd5b773358f16505197571a5f",
         "manifest.yaml": "f78e8e0e540b78e084b6dffcaf513f3b21a160813610ff36b4610c91913f9720",
         "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9",
         "tools.yaml": "a352b7b9d6b9487f45caaf4ad601a6a7514a4b4f13a2531b4a49a1e0bbaf737c"
       }
     },
     "system-specification": {
-      "aggregate": "81f49c3b63bb9ba46e93dc9419acf6a5607d2cc4bc1a1ecbda1d319d91075f0c",
+      "aggregate": "541c90748b465630233860b19afe9de9d1907e27ffff2a13d8af785e83e179c1",
       "files": {
         "SKILL.md": "e99b5ffa7bb87a8528d6030347d5947dc5e7422b3af3e09a80e8cb413b69eb3b",
-        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
-        "manifest.yaml": "849ddc4ebafb5743d885f80051272c1c678e4e5b9260d8a4630c9db69cfd4d7f"
+        "adapter.py": "bc4f797bae25a8d68d4052ec3b705772bd7a7df57bfc654e00ea54097b773834",
+        "manifest.yaml": "849ddc4ebafb5743d885f80051272c1c678e4e5b9260d8a4630c9db69cfd4d7f",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9"
       }
     },
     "write-report": {
-      "aggregate": "6c5d30bcaa6825e91e4ca94b9bc857c0e5424a403121c03ef5864e5bd415d380",
+      "aggregate": "83e7f6ee99431c00b0bfeba220283fe278f4a729e5ed3ac9af8b1c7b4cf3fad6",
       "files": {
         "SKILL.md": "f612f2357f80a0f78e24a13830bb30f98aa766a486ac5af69de655fe8f5cf9ab",
-        "adapter.py": "f63327a2e5adbaa305b02efbbe6d57d8ee9968b4b8d3b0f25b87b587dfcb3626",
-        "manifest.yaml": "395112e59152c04b3280958101794046a329923635009650a379ae1f8c8e8c3f"
+        "adapter.py": "bc4f797bae25a8d68d4052ec3b705772bd7a7df57bfc654e00ea54097b773834",
+        "manifest.yaml": "395112e59152c04b3280958101794046a329923635009650a379ae1f8c8e8c3f",
+        "safety.py": "8b7ba9fb973678d247b5d4d9ddf908441904a4a3f3bcd561da665e41f49542a9"
       }
     }
   }

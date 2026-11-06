@@ -68,3 +68,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def run(markdown_text: str) -> dict:
+    return convert(markdown_text)

@@ -605,14 +605,25 @@ def run_target_check(args: argparse.Namespace) -> int:
         )
 
     if selected >= 3:
-        steps.append(
-            {
-                "name": "garak",
-                "status": "skipped",
-                "required": False,
-                "reason": "target L3 not wired yet",
-            }
+        garak_env = {
+            **env,
+            "TARGETS": str(root),
+            "SKILL": args.skill,
+            "GARAK_PORT": str(free_port()),
+            "GARAK_REPORT_PREFIX": str(out / "garak"),
+        }
+        garak_step = run_step(
+            "garak",
+            [tool("bash") or "bash", "evals/garak/scan_release.sh"],
+            garak_env,
+            timeout=args.promptfoo_timeout,
         )
+        steps.append(garak_step)
+        garak_summary = out / "garak_summary.json"
+        if garak_summary.exists():
+            summary["metrics"]["garak"] = json.loads(
+                garak_summary.read_text(encoding="utf-8")
+            )
 
     summary["steps"] = steps
     (out / "summary.json").write_text(

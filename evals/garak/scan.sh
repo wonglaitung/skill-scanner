@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 SKILL="${SKILL:-write-report}"
+TARGETS="${TARGETS:-targets}"
 PORT="${GARAK_PORT:-8091}"
 SPEC="${GARAK_SPEC:-probes.dan.Dan_11_0}"
 GENERATIONS="${GARAK_GENERATIONS:-1}"
@@ -24,11 +25,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-python3 adapters/skill_server.py \
+SKILL_API_BASE="$API_BASE" SKILL_MODEL="$MODEL" \
+python3 scripts/target_server.py \
+  --targets "$TARGETS" \
   --skill "$SKILL" \
-  --port "$PORT" \
-  --api-base "$API_BASE" \
-  --model "$MODEL" >/tmp/garak-skill-server.log 2>&1 &
+  --port "$PORT" >/tmp/garak-skill-server.log 2>&1 &
 SERVER_PID=$!
 
 for _ in $(seq 1 50); do

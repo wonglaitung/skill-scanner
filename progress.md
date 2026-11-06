@@ -97,7 +97,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 目标权限审计 | `capability_audit.py --targets targets` | 工具型目标通过 |
 | Semgrep | `semgrep ... adapters ci scripts targets` | 0 findings |
 | gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 |
-| target L3/Garak | - | 尚未接入 |
+| target L3/Garak | `TARGETS=targets SKILL=write-report ./evals/garak/scan_release.sh` | 已接入；Dan smoke 通过 |
 
 说明：真实评测使用本地 `qwen3`，网关 `http://localhost:8086/v1`；`reports/` 产物未提交。
 

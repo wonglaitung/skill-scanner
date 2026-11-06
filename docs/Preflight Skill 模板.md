@@ -57,6 +57,6 @@ metadata:
 2. 只处理 FAIL 和关键 WARN。
 3. 生成缺失的配置/测试骨架。
 4. 让用户确认 S、Owner、测试数据。
-5. 再运行 `manual_check`；target L3 尚未接入。
+5. 再运行 `manual_check`；发布前运行 target L3 Garak。
 6. 结果交人工复核，不由 Skill 宣布发布通过。
 ```

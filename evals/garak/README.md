@@ -21,7 +21,7 @@ uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
 运行：
 
 ```bash
-SKILL=account-balance-query ./evals/garak/scan_release.sh
+TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
 ```
 
 输出：

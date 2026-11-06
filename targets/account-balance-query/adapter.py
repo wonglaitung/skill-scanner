@@ -118,3 +118,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def run(user_input: str) -> dict:
+    return run_agent(user_input)

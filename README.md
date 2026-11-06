@@ -56,6 +56,9 @@ python scripts/scan_all.py --targets targets
 # 工具型
 python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
 
+# 发布前 L3
+TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
+
 ```
 
 输出：
