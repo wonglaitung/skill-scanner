@@ -85,50 +85,21 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-06 | 目标包运行 | 8 个目标包完成 Promptfoo/DeepEval/工具测试；`manual_check --targets` 可用；write/system/ticket 已实跑通过 |
 | 2026-11-06 | 批量扫描 | 新增 `targets/inventory.yaml` 与 `scripts/scan_all.py`；8 个目标 preflight 全部通过；支持 `--mode check` |
 
-## 最近验证（2026-11-02）
+## 当前验证（2026-11-06）
 
 | 检查 | 命令 | 结果 |
 |---|---|---|
-| SKILL.md 校验 | `python3 ci/validate_skill.py` | 4 个 Skill 全部 OK |
-| Ruff | `ruff check adapters ci evals skills` | All checks passed |
-| pytest | `pytest -q` | 2 passed, 6 skipped |
-| Promptfoo 配置 | `npx promptfoo validate config -c evals/promptfooconfig.yaml` | valid |
-| Promptfoo redteam 配置 | `npx promptfoo validate config -c evals/redteam.yaml` | valid |
-| Promptfoo 示例实跑 | `SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 npx promptfoo eval -c evals/promptfooconfig.yaml` | 6/6 passed |
-| Promptfoo S2 小样本 | `SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 SKILL_TIMEOUT=180 npx promptfoo eval -c evals/promptfooconfig.smoke.yaml --max-concurrency 1` | 6/6 passed |
-| PII 复测 | 同上，仅 `write-report` 的两条 PII 用例 | 2/2 passed |
-| DeepEval 示例 | `RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 deepeval test run evals/deepeval/test_skill.py` | 1/1 passed |
-| DeepEval S2 相关性 | `RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 deepeval test run evals/deepeval/test_s2_skills.py` | 3/3 passed（AnswerRelevancy 均 1.0） |
-| DeepEval S2 扩展 | `pytest evals/deepeval/test_s2_skills.py -k "grounding or tool_correctness"` | 2/2 passed；Faithfulness/Hallucination/ToolCorrectness 通过 |
-| Garak 轻量扫描 | `python3 -m garak --target_type rest -G evals/garak/rest_config.json --spec probes.dan.Dan_11_0 --generations 1 --report_prefix "$PWD/reports/garak_dan"` | 1/1 passed（6.6s） |
-| Garak promptinject | 同上，`--spec probes.promptinject.HijackHateHumans --parallel_attempts 8` | 256 条，600s 到 113/256 超时（未完成） |
-| Semgrep | `semgrep --config p/python --config p/owasp-top-ten adapters ci skills scripts --error` | 1 finding（manual_check subprocess）→ 修复后 0 findings |
-| 沙箱 | `./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"` | 通过（network none、read-only） |
-| 沙箱逃逸 | `./scripts/sandbox_escape_check.sh` | 通过（非 root、只读、无网络、无 Docker socket） |
-| Skill 完整性 | `python scripts/skill_lock.py verify` | 8 个 Skill 全部匹配 |
-| 手工报告含供应链 | `python scripts/manual_check.py --targets targets --skill md-to-word --level L0` | security passed，Trivy 0，SBOM 622 |
-| 模型端点沙箱 | `PORT=8092 ./scripts/run_skill_server_sandboxed.sh manager-report` | 健康检查与 chat 请求通过 |
-| 网络白名单 | `docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build` | 模型请求通过；外部 HTTPS 403；直连 IP 不可达 |
-| Agent Promptfoo | `python scripts/manual_check.py --targets targets --skill <h3-skill> --level L2 --agent` | 只读 14/14、写操作 10/10、跨 Skill 9/9 |
-| Agent ToolCorrectness | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest evals/deepeval/test_agent_*.py -q` | 只读 7、写操作 2、跨 Skill 2 |
-| Agent 手工 L2 | `python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent` | Promptfoo 14/14、DeepEval 7/7 |
-| Agent Gate | 直接调用 `DeterministicGate` | 已接入；无 unsourced 时不再误隔离 |
-| Agent 录制回放 | `RUN_LLM_EVALS=1 ./scripts/with_harness.sh python -m pytest ci/test_agent_recording.py -q` | 3 passed（3 类工具 Skill） |
-| 签名工具 | `scripts/sign_skills.py keygen/sign/verify` | 验签通过；篡改 lock 后失败 |
-| gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 components |
-| 脚本型 Skill | `pytest ci/test_md_to_word_adapter.py -q` | 1 passed（Markdown 转 docx） |
-| 脚本型 Promptfoo | `npx promptfoo eval -c evals/promptfooconfig.md-to-word.yaml` | 5/5 passed |
-| 脚本型手工 L1 | `python scripts/manual_check.py --targets targets --skill md-to-word --level L1` | 通过，Semgrep 0 findings |
-| 脚本契约测试 | `pytest ci/test_md_to_word_contract.py -q` | 4/4 passed |
-| Garak Skill 级 | `SKILL=manager-report ./evals/garak/scan.sh` | Dan_11_0 1/1（扫描 Skill 端点，非裸模型） |
-| 手工检查 L0 | `python scripts/manual_check.py --targets targets --skill expense-policy-qa --level L0` | 通过，生成 report.md/summary.json |
-| 手工检查 L2 | `python scripts/manual_check.py --targets targets --skill manager-report --level L2` | 通过：Promptfoo 8/8、DeepEval 1/1 |
-| 基线 | `python scripts/baseline.py --targets targets collect/trend/diff manager-report` | 多轮采集与 Flaky 已可用；manager-report 仍为单轮旧基线 |
-| write-report 8 条 | `npx promptfoo eval -c evals/promptfooconfig.write-report.yaml` | 7/8 passed（F-003） |
-| system-specification 8 条 | `npx promptfoo eval -c evals/promptfooconfig.system-specification.yaml` | 8/8 passed（1 条较慢） |
-| manager-report 8 条 | `npx promptfoo eval -c evals/promptfooconfig.manager-report.yaml` | 8/8 passed |
+| 目标包校验 | `python ci/validate_skill.py` | 8 个目标全部 OK |
+| 完整性锁 | `python scripts/skill_lock.py verify` | 8 个目标全部匹配 |
+| 批量 preflight | `python scripts/scan_all.py --targets targets` | 8/8 PASS |
+| Promptfoo | 各目标 `evals/promptfoo.yaml` | write 3/3、system 8/8、manager 8/8、expense 6/6、md 5/5、account 15/15、ticket 10/10、cross 9/9 |
+| DeepEval/工具测试 | 各目标 `evals/test_*.py` | 8/8 目标通过 |
+| 目标权限审计 | `capability_audit.py --targets targets` | 工具型目标通过 |
+| Semgrep | `semgrep ... adapters ci scripts targets` | 0 findings |
+| gitleaks / Trivy / SBOM | `./ci/run_security.sh` | gitleaks 0、npm audit 0、Trivy 0、SBOM 622 |
+| target L3/Garak | - | 尚未接入 |
 
-说明：真实评测使用本地 `qwen3`，网关 `http://localhost:8086/v1`；`reports/` 下的产物未提交。
+说明：真实评测使用本地 `qwen3`，网关 `http://localhost:8086/v1`；`reports/` 产物未提交。
 
 ## 基线发现
 

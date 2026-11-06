@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGETS_DIR = ROOT / "targets"
 LOCK_PATH = TARGETS_DIR / "skills.lock.json"
 EXCLUDED_SUFFIXES = {".pyc", ".log"}
-EXCLUDED_DIRS = {"__pycache__"}
+EXCLUDED_DIRS = {"__pycache__", "evals", "fixtures"}
 
 
 def sha256_file(path: Path) -> str:
