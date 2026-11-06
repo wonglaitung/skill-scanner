@@ -277,3 +277,4 @@ AGENTS.md             Agent 工作约定
 - [`Skill 分级与检查使用指南.md`](docs/Skill%20分级与检查使用指南.md)
 - [`Preflight Skill 模板.md`](docs/Preflight%20Skill%20模板.md)
 - [`对抗审核报告模板.md`](docs/对抗审核报告模板.md)
+- [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)：从放置目标到报告生成的用户旅程助手
