@@ -36,7 +36,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行�
 ```text
 docs/
 targets/                 # 目标包（8 个）
-targets/                # 目标包：8 个 Skill
+assistant/              # 内部辅助 Skill（不参与目标检查）
 adapters/               # Promptfoo/Garak/DeepEval 适配层
 evals/                  # 用例、配置、基线
 ci/                     # 校验与门禁脚本
