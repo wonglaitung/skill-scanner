@@ -143,7 +143,7 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 |---|---|---|---|
 | S0/S1 纯提示词 → L1 | 新建 `targets/<skill>/evals/promptfoo.yaml`，补正常、拒绝、PII/泄露用例 | 15-30 分钟 | 3-5 分钟 |
 | S2 纯提示词 → L2 | 在 L1 基础上，登记 DeepEval 映射或新增测试，补相关性/忠实度/幻觉用例 | 30-60 分钟 | 5-10 分钟 |
-| S3 纯提示词 → L3 | 在 L2 基础上准备 target L3；当前 target L3 尚未接入，S3 暂不放行 | 待接入 | 待接入 |
+| S3 纯提示词 → L3 | 在 L2 基础上运行 target L3：`TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh` | 25-35 分钟 | 25-35 分钟 |
 | 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`，创建 `.venv-harness` | 1-2 小时 | 5-10 分钟 |
 | 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查 | 1.5-3 小时 | 25-35 分钟 |
 | 脚本型 → L1 | 补 provider、Promptfoo 配置和契约测试（如 `ci/test_<skill>_contract.py`） | 20-40 分钟 | 1-2 分钟 |

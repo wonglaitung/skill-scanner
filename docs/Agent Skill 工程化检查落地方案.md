@@ -752,7 +752,7 @@ python -m garak \
 - `request_timeout` 建议设为 120 秒以上，本地小模型单次响应可能超过默认 20 秒。
 - `--report_prefix` 使用绝对路径，避免 Garak 把报告写到其运行目录下。
 - `promptinject` 等探针条目多，本地模型应分批或并行执行（`--parallel_attempts`），并放到独立 venv/容器。
-- Garak 当前只保留模型级/历史 Release 脚本；`targets/` 目标包的 L3 尚未接入。
+- Garak target L3 通过 `scripts/target_server.py` 扫描目标包；发布前使用 `TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh`。
 
 要点：
 
@@ -1166,7 +1166,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install garak
-      - run: echo "target L3 pending"
+      - run: TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh
       - run: python ci/gate.py --report reports/garak.report.jsonl --level release
 ```
 
@@ -1201,7 +1201,7 @@ npx promptfoo@latest redteam run -c evals/redteam.yaml
 deepeval test run targets/<skill>/evals/test_*.py
 
 # 7. Garak 发布前独立扫描（L3）
-# target L3 pending
+TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh
 ```
 
 ---

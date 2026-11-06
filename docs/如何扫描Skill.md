@@ -425,7 +425,7 @@ uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
 运行发布前复查：
 
 ```bash
-# target L3/Garak 尚未接入，当前发布前 L3 暂不可用
+TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh
 ```
 
 Release v1 包含：
