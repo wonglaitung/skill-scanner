@@ -124,6 +124,31 @@ def target_preflight(args: argparse.Namespace) -> int:
         add("OK" if path.exists() else "FAIL", key, str(path.relative_to(target_dir)))
 
     if str(manifest["type"]) == "tool":
+        proc = subprocess.run(  # nosemgrep
+            [  # nosemgrep
+                sys.executable,
+                "scripts/capability_audit.py",
+                "--targets",
+                str(root),
+                "--skill",
+                args.skill,
+                "--json",
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=120,
+        )
+        try:
+            cap_data = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            cap_data = {}
+        if proc.returncode != 0:
+            add("FAIL", "capability-audit", str(cap_data.get("errors") or proc.stderr.strip()))
+        else:
+            add("OK", "capability-audit", str(cap_data.get("status", "passed")))
+
+    if str(manifest["type"]) == "tool":
         for key in ["tools", "adapter"]:
             value = manifest.get(key)
             if not value:

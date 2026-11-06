@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -138,9 +139,78 @@ def load_actual_calls(path: Path | None, provider: str | None = None) -> list[di
     return calls
 
 
+def target_audit(args: argparse.Namespace) -> int:
+    target_dir = args.targets.expanduser().resolve() / args.skill
+    manifest_path = target_dir / "manifest.yaml"
+    tools_path = target_dir / "tools.yaml"
+    adapter_path = target_dir / "adapter.py"
+    if not manifest_path.exists() or not tools_path.exists() or not adapter_path.exists():
+        print(f"[FAIL] incomplete target: {target_dir}")
+        return 2
+    data = yaml.safe_load(tools_path.read_text(encoding="utf-8")) or {}
+    tools = data.get("tools") or []
+    names = [item.get("name") for item in tools if isinstance(item, dict)]
+    errors = []
+    if len(names) != len(set(names)):
+        errors.append("duplicate tools in tools.yaml")
+    for item in tools:
+        name = item.get("name") if isinstance(item, dict) else None
+        if not name:
+            errors.append("tool missing name")
+            continue
+        if not item.get("scopes"):
+            errors.append(f"{name}: scopes empty")
+        if item.get("side_effects") not in {"none", "read", "write", "external", "destructive"}:
+            errors.append(f"{name}: invalid side_effects")
+        if not item.get("data_access"):
+            errors.append(f"{name}: data_access empty")
+
+    proc = subprocess.run(  # nosemgrep
+        [sys.executable, str(adapter_path), "registry"],  # nosemgrep
+        cwd=target_dir,
+        text=True,
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    if proc.returncode != 0:
+        errors.append(f"adapter registry failed: {proc.stderr.strip()}")
+        registry_names = []
+    else:
+        try:
+            registry = json.loads(proc.stdout)
+            registry_names = [item["name"] for item in registry.get("tools", [])]
+        except (json.JSONDecodeError, KeyError):
+            errors.append("adapter registry returned invalid JSON")
+            registry_names = []
+
+    for name in sorted(set(names) - set(registry_names)):
+        errors.append(f"{name}: declared but not registered")
+    for name in sorted(set(registry_names) - set(names)):
+        errors.append(f"{name}: registered but not declared")
+
+    result = {
+        "skill": args.skill,
+        "status": "failed" if errors else "passed",
+        "declared_tools": names,
+        "registry_tools": registry_names,
+        "errors": errors,
+    }
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        print(f"skill: {args.skill}  status: {result['status']}")
+        print(f"  declared: {names}")
+        print(f"  registry: {registry_names}")
+        for error in errors:
+            print(f"  [ERROR] {error}")
+    return 0 if not errors else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="审计 Skill 的说明、权限与工具实现一致性")
     parser.add_argument("--skill", required=True)
+    parser.add_argument("--targets", type=Path, default=None, help="目标包目录")
     parser.add_argument("--report", type=Path, default=None, help="Promptfoo 报告目录或 JSON")
     parser.add_argument(
         "--provider",
@@ -149,6 +219,9 @@ def main() -> int:
     )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
+
+    if args.targets is not None:
+        return target_audit(args)
 
     skill_path = SKILLS_DIR / args.skill / "SKILL.md"
     if not skill_path.exists():
