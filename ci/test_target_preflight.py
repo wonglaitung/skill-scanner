@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -31,6 +33,8 @@ def test_target_preflight_prompt() -> None:
 
 
 def test_target_preflight_tool() -> None:
+    if not (ROOT / ".venv-harness" / "bin" / "python").exists():
+        pytest.skip("harness venv not installed in this environment")
     proc = subprocess.run(
         [
             sys.executable,
