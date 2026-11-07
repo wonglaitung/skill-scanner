@@ -18,6 +18,7 @@ def test_scan_all_preflight() -> None:
             "write-report",
             "--out",
             "/tmp/opencode/scan_all_test",
+            "--skip-network",
         ],
         cwd=ROOT,
         text=True,

@@ -21,6 +21,7 @@ def main() -> int:
     parser.add_argument("--mode", choices=["preflight", "check"], default="preflight")
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--only", action="append", default=None)
+    parser.add_argument("--skip-network", action="store_true")
     args = parser.parse_args()
 
     root = args.targets.expanduser().resolve()
@@ -66,6 +67,8 @@ def main() -> int:
         ]
         if manifest.get("agent"):
             common.append("--agent")
+        if args.skip_network:
+            common.append("--skip-network")
         proc = subprocess.run(  # nosemgrep
             common,  # nosemgrep
             cwd=ROOT,
