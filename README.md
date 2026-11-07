@@ -17,9 +17,26 @@ Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、
 - 保存基线并对比回退
 - 生成可审计的 Markdown/JSON 报告
 
-完整操作流程见 `assistant/skill-release-guide/SKILL.md`；报告解读与排障见 `docs/Skill 检查使用指南.md`。
+## 推荐用法：让 Skill 助手做检查
 
-## 快速开始
+首次使用先完成下面的依赖和本地模型网关配置，然后把 `assistant/skill-release-guide/` 加载到支持 Skill 的 Agent 环境，用自然语言说明目标，不需要自己拼命令：
+
+```text
+使用 skill-release-guide 检查 /data/skills/customer-reply。
+名称 customer-reply，Owner cs-team，风险 S2，类型 prompt，检查 L2。
+先做单次检查，通过后跑 3 轮基线。
+```
+
+Skill 会补问缺失信息，依次执行 `init → check → run`，并输出 `reports/<skill>/release-<timestamp>/summary.md`。
+它不会自行决定 S 等级或 Owner，也不会编造业务测试用例。
+
+- 完整案例：[`assistant/README.md`](assistant/README.md)
+- 报告解读与排障：[`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)
+- 流程定义：[`assistant/skill-release-guide/SKILL.md`](assistant/skill-release-guide/SKILL.md)
+
+## 手动快速开始（调试用）
+
+没有 Agent 环境或需要定位问题时，使用下面命令。正常检查优先走上面的 Skill 入口。
 
 ### 1. 依赖
 
@@ -41,10 +58,10 @@ http://localhost:8086/v1
 
 所有模型调用只走本地网关，不访问外部模型。
 
-### 3. 使用流程
+### 3. 命令
 
 ```bash
-# 单入口（推荐）
+# 单入口（Skill 助手内部会调用）
 python scripts/release_assistant.py init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
 python scripts/release_assistant.py check --targets targets --skill my-skill
 python scripts/release_assistant.py run --targets targets --skill my-skill --runs 3

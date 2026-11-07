@@ -88,6 +88,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-07 | 单入口发布助手 | 新增 `scripts/release_assistant.py` 与 `assistant/skill-release-guide`；整合 init/check/run、3 轮基线、Gate、L3 和汇总报告 |
 | 2026-11-07 | 文档合并 | 以 `assistant/skill-release-guide` 为唯一用户入口；docs 内容合并为 3 份：`Skill 检查使用指南.md`、`Agent Skill 工程化检查方案与生产路线.md`、`对抗审核报告模板.md` |
 | 2026-11-07 | 助手用法案例 | `assistant/README.md` 增加真实使用案例：纯提示词导入、工具型 L2 + Agent、已有目标复检，并说明触发方式、命令、输出和边界 |
+| 2026-11-07 | README 入口 | 根 `README.md` 增加“推荐用法：让 Skill 助手做检查”，手动命令改为调试入口；详细案例仍留在 `assistant/README.md` |
 
 ## 当前验证（2026-11-06）
 
