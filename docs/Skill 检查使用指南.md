@@ -1,4 +1,4 @@
-# Skill 分级与检查使用指南
+# Skill 检查使用指南：分级、报告与排障
 
 适用对象：Skill 作者、Skill Owner、安全审核人。
 
@@ -9,6 +9,10 @@
 3. 要不要真正执行工具调用？——**Agent**
 
 用户侧统一使用 **S + L + Agent**，不使用内部代号。
+
+完整操作流程只在
+[`assistant/skill-release-guide/SKILL.md`](../assistant/skill-release-guide/SKILL.md)
+维护；本文负责定级、运行前置、报告解读和排障。
 
 ---
 
@@ -125,15 +129,8 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 
 1. 确定 S 等级，写入 `metadata.risk-level`；
 2. 补齐 `SKILL.md` 的 `name`、`description`、`license`、`allowed-tools`、`metadata.owner/risk-level/version`；
-3. 生成并验证完整性锁：
-   ```bash
-   python scripts/skill_lock.py generate
-   python scripts/skill_lock.py verify
-   ```
-4. 通过结构校验：
-   ```bash
-   python ci/validate_skill.py --skill my-skill
-   ```
+3. 生成并验证完整性锁；
+4. 通过结构校验；
 5. 准备本地模型网关和依赖；
 6. 准备合成测试数据，禁止真实 PII、密钥、生产凭证。
 
@@ -170,30 +167,7 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 
 ### 4.3 用 preflight.py 自动检查前置条件
 
-运行前先跑：
-
-```bash
-python scripts/preflight.py --targets targets --skill my-skill --risk S2 --level L2
-```
-
-工具型 Skill：
-
-```bash
-python scripts/preflight.py --targets targets --skill account-balance-query --risk S2 --level L2 --agent
-```
-
-发布前检查：
-
-```bash
-python scripts/preflight.py --targets targets --skill my-skill --risk S3 --level L3 --agent --release
-```
-
-执行完整检查：
-
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L2
-python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
-```
+运行前先跑 `preflight`；工具型加 `--agent`，发布前加 `--release`。命令见 §5.6。
 
 `preflight` 会检查：
 
@@ -234,114 +208,53 @@ status: failed  failures=1  warnings=0
 
 离线环境可加 `--skip-network`，只跳过网关探测。
 
-### 4.4 可选：用 Agent Skill 包装 preflight
-
-可以做一个内部 Agent Skill，只负责：
-
-1. 调用 `preflight.py`；
-2. 解释缺失项；
-3. 生成 Promptfoo/DeepEval/Agent 测试骨架；
-4. 提示下一步命令。
-
-它不得：
-
-- 自行确定 S 等级或 Owner；
-- 自行批准发布；
-- 把 `skipped` 当 `passed`；
-- 替代 `manual_check` 和 Garak。
-
-建议把它当作“准备助手”，不要当作“发布审批人”。
-
-可直接使用 [`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md)。它是内部辅助 Skill，不放进 `targets/`，避免形成“用 Skill 检查 Skill”的循环。
-
-### 4.5 单入口发布助手
-
-```bash
-python scripts/release_assistant.py init \
-  --source /path/to/skill --name my-skill \
-  --owner my-team --risk S2 --type prompt --level L2 --targets targets
-
-python scripts/release_assistant.py check --targets targets --skill my-skill
-
-python scripts/release_assistant.py run \
-  --targets targets --skill my-skill --runs 3 --l3
-```
-
-`run` 会串联：
-
-- 完整性锁
-- preflight
-- 3 轮 manual_check
-- 基线采集
-- Delta Gate
-- 可选 target L3
-- `reports/<skill>/release-<timestamp>/summary.md`
-
 ---
 
-## 5. 命令示例
+## 5. 报告与排障
 
-### S0/S1 纯提示词
+### 5.1 报告位置
 
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L1
+完整发布检查：
+
+```text
+reports/<skill>/release-<timestamp>/
+├── summary.md
+├── summary.json
+└── garak/                  # 启用 --l3 时
 ```
 
-### S2 纯提示词
+单次检查：
 
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L2
+```text
+reports/<skill>/target-<timestamp>/
+├── report.md
+├── summary.json
+├── run.log
+└── promptfoo.json
 ```
 
-### S3 纯提示词
+L3 原始报告：
 
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L3
-```
-
-### 工具型 Skill
-
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
-```
-
-### 高风险工具型
-
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L2 --agent
-python scripts/manual_check.py --targets targets --skill my-skill --level L3
-```
-
-### 脚本型
-
-```bash
-python scripts/manual_check.py --targets targets --skill my-skill --level L1
-pytest -q ci/test_<my-skill>_contract.py
+```text
+reports/garak/release/<skill>/<timestamp>/
+├── garak.report.jsonl
+├── garak.report.html
+├── garak_summary.json
+└── garak_summary.md
 ```
 
 ---
 
-## 6. 发布前附加要求
+### 5.2 阅读顺序
 
-除最低检查外，发布前还要：
+1. `summary.md` / `report.md` 的步骤结果；
+2. Promptfoo 失败用例；
+3. DeepEval 或工具测试；
+4. 基线与 Delta Gate；
+5. L3 的 `true compliant`；
+6. 未通过项和下一步。
 
-1. 连续跑 3 轮基线；
-2. 采集基线并跑 Delta Gate；
-3. 查看 Flaky 用例；
-4. 人工复核失败、隔离和跳过项；
-5. S2/S3 由 Owner 签核；
-6. S3 发布前完成 L3。
-
-```bash
-python scripts/baseline.py --targets targets collect my-skill --runs 3
-python scripts/baseline.py --targets targets gate my-skill --tolerance 0.05
-```
-
----
-
-## 7. 报告里怎么看
-
-报告和 `summary.json` 使用三个字段：
+报告字段：
 
 ```text
 risk_level: S2
@@ -349,17 +262,100 @@ level: L2
 agent: true
 ```
 
-对应含义：
-
-- `risk_level`：这个 Skill 的风险等级；
-- `level`：这次检查的深度；
-- `agent`：这次是否启用了 Agent 工具执行。
+- `risk_level`：Skill 风险等级；
+- `level`：本次检查深度；
+- `agent`：本次是否启用 Agent 工具执行。
 
 ---
 
-## 8. 不要做的事
+### 5.3 状态含义
 
-- 不要把 Agent 当成 L4 或更高级别。
-- 不要用 L3 替代工具越权检查；工具权限、参数注入、外泄主要靠 `L2 + Agent`。
-- 不要对纯提示词 Skill 强行加 `--agent`。
-- 不要用单轮结果代替 3 轮基线和 Delta Gate。
+| 状态 | 含义 |
+|---|---|
+| PASSED | 通过 |
+| FAILED | 有失败，需要处理 |
+| WARN | 可继续，但发布前需处理 |
+| SKIPPED | 未执行，不能当通过 |
+
+---
+
+### 5.4 L3 结论怎么看
+
+先看 `true compliant`，再看原始 ASR。
+
+- `true compliant = 0` 才能认为该 probe 没有真实命中；
+- 原始 ASR 非零但 `true compliant = 0`，通常是检测器把拒绝时的复述算成命中；
+- 不要把原始 ASR 直接当成真实攻击成功率；
+- Garak 只扫端点，不能替代工具越权、参数注入和数据外泄检查。
+
+---
+
+### 5.5 常见问题
+
+| 现象 | 处理 |
+|---|---|
+| `manifest.yaml not found` | 从入口 Skill 第 1 步重新初始化 |
+| `preflight` 失败 | 按输出补 manifest、adapter、evals、tools |
+| `skill-lock` 失败 | 执行 `python scripts/skill_lock.py generate` |
+| Promptfoo 配置缺失 | 补 `targets/<skill>/evals/promptfoo.yaml` |
+| DeepEval 目标缺失 | 补 `targets/<skill>/evals/test_*.py` |
+| 工具型 capability-audit 失败 | 检查 `tools.yaml` 与 `adapter.py registry` |
+| 模型连接失败 | 检查 `http://localhost:8086/v1` |
+| L3 很慢 | 使用独立 Garak 环境，避免并发跑多个目标 |
+| 出现 `skipped` | 不能当 `passed`，必须补配置或说明原因 |
+
+---
+
+### 5.6 手动调试命令
+
+仅在入口流程失败、需要定位时使用。
+
+```bash
+# 结构校验
+python ci/validate_skill.py
+python ci/validate_skill.py --skill my-skill
+
+# 完整性锁
+python scripts/skill_lock.py generate
+python scripts/skill_lock.py verify
+
+# 运行前置
+python scripts/preflight.py --targets targets --skill my-skill --risk S2 --level L2
+
+# 单次检查
+python scripts/manual_check.py --targets targets --skill my-skill --level L2
+
+# 权限一致性
+python scripts/capability_audit.py --targets targets --skill my-skill
+
+# 提示词质量
+python scripts/prompt_audit.py --skill my-skill
+python scripts/prompt_audit.py --skill my-skill --llm
+
+# 基线
+python scripts/baseline.py --targets targets collect my-skill --runs 3
+python scripts/baseline.py --targets targets trend my-skill
+python scripts/baseline.py --targets targets gate my-skill --tolerance 0.05
+
+# 目标服务（调试 Garak）
+python scripts/target_server.py --targets targets --skill my-skill --port 8095
+```
+
+工具型 Skill 在 `preflight` 和 `manual_check` 上加 `--agent`。
+
+---
+
+### 5.7 批量运行
+
+```bash
+# 批量 preflight
+python scripts/scan_all.py --targets targets
+
+# 批量单次检查
+python scripts/scan_all.py --targets targets --mode check
+
+# 离线只检查配置
+python scripts/scan_all.py --targets targets --skip-network
+```
+
+批量运行不替代每个 Skill 的 3 轮基线、Delta Gate 和 L3。

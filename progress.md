@@ -5,7 +5,7 @@
 Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，最小骨架已建立。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
 - 当前版本：v2.11
 
 ## 当前状态
@@ -13,8 +13,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 项 | 状态 |
 |---|---|
 | 方案文档 | 已完成 v2.11 |
-| 代码实现 | 最小骨架已建立（6 个 Skill、Adapter、Skill 端点、手工检查与基线工具） |
-| CI 流水线 | 骨架保留但暂不启用；按决策，人工模式技术底座完整后再提 CI |
+| 代码实现 | target-only 扫描、单入口助手、手工检查与基线工具已落地；8 个目标包 |
+| CI 流水线 | `skill-check` 已启用静态检查（validate/Ruff/pytest）；nightly 待自托管 runner |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`targets/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词；1 个示例；1 个脚本型；3 个工具型：`account-balance-query`、`service-ticket-update`、`cross-skill-router` |
 | 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
@@ -69,7 +69,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-03 | 长文超时治理 | `SKILL_MAX_TOKENS`/`--max-tokens` 限制生成长度；system-specification 3 轮 8/8、2/2 |
 | 2026-11-03 | Quarantine | 新增 `evals/quarantine.json`、`scripts/quarantine.py`；报告单列隔离用例，Flaky 跳过隔离用例 |
 | 2026-11-03 | Judge 校准 | 新增 20 条人工标注集与 `judge_calibration.py`；一致率 95%、MAE 0.05；1 条不匹配为“相关但事实错误” |
-| 2026-11-03 | 使用说明 | 重写 `docs/如何扫描Skill.md`：按用户路径给出 10 步操作、三条最短命令路径与常见问题 |
+| 2026-11-03 | 使用说明 | 重写 Skill 扫描使用说明：按用户路径给出操作步骤、最短命令路径与常见问题 |
 | 2026-11-03 | 能力一致性审计 | 新增 `capability_audit.py` 与 `metadata.tool-permissions` 声明；检查 allowed-tools、tool-set、实际 Trace 一致性；已接入 manual_check |
 | 2026-11-04 | 提示词质量检查 | 新增 `prompt_audit.py`：PII/密钥/内部信息/泄露短语/权限矛盾；支持 `--llm`；新增种子集与 7 个测试；已接入 manual_check |
 | 2026-11-04 | Garak Release v1 | 独立 `.venv-garak`；Dan PASS；首轮 promptinject 原始 ASR 18.36%，修复后 4.69%，人工归类 true compliant 0；新增 `scan_release.sh`、`garak_summary.py` 与 triage |
@@ -86,6 +86,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-06 | 批量扫描 | 新增 `targets/inventory.yaml` 与 `scripts/scan_all.py`；8 个目标 preflight 全部通过；支持 `--mode check` |
 | 2026-11-06 | Target L3 | 新增 `scripts/target_server.py`；7 个 LLM 目标完成 Garak Release v2，true compliant 全为 0；md-to-word 跳过 |
 | 2026-11-07 | 单入口发布助手 | 新增 `scripts/release_assistant.py` 与 `assistant/skill-release-guide`；整合 init/check/run、3 轮基线、Gate、L3 和汇总报告 |
+| 2026-11-07 | 文档合并 | 以 `assistant/skill-release-guide` 为唯一用户入口；docs 内容合并为 3 份：`Skill 检查使用指南.md`、`Agent Skill 工程化检查方案与生产路线.md`、`对抗审核报告模板.md` |
 
 ## 当前验证（2026-11-06）
 
@@ -263,5 +264,5 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 - **随时更新**：完成任务、做出决策、发现风险、改变计划或结束会话前，立即更新本文件，不等里程碑。
 - 每个里程碑额外记录版本号与提交号。
-- 方案变更同步更新 `docs/Agent Skill 工程化检查落地方案.md` 的版本号与正文。
+- 方案变更同步更新 `docs/Agent Skill 工程化检查方案与生产路线.md` 的版本号与正文。
 - 代码实现后，在本文件记录命令、覆盖率与试点结果。

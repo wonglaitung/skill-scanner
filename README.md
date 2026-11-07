@@ -1,8 +1,8 @@
 # skill-scanner
 
-Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段，不依赖 CI。
+Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段，CI 仅做静态检查。
 
-- 方案文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.11）
+- 方案文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
 - 当前进度：`progress.md`
 - Agent 工作约定：`AGENTS.md`
 
@@ -17,7 +17,7 @@ Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、
 - 保存基线并对比回退
 - 生成可审计的 Markdown/JSON 报告
 
-详细步骤见 `docs/如何扫描Skill.md`。
+完整操作流程见 `assistant/skill-release-guide/SKILL.md`；报告解读与排障见 `docs/Skill 检查使用指南.md`。
 
 ## 快速开始
 
@@ -156,7 +156,7 @@ SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
 
 ## 分级模型
 
-完整说明见 [`docs/Skill 分级与检查使用指南.md`](docs/Skill%20分级与检查使用指南.md)。
+完整说明见 [`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)。
 
 - **S0-S3**：业务风险等级
 - **L0-L3**：检查深度
@@ -277,9 +277,7 @@ AGENTS.md             Agent 工作约定
 ## 相关文档
 
 - [`docs/README.md`](docs/README.md)：文档索引
-- [`Agent Skill 工程化检查落地方案.md`](docs/Agent%20Skill%20工程化检查落地方案.md)
-- [`生产级演进路线.md`](docs/生产级演进路线.md)
-- [`如何扫描Skill.md`](docs/如何扫描Skill.md)
-- [`Skill 分级与检查使用指南.md`](docs/Skill%20分级与检查使用指南.md)
+- [`Agent Skill 工程化检查方案与生产路线.md`](docs/Agent%20Skill%20工程化检查方案与生产路线.md)
+- [`Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)：定级、运行前置、报告解读与排障
 - [`对抗审核报告模板.md`](docs/对抗审核报告模板.md)
-- [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)：从放置目标到报告生成的用户旅程助手
+- [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)：唯一用户入口，从放置目标到报告生成
