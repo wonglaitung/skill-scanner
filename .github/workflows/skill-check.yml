@@ -31,7 +31,7 @@ jobs:
         run: python ci/validate_skill.py
 
       - name: Ruff
-        run: ruff check adapters ci evals skills
+        run: ruff check adapters ci evals scripts targets
 
       - name: Pytest
         run: pytest -q

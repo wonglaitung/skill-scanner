@@ -40,23 +40,16 @@ jobs:
           pip install -r requirements-dev.txt -r requirements-eval.txt
           npm install
 
-      - name: Promptfoo smoke
-        run: npx promptfoo eval -c evals/promptfooconfig.smoke.yaml --max-concurrency 1
+      - name: Setup harness env
+        run: ./scripts/setup_harness_env.sh
 
-      - name: Promptfoo per-skill
+      - name: Batch target checks
+        run: python scripts/scan_all.py --targets targets --mode check
+
+      - name: Target L3 smoke
         run: |
-          npx promptfoo eval -c evals/promptfooconfig.write-report.yaml --max-concurrency 1
-          npx promptfoo eval -c evals/promptfooconfig.system-specification.yaml --max-concurrency 1
-          npx promptfoo eval -c evals/promptfooconfig.manager-report.yaml --max-concurrency 1
-
-      - name: DeepEval S2
-        run: deepeval test run evals/deepeval/test_s2_skills.py
-
-      - name: Garak light scan
-        run: |
-          python3 -m garak --target_type rest -G evals/garak/rest_config.json \
-            --spec probes.dan.Dan_11_0 --generations 1 \
-            --report_prefix "$PWD/reports/garak_dan"
+          TARGETS=targets SKILL=write-report GARAK_PARALLEL=16 \
+            ./evals/garak/scan_release.sh
 
       - name: Upload reports
         if: always()
