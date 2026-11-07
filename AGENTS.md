@@ -2,21 +2,19 @@
 
 ## 项目
 
-Agent Skill 工程化检查与对抗审核方案。当前处于「文档先行、准备试点」阶段，代码尚未开始。
+Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，target-only 扫描与单入口流程已落地。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查落地方案.md`（v2.11）
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
 - 当前进度：`progress.md`
 
 ## 开始工作前必读
 
-1. `docs/Agent Skill 工程化检查落地方案.md`：唯一方案源，工具链、门禁、目录、路线图以它为准。
+1. `docs/Agent Skill 工程化检查方案与生产路线.md`：唯一方案源，工具链、门禁、目录、路线图、Phase A-D 以它为准。
 2. `progress.md`：当前阶段、已完成事项、待办与风险。
-3. `docs/生产级演进路线.md`：Phase A-D、验收标准与 KPI。
-4. `docs/如何扫描Skill.md`：单入口发布流程、命令与常见问题。
-5. `docs/Skill 分级与检查使用指南.md`：S 风险、L 深度、Agent 标志与最低检查矩阵。
-6. `assistant/skill-release-guide/SKILL.md`：单入口发布助手 Skill。
-7. `docs/README.md`：文档索引；只保留当前有效文档。
+3. `assistant/skill-release-guide/SKILL.md`：唯一用户入口，初始化、检查、基线、Gate、L3 与报告。
+4. `docs/Skill 检查使用指南.md`：S 风险、L 深度、Agent 标志、最低检查矩阵、报告解读与排障。
+5. `docs/README.md`：文档索引；只保留当前有效文档。
 
 ## 当前阶段
 
@@ -80,7 +78,7 @@ AGENTS.md
 
 ## 分级模型
 
-统一使用 **S + L + Agent**，详见 `docs/Skill 分级与检查使用指南.md`。
+统一使用 **S + L + Agent**，详见 `docs/Skill 检查使用指南.md`。
 
 - **S0-S3**：业务风险等级
 - **L0-L3**：检查深度
