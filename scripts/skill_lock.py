@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS_DIR = ROOT / "targets"
 EXCLUDED_SUFFIXES = {".pyc", ".log"}
-EXCLUDED_DIRS = {"__pycache__", "evals", "fixtures"}
+EXCLUDED_DIRS = {"__pycache__", "evals", "fixtures", "node_modules"}
 
 
 def sha256_file(path: Path) -> str:

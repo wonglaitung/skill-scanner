@@ -224,8 +224,15 @@ def target_preflight(args: argparse.Namespace) -> int:
 
     if not args.skip_network:
         api_base = api_base_url()
+        request = urllib.request.Request(
+            f"{api_base}/models",
+            headers={
+                "Authorization": f"Bearer {os.getenv('SKILL_API_KEY', 'local-placeholder')}",
+                "User-Agent": "curl/8.0",
+            },
+        )
         try:
-            with urllib.request.urlopen(f"{api_base}/models", timeout=2):
+            with urllib.request.urlopen(request, timeout=10):
                 add("OK", "gateway", api_base)
         except Exception as exc:  # noqa: BLE001
             add("FAIL", "gateway", f"{api_base}: {exc}")
@@ -421,8 +428,15 @@ def main() -> int:
     # Environment checks
     if not args.skip_network:
         api_base = api_base_url()
+        request = urllib.request.Request(
+            f"{api_base}/models",
+            headers={
+                "Authorization": f"Bearer {os.getenv('SKILL_API_KEY', 'local-placeholder')}",
+                "User-Agent": "curl/8.0",
+            },
+        )
         try:
-            with urllib.request.urlopen(f"{api_base}/models", timeout=2):
+            with urllib.request.urlopen(request, timeout=10):
                 add("OK", "gateway", api_base)
         except Exception as exc:  # noqa: BLE001
             add("FAIL", "gateway", f"{api_base}: {exc}")

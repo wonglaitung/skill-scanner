@@ -93,6 +93,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-17 | 文档同步修正 | 统一 `progress.md`/`README.md` 方案版本为 v2.12；README 补齐 `service-ticket-update`、`cross-skill-router` 清单，修正 semgrep 目标目录与 DeepEval 命令示例 |
 | 2026-11-17 | 发布检查闭环修正 | `release_assistant.py` 失败判定覆盖所有轮次且 summary 关联真实报告；`manual_check.py` 必需步骤 skipped 判失败；`skill_lock.py` 支持外部 `--targets`；`baseline.py` 支持按发布目录采集；首次检查不再因缺基线 FAIL；新增模板占位警告。Ruff 通过、pytest 44 passed 8 skipped；临时自定义 Skill 完成 init/check/run 冒烟 |
 | 2026-11-17 | Docker 全链路容器化 | 统一检查镜像 `skill-checker:local`（工具链 + 被测执行依赖，版本锁定、venv 隔离）；唯一宿主机入口 `scripts/check_in_docker.sh`；全面切 Docker（容器外运行被拒绝）；修复遗留 `skills/` → `targets/` 路径；网关改为可配置 OpenAI-compatible。镜像构建成功；自定义 Skill 端到端 init/check/run 3 轮全 PASS，Gate PASS，供应链扫描在容器内完成；Ruff 通过、pytest 44 passed 8 skipped |
+| 2026-11-17 | 脚本型目标包检查闭环验证 | 用真实脚本型 Skill 验证：实现 `adapter.py` 调用目标脚本并把模板用例替换为 3 条基于真实行为的业务回归用例；外部 OpenAI-compatible 网关接入（修复 preflight 探测缺 Authorization 与 UA 导致的 403）；3 轮检查全 PASS、Gate PASS、模板警告消除、基线重建。验证后该私有目标包未纳入仓库 |
+| 2026-11-17 | skill-release-guide 完善 | 依脚本型 Skill 实测补齐入口 Skill：Docker/网关前置排障（WSL 集成、403、Key 保密）、大依赖目录复制确认、脚本型 adapter 与基于真实行为的 Promptfoo 用例要求、模板警告与结论清单；版本升至 0.6.0 |
+| 2026-11-17 | 完整性锁排除安装产物 | `skill_lock.py` 排除 `node_modules`；脚本型 adapter 在依赖缺失时按需 `npm install`；目标包锁不再包含安装产物，clone 后仍可校验；check 复测通过 |
 
 ## 当前验证（2026-11-06）
 
