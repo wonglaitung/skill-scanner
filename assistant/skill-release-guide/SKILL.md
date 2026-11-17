@@ -62,6 +62,9 @@ metadata:
   应返回 200。检查工具会自动携带 Key 和兼容 UA；若返回 403，先核对 Key 是否有效、
   网关是否允许该来源。Key 只通过环境变量传入，不得写入目标包、`fixtures/` 或报告。
 
+`targets/` 不是仓库固定内容：第 1 步的 `init` 会在本地生成它；也可用 `--targets <私有路径>`
+指向仓库外的目标包目录。仓库不附带任何存量目标包。
+
 测试数据只使用合成数据，禁止真实 PII、密钥、生产凭证。
 
 ## 第 1 步：初始化目标包
@@ -256,4 +259,3 @@ Key 无效或网关策略限制。若 `Warnings` 含模板占位，先补用例�
 - 方案与门禁：[`Agent Skill 工程化检查方案与生产路线.md`](../../docs/Agent%20Skill%20工程化检查方案与生产路线.md)
 - 文档索引：[`docs/README.md`](../../docs/README.md)
 - 使用案例：[`assistant/README.md`](../README.md)
-- 目标包结构：[`targets/README.md`](../../targets/README.md)

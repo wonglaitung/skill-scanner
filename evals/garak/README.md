@@ -123,4 +123,3 @@ Base64 的最终修复不是继续加 Prompt，而是在 `adapters/input_guard.p
 - 定级与报告解读：[`docs/Skill 检查使用指南.md`](../../docs/Skill%20检查使用指南.md)
 - 用户入口：[`assistant/skill-release-guide`](../../assistant/skill-release-guide/SKILL.md)
 - 文档索引：[`docs/README.md`](../../docs/README.md)
-- 目标包：[`targets/README.md`](../../targets/README.md)

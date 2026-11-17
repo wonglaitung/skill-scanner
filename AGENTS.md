@@ -20,9 +20,8 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 2 周试点实施：
 
-- 已导入 3 个 S2 纯提示词 Skill：`write-report`、`system-specification`、`manager-report`。
-- 另有示例 Skill `expense-policy-qa`。
-- 另有脚本型 S2 Skill `md-to-word`，用于验证 SAST 与脚本适配。
+- 存量目标包（历史试点的纯提示词/示例/脚本型/工具型 Skill）已从仓库移除；
+  重新测试时由 `init` 在本地生成，或用 `--targets <私有路径>` 指向仓库外目录。
 - 安全团队主导。
 - 先告警，不阻断 PR。
 - 使用可配置的 OpenAI-compatible 模型网关（`SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL`），容器内默认 `http://host.docker.internal:8086/v1`，模型 `qwen3`。
@@ -35,7 +34,6 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 ```text
 docs/
-targets/                 # 目标包（8 个）
 assistant/              # 内部辅助 Skill（不参与目标检查）
 adapters/               # Promptfoo/Garak/DeepEval 适配层
 adapters/sandbox/Dockerfile.checks  # 统一检查镜像（工具链 + 被测执行依赖）
@@ -47,6 +45,8 @@ scripts/check_in_docker.sh  # 宿主机唯一入口
 progress.md
 AGENTS.md
 ```
+
+`targets/` 不是仓库固定内容：由 `init` 在本地生成，或用 `--targets <私有路径>` 指向仓库外目录。
 
 适配层统一叫 `adapters/`，不要改回 `harness/`，避免与 `wonglaitung/harness` Agent SDK 重名。
 

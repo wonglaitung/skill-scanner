@@ -103,8 +103,9 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 ### 4.1 当前工具支持情况
 
 矩阵已经文档化；执行层目前是“手工选择 L”，尚未做到按 S 自动选 L 或强制拦截。
+下表“现有样例”为历史试点记录，其目标包已从仓库移除，仅说明各矩阵项曾通过验证。
 
-| 矩阵项 | 工具支持 | 现有样例 | 主要缺口 |
+| 矩阵项 | 工具支持 | 历史样例 | 主要缺口 |
 |---|---|---|---|
 | S0/S1 纯提示词 → L1 | 可用 | 暂无 S0/S1 样例 | 需要 Promptfoo 配置；缺配置时可能跳过 |
 | S2 纯提示词 → L2 | 可用 | write-report、system-specification、manager-report、expense-policy-qa | 新 Skill 需登记 DeepEval 映射或用例 |
@@ -364,5 +365,4 @@ docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
 - 方案与门禁：[`Agent Skill 工程化检查方案与生产路线.md`](Agent%20Skill%20工程化检查方案与生产路线.md)
 - 文档索引：[`docs/README.md`](README.md)
 - 使用案例：[`assistant/README.md`](../assistant/README.md)
-- 目标包结构：[`targets/README.md`](../targets/README.md)
 - L3 独立扫描：[`evals/garak/README.md`](../evals/garak/README.md)

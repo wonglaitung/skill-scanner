@@ -71,7 +71,7 @@ reports/customer-reply/release-<timestamp>/summary.json
 用户输入：
 
 ```text
-检查 targets/service-ticket-update，风险 S2，类型 tool，L2 + Agent。
+检查我的工具型 Skill my-tool，风险 S2，类型 tool，L2 + Agent。
 这是写操作，发布前还要跑 L3。
 ```
 
@@ -80,11 +80,11 @@ Agent 实际执行：
 ```bash
 ./scripts/check_in_docker.sh check \
   --targets targets \
-  --skill service-ticket-update
+  --skill my-tool
 
 ./scripts/check_in_docker.sh run \
   --targets targets \
-  --skill service-ticket-update \
+  --skill my-tool \
   --runs 3 --l3
 ```
 
@@ -92,8 +92,8 @@ Agent 实际执行：
 
 ```bash
 ./scripts/check_in_docker.sh init \
-  --source /path/to/service-ticket-update \
-  --name service-ticket-update \
+  --source /path/to/my-tool \
+  --name my-tool \
   --owner owner-team \
   --risk S2 \
   --type tool \
@@ -102,14 +102,14 @@ Agent 实际执行：
 ```
 
 Agent 会检查 `tools.yaml`、权限声明、工具调用轨迹、未授权工具、参数注入和外泄用例。
-L3 结果放在 `reports/garak/release/service-ticket-update/<timestamp>/`。
+L3 结果放在 `reports/garak/release/my-tool/<timestamp>/`。
 
 ## 案例 3：已有目标包复检
 
 不改目标包，只重新跑检查和基线：
 
 ```text
-复检 targets/write-report，L2，跑 3 轮，不跑 L3。
+复检我的 Skill my-skill，L2，跑 3 轮，不跑 L3。
 先告诉我上次失败项，再开始。
 ```
 
@@ -118,11 +118,11 @@ Agent 实际执行：
 ```bash
 ./scripts/check_in_docker.sh check \
   --targets targets \
-  --skill write-report
+  --skill my-skill
 
 ./scripts/check_in_docker.sh run \
   --targets targets \
-  --skill write-report \
+  --skill my-skill \
   --runs 3
 ```
 
@@ -137,11 +137,10 @@ Agent 实际执行：
 - 检查全部在 Docker 容器内运行，宿主机只需 Docker。
 - 模型网关默认 `http://host.docker.internal:8086/v1`（OpenAI-compatible），
   可用 `SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL` 覆盖。
-- 目标包统一放 `targets/`，不要放回 `skills/`。
+- 目标包由 `init` 生成在本地 `targets/`，或用 `--targets <私有路径>` 指向仓库外目录；仓库不附带目标包。
 
 ## 相关文档
 
 - 流程定义：[`skill-release-guide/SKILL.md`](skill-release-guide/SKILL.md)
 - 定级与排障：[`docs/Skill 检查使用指南.md`](../docs/Skill%20检查使用指南.md)
 - 文档索引：[`docs/README.md`](../docs/README.md)
-- 目标包结构：[`targets/README.md`](../targets/README.md)

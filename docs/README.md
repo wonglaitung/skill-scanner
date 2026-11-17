@@ -17,8 +17,9 @@
 |---|---|
 | [`README.md`](../README.md) | 项目总入口：Docker 快速开始与分级摘要 |
 | [`assistant/README.md`](../assistant/README.md) | 入口 Skill 的三种使用案例 |
-| [`targets/README.md`](../targets/README.md) | 目标包结构与容器内命令 |
 | [`evals/garak/README.md`](../evals/garak/README.md) | L3 独立扫描环境与历史结果 |
+
+`targets/` 不是仓库内容：由 `init` 在本地生成，或用 `--targets <私有路径>` 指向外部目标包目录。
 
 ## 阅读顺序
 

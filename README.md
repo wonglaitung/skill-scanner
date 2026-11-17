@@ -118,7 +118,10 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
 [`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)；流程入口见
 [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)。
 
-## 已有 Skill
+## 已有 Skill（历史试点，目标包已从仓库移除）
+
+以下为历史试点清单，仅作参考；当前仓库不附带任何目标包。重新测试时由 `init` 生成，
+或用 `--targets <私有路径>` 指向你自己的目标包目录。
 
 | Skill | 类型 | 说明 |
 |---|---|---|
@@ -135,7 +138,6 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
 
 ```text
 docs/                       方案、分级指南、扫描指南、模板
-targets/                    目标包（8 个）
 adapters/                   Promptfoo/Garak/DeepEval 适配层
 adapters/sandbox/           Dockerfile.checks、脚本沙箱、模型端点沙箱
 assistant/                  唯一用户入口 skill-release-guide
@@ -148,7 +150,10 @@ progress.md                 项目进度
 AGENTS.md                   Agent 工作约定
 ```
 
-## 当前结果
+`targets/` 不是仓库的固定内容：它由 `init` 在本地生成，或用 `--targets <私有路径>`
+指向仓库外的目标包目录。存量目标包已从仓库移除，你可拿它们重新测试。
+
+## 当前结果（历史验证记录，存量目标包已移除）
 
 | 检查 | 结果 |
 |---|---|
@@ -197,5 +202,4 @@ harness-sdk 锁定 `0.1.0` 与 commit `c4cf29f`，使用独立虚拟环境。
 - [`对抗审核报告模板.md`](docs/对抗审核报告模板.md)
 - [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)：唯一用户入口，从放置目标到报告生成
 - [`assistant/README.md`](assistant/README.md)：三种典型使用案例
-- [`targets/README.md`](targets/README.md)：目标包结构与容器内命令
 - [`evals/garak/README.md`](evals/garak/README.md)：发布前 L3 独立扫描

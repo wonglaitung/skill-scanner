@@ -1023,7 +1023,7 @@ def decide(report, baseline):
 ```text
 skill-scanner/
 ├── docs/
-├── targets/
+├── targets/                  # 运行时生成或外部私有目录，不入库
 │   └── my_skill/
 │       ├── SKILL.md
 │       ├── scripts/
@@ -1945,6 +1945,5 @@ Garak target L3 扩展（待接入）：
 - 定级、报告与排障：[`docs/Skill 检查使用指南.md`](Skill%20检查使用指南.md)
 - 用户入口：[`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md)
 - 使用案例：[`assistant/README.md`](../assistant/README.md)
-- 目标包：[`targets/README.md`](../targets/README.md)
 - L3 独立扫描：[`evals/garak/README.md`](../evals/garak/README.md)
 - 当前进度：[`progress.md`](../progress.md)
