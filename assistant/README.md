@@ -138,3 +138,10 @@ Agent 实际执行：
 - 模型网关默认 `http://host.docker.internal:8086/v1`（OpenAI-compatible），
   可用 `SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL` 覆盖。
 - 目标包统一放 `targets/`，不要放回 `skills/`。
+
+## 相关文档
+
+- 流程定义：[`skill-release-guide/SKILL.md`](skill-release-guide/SKILL.md)
+- 定级与排障：[`docs/Skill 检查使用指南.md`](../docs/Skill%20检查使用指南.md)
+- 文档索引：[`docs/README.md`](../docs/README.md)
+- 目标包结构：[`targets/README.md`](../targets/README.md)

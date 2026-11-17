@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.5.1
+  version: 0.5.2
 ---
 
 # Skill Release Guide
@@ -224,3 +224,11 @@ targets/my-skill/
 - 不得把待验证 Skill 放进 `skills/`。
 - 不得在容器外直接运行 `release_assistant.py` 或 `manual_check.py`（入口会拒绝）。
 - 不得代替人工签核。
+
+## 相关文档
+
+- 定级、报告解读与排障：[`docs/Skill 检查使用指南.md`](../../docs/Skill%20检查使用指南.md)
+- 方案与门禁：[`Agent Skill 工程化检查方案与生产路线.md`](../../docs/Agent%20Skill%20工程化检查方案与生产路线.md)
+- 文档索引：[`docs/README.md`](../../docs/README.md)
+- 使用案例：[`assistant/README.md`](../README.md)
+- 目标包结构：[`targets/README.md`](../../targets/README.md)

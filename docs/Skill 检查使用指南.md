@@ -355,3 +355,14 @@ docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
 ```
 
 批量运行不替代每个 Skill 的 3 轮基线、Delta Gate 和 L3。
+
+---
+
+## 相关文档
+
+- 流程入口：[`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md)
+- 方案与门禁：[`Agent Skill 工程化检查方案与生产路线.md`](Agent%20Skill%20工程化检查方案与生产路线.md)
+- 文档索引：[`docs/README.md`](README.md)
+- 使用案例：[`assistant/README.md`](../assistant/README.md)
+- 目标包结构：[`targets/README.md`](../targets/README.md)
+- L3 独立扫描：[`evals/garak/README.md`](../evals/garak/README.md)

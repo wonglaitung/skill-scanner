@@ -10,11 +10,11 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 ## 开始工作前必读
 
-1. `docs/Agent Skill 工程化检查方案与生产路线.md`：唯一方案源，工具链、门禁、目录、路线图、Phase A-D 以它为准。
-2. `progress.md`：当前阶段、已完成事项、待办与风险。
-3. `assistant/skill-release-guide/SKILL.md`：唯一用户入口，初始化、检查、基线、Gate、L3 与报告。
-4. `docs/Skill 检查使用指南.md`：S 风险、L 深度、Agent 标志、最低检查矩阵、报告解读与排障。
-5. `docs/README.md`：文档索引；只保留当前有效文档。
+1. [`docs/Agent Skill 工程化检查方案与生产路线.md`](docs/Agent%20Skill%20工程化检查方案与生产路线.md)：唯一方案源，工具链、门禁、目录、路线图、Phase A-D 以它为准。
+2. [`progress.md`](progress.md)：当前阶段、已完成事项、待办与风险。
+3. [`assistant/skill-release-guide/SKILL.md`](assistant/skill-release-guide/SKILL.md)：唯一用户入口，初始化、检查、基线、Gate、L3 与报告。
+4. [`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)：S 风险、L 深度、Agent 标志、最低检查矩阵、报告解读与排障。
+5. [`docs/README.md`](docs/README.md)：文档索引；只保留当前有效文档。
 
 ## 当前阶段
 
@@ -82,11 +82,12 @@ AGENTS.md
 
 ## 分级模型
 
-统一使用 **S + L + Agent**，详见 `docs/Skill 检查使用指南.md`。
+统一使用 **S + L + Agent**，权威定义见
+[`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)。
 
 - **S0-S3**：业务风险等级
 - **L0-L3**：检查深度
-- **`--agent`**：Agent 执行标志，不是等级
+- **`agent: true`**：Agent 执行标志（写入 manifest），不是等级
 
 最低检查：
 

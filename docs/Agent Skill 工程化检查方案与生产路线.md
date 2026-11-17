@@ -5,7 +5,7 @@
 | 文档版本 | v2.13 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
-| 关联文档 | `docs/README.md`、`docs/Skill 检查使用指南.md`、`progress.md` |
+| 关联文档 | [文档索引](README.md)、[使用指南](Skill%20检查使用指南.md)、[进度](../progress.md)、[入口 Skill](../assistant/skill-release-guide/SKILL.md) |
 | 维护人 | 安全工程 / DevOps / Skill Owner |
 
 ---
@@ -1938,3 +1938,13 @@ Garak target L3 扩展（待接入）：
 8. 对抗性测试不再作为方案主体，而是提示词与语义检查中的一个子域。
 
 ---
+
+## 相关文档
+
+- 文档索引：[`docs/README.md`](README.md)
+- 定级、报告与排障：[`docs/Skill 检查使用指南.md`](Skill%20检查使用指南.md)
+- 用户入口：[`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md)
+- 使用案例：[`assistant/README.md`](../assistant/README.md)
+- 目标包：[`targets/README.md`](../targets/README.md)
+- L3 独立扫描：[`evals/garak/README.md`](../evals/garak/README.md)
+- 当前进度：[`progress.md`](../progress.md)

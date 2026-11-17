@@ -9,6 +9,17 @@
 | [`Agent Skill 工程化检查方案与生产路线.md`](Agent%20Skill%20工程化检查方案与生产路线.md) | 方案源：威胁模型、检查框架、工具链、门禁、路线图、Phase A-D 与验收 | 方案负责人、安全工程、架构 | 做方案决策、排期或验收时 |
 | [`对抗审核报告模板.md`](对抗审核报告模板.md) | 独立对抗审核报告模板 | 安全审核人 | 输出人工审核报告时 |
 
+### 子目录补充说明
+
+以下文档只做补充说明，不定义新流程或门禁；权威定义仍以上表为准。
+
+| 文档 | 用途 |
+|---|---|
+| [`README.md`](../README.md) | 项目总入口：Docker 快速开始与分级摘要 |
+| [`assistant/README.md`](../assistant/README.md) | 入口 Skill 的三种使用案例 |
+| [`targets/README.md`](../targets/README.md) | 目标包结构与容器内命令 |
+| [`evals/garak/README.md`](../evals/garak/README.md) | L3 独立扫描环境与历史结果 |
+
 ## 阅读顺序
 
 1. 用 [`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md) 走完整流程。

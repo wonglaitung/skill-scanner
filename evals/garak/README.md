@@ -116,3 +116,11 @@ Base64 的最终修复不是继续加 Prompt，而是在 `adapters/input_guard.p
 ## 注意
 
 `scan.sh` 是单 probe/自定义 spec 工具；发布前复查优先用 `scan_release.sh`，并保留 `garak_summary.md` 作为独立证据。
+
+## 相关文档
+
+- 方案 §7.4 发布前独立扫描：[`Agent Skill 工程化检查方案与生产路线.md`](../../docs/Agent%20Skill%20工程化检查方案与生产路线.md)
+- 定级与报告解读：[`docs/Skill 检查使用指南.md`](../../docs/Skill%20检查使用指南.md)
+- 用户入口：[`assistant/skill-release-guide`](../../assistant/skill-release-guide/SKILL.md)
+- 文档索引：[`docs/README.md`](../../docs/README.md)
+- 目标包：[`targets/README.md`](../../targets/README.md)
