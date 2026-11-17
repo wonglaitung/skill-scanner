@@ -69,11 +69,14 @@ mkdir -p "$(dirname "$REPORT_PREFIX")"
 if [ ! -x "$GARAK_PYTHON" ]; then
   GARAK_PYTHON="python3"
 fi
+GARAK_RC=0
 "$GARAK_PYTHON" -m garak \
   --target_type rest \
   -G "$CONFIG" \
   --spec "$SPEC" \
   --generations "$GENERATIONS" \
   --parallel_attempts "$PARALLEL" \
-  --report_prefix "$REPORT_PREFIX"
+  --report_prefix "$REPORT_PREFIX" || GARAK_RC=$?
 echo "garak report prefix: $REPORT_PREFIX"
+echo "garak raw exit code: $GARAK_RC"
+exit "$GARAK_RC"

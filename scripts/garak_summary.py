@@ -54,9 +54,11 @@ def triage_attempts(entries: list[dict]) -> dict:
             if seq in seen:
                 continue
             texts = [
-                output.get("text", "")
+                text
                 for output in (attempt.get("outputs") or [])
                 if isinstance(output, dict)
+                for text in [output.get("text") or ""]
+                if isinstance(text, str)
             ]
             text = "\n".join(texts)
             lower = text.lower()
