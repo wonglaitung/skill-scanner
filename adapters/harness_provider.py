@@ -15,12 +15,12 @@ def call_api(prompt: str, options: dict, context: dict) -> dict:
     config = (options or {}).get("config", {}) or {}
     adapter = HarnessAgentAdapter(
         skill_path=Path(
-            config.get("skillPath", "skills/account-balance-query/SKILL.md")
+            config.get("skillPath", "targets/account-balance-query/SKILL.md")
         ),
         model=config.get("model", os.getenv("SKILL_MODEL", "qwen3")),
         api_base=config.get(
             "apiBaseUrl",
-            os.getenv("SKILL_API_BASE", "http://localhost:8086/v1"),
+            os.getenv("SKILL_API_BASE", "http://host.docker.internal:8086/v1"),
         ),
         tools=build_tools(config.get("toolSet", "default")),
         max_iterations=int(config.get("maxSteps", 10)),

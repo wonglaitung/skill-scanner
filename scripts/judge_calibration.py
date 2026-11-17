@@ -52,7 +52,7 @@ def main() -> int:
     judge = LocalModel(
         model=os.getenv("JUDGE_MODEL", "qwen3"),
         base_url=os.getenv(
-            "JUDGE_API_BASE", os.getenv("SKILL_API_BASE", "http://localhost:8086/v1")
+            "JUDGE_API_BASE", os.getenv("SKILL_API_BASE", "http://host.docker.internal:8086/v1")
         ),
         api_key=os.getenv(
             "JUDGE_API_KEY", os.getenv("SKILL_API_KEY", "local-placeholder")

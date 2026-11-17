@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from quarantine import active_entries, match  # noqa: E402
 
-SKILLS_DIR = ROOT / "skills"
+SKILLS_DIR = ROOT / "targets"
 REPORTS_DIR = ROOT / "reports"
 
 LEVELS = {"L0": 0, "L1": 1, "L2": 2, "L3": 3}
@@ -109,6 +109,15 @@ def run_step(
             "stdout": exc.stdout or "",
             "stderr": exc.stderr or "",
         }
+
+
+def hard_failures(steps: list[dict]) -> list[dict]:
+    return [
+        step
+        for step in steps
+        if step.get("required", True)
+        and step.get("status") in {"failed", "error", "timeout", "skipped"}
+    ]
 
 
 def promptfoo_config(skill: str, agent: bool = False) -> Path | None:
@@ -255,6 +264,9 @@ def parse_security(out: Path) -> dict:
 
 
 def harness_python() -> str | None:
+    configured = os.getenv("HARNESS_PYTHON")
+    if configured and Path(configured).exists():
+        return configured
     candidate = ROOT / ".venv-harness" / "bin" / "python"
     return str(candidate) if candidate.exists() else None
 
@@ -317,6 +329,14 @@ def write_report(
         lines.append(
             f"| {step['name']} | {step['status']} | {step.get('elapsed_seconds', '-')} |"
         )
+
+    blocking = hard_failures(steps)
+    if blocking:
+        lines.extend(["", "## 阻断项", ""])
+        for step in blocking:
+            reason = step.get("reason") or ""
+            suffix = f"（{reason}）" if reason else ""
+            lines.append(f"- {step['name']}：{step['status']}{suffix}")
 
     promptfoo = summary.get("metrics", {}).get("promptfoo")
     if promptfoo:
@@ -557,12 +577,25 @@ def run_target_check(args: argparse.Namespace) -> int:
             "semgrep",
             [semgrep_path, "--config", "p/python", "--config", "p/owasp-top-ten",
              str(target_dir), "--error"]
-            if semgrep_path
-            else None,
-            env,
-            timeout=600,
-        )
+             if semgrep_path
+             else None,
+             env,
+             timeout=600,
+             required=False,
+         )
+     )
+
+    security_env = {**env, "REPORT_DIR": str(out)}
+    security_step = run_step(
+        "security",
+        [tool("bash") or "bash", "ci/run_security.sh"],
+        security_env,
+        timeout=900,
+        required=False,
     )
+    steps.append(security_step)
+    summary_security = parse_security(out)
+    summary_security["status"] = security_step["status"]
 
     summary = {
         "skill": args.skill,
@@ -572,18 +605,29 @@ def run_target_check(args: argparse.Namespace) -> int:
         "api_base": args.api_base,
         "agent": args.agent,
         "steps": [],
-        "metrics": {},
+        "metrics": {"security": summary_security},
     }
 
     if selected >= 1 and manifest.get("promptfoo"):
         config = (target_dir / str(manifest["promptfoo"])).resolve()
-        npx = tool("npx")
+        pf_args = [
+            "eval",
+            "-c",
+            str(config),
+            "-o",
+            str(out / "promptfoo.json"),
+            "--max-concurrency",
+            "1",
+        ]
+        promptfoo_bin = tool("promptfoo")
+        if promptfoo_bin:
+            pf_cmd = [promptfoo_bin, *pf_args]
+        else:
+            npx = tool("npx")
+            pf_cmd = [npx, "-y", "promptfoo@latest", *pf_args] if npx else None
         step = run_step(
             "promptfoo",
-            [npx, "-y", "promptfoo@latest", "eval", "-c", str(config),
-             "-o", str(out / "promptfoo.json"), "--max-concurrency", "1"]
-            if npx
-            else None,
+            pf_cmd,
             env,
             timeout=args.promptfoo_timeout,
         )
@@ -592,9 +636,10 @@ def run_target_check(args: argparse.Namespace) -> int:
 
     if selected >= 2 and manifest.get("deepeval"):
         target = (target_dir / str(manifest["deepeval"])).resolve()
+        deepeval_python = os.getenv("DEEPEVAL_PYTHON") or sys.executable
         step = run_step(
             "deepeval",
-            [sys.executable, "-m", "pytest", str(target), "-q"],
+            [deepeval_python, "-m", "pytest", str(target), "-q"],
             env,
             timeout=args.promptfoo_timeout,
         )
@@ -639,16 +684,11 @@ def run_target_check(args: argparse.Namespace) -> int:
     baseline = (target_dir / str(manifest.get("baseline") or "")).resolve()
     write_report(args.skill, args.level, out, summary, steps, baseline_path=baseline)
 
-    hard_failures = [
-        step
-        for step in steps
-        if step.get("required", True)
-        and step["status"] in {"failed", "error", "timeout"}
-    ]
+    failures = hard_failures(steps)
     print(f"报告：{out / 'report.md'}")
     print(f"固定摘要：{out / 'summary.json'}")
-    if hard_failures:
-        print("失败/超时：" + ", ".join(step["name"] for step in hard_failures))
+    if failures:
+        print("失败/跳过：" + ", ".join(step["name"] for step in failures))
         return 0 if args.allow_failures else 1
     print("全部必需步骤通过")
     return 0
@@ -656,12 +696,17 @@ def run_target_check(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="手工触发 Skill 检查")
-    parser.add_argument("--skill", required=True, help="skills/ 或 targets/ 下的目录名")
+    parser.add_argument("--skill", required=True, help="targets/ 下的目录名")
     parser.add_argument("--targets", type=Path, required=True, help="目标包仓库或 targets 目录")
     parser.add_argument("--level", choices=LEVELS, default="L1")
-    parser.add_argument("--model", default="qwen3")
-    parser.add_argument("--api-base", default="http://localhost:8086/v1")
-    parser.add_argument("--api-key", default="local-placeholder")
+    parser.add_argument("--model", default=os.getenv("SKILL_MODEL", "qwen3"))
+    parser.add_argument(
+        "--api-base",
+        default=os.getenv("SKILL_API_BASE", "http://host.docker.internal:8086/v1"),
+    )
+    parser.add_argument(
+        "--api-key", default=os.getenv("SKILL_API_KEY", "local-placeholder")
+    )
     parser.add_argument("--judge-model", default=None)
     parser.add_argument("--skill-timeout", type=int, default=180)
     parser.add_argument("--max-tokens", type=int, default=2048)
@@ -677,6 +722,12 @@ def main() -> int:
         help="对提示词增加本地 qwen3 辅助审查",
     )
     args = parser.parse_args()
+    if os.environ.get("SKILL_IN_DOCKER") != "1":
+        print(
+            "[FAIL] 检查必须在 Docker 容器内运行；请使用 scripts/check_in_docker.sh",
+            file=sys.stderr,
+        )
+        return 2
 
     if not re.fullmatch(r"[a-z0-9-]+", args.skill):
         print(f"[FAIL] invalid skill name: {args.skill}")
@@ -779,6 +830,7 @@ def main() -> int:
             else None,
             env,
             timeout=300,
+            required=False,
         )
     )
 
@@ -792,6 +844,7 @@ def main() -> int:
             else None,
             env,
             timeout=600,
+            required=False,
         )
     )
 
@@ -802,6 +855,7 @@ def main() -> int:
         [tool("bash") or "bash", "ci/run_security.sh"] if docker_path else None,
         security_env,
         timeout=900,
+        required=False,
     )
     steps.append(security_step)
     summary_security = parse_security(out)
@@ -815,6 +869,7 @@ def main() -> int:
             [shellcheck_path, *shell_files] if shellcheck_path and shell_files else None,
             env,
             timeout=300,
+            required=False,
         )
     )
 
@@ -845,13 +900,24 @@ def main() -> int:
                 }
             )
         else:
-            npx = tool("npx")
+            pf_args = [
+                "eval",
+                "-c",
+                str(config),
+                "-o",
+                str(out / "promptfoo.json"),
+                "--max-concurrency",
+                "1",
+            ]
+            promptfoo_bin = tool("promptfoo")
+            if promptfoo_bin:
+                pf_cmd = [promptfoo_bin, *pf_args]
+            else:
+                npx = tool("npx")
+                pf_cmd = [npx, "-y", "promptfoo@latest", *pf_args] if npx else None
             promptfoo_step = run_step(
                 "promptfoo",
-                [npx, "-y", "promptfoo@latest", "eval", "-c", str(config),
-                 "-o", str(out / "promptfoo.json"), "--max-concurrency", "1"]
-                if npx
-                else None,
+                pf_cmd,
                 env,
                 timeout=args.promptfoo_timeout,
             )
@@ -893,7 +959,9 @@ def main() -> int:
             )
         else:
             test_file, expression = target
-            python_bin = harness_python() if args.agent else sys.executable
+            python_bin = harness_python() if args.agent else (
+                os.getenv("DEEPEVAL_PYTHON") or sys.executable
+            )
             cmd = [python_bin or sys.executable, "-m", "pytest", str(test_file), "-q"]
             if expression:
                 cmd.extend(["-k", expression])
@@ -1045,16 +1113,11 @@ def main() -> int:
 
     write_report(args.skill, args.level, out, summary, steps)
 
-    hard_failures = [
-        step
-        for step in steps
-        if step.get("required", True)
-        and step["status"] in {"failed", "error", "timeout"}
-    ]
+    failures = hard_failures(steps)
     print(f"报告：{out / 'report.md'}")
     print(f"固定摘要：{out / 'summary.json'}")
-    if hard_failures:
-        print("失败/超时：" + ", ".join(step["name"] for step in hard_failures))
+    if failures:
+        print("失败/跳过：" + ", ".join(step["name"] for step in failures))
         return 0 if args.allow_failures else 1
     print("全部必需步骤通过")
     return 0

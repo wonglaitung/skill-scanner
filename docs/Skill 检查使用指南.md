@@ -59,13 +59,13 @@ L1 包含 L0，L2 包含 L1，L3 包含 L2。
 Agent 不是等级，是 L1/L2 的执行标志。
 
 ```bash
-python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
+./scripts/check_in_docker.sh check --targets targets --skill account-balance-query
 ```
 
 含义：
 
-- `L2`：检查深度到 DeepEval；
-- `--agent`：用 Agent 模式执行，真正调用工具、记录 Trace、启用 Gate 和录制回放。
+- `L2`：检查深度到 DeepEval（由 `manifest.yaml` 的 `level` 指定）；
+- `agent: true`：工具型由 manifest 自动启用 Agent 模式，真正调用工具、记录 Trace、启用 Gate 和录制回放。
 
 Agent 模式适用：
 
@@ -119,9 +119,9 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 |---|---|
 | 按 S 自动选择最低 L | 未实现 |
 | 传入 L 低于最低矩阵时拦截 | 未实现 |
-| 缺 Promptfoo/DeepEval 配置时强提醒 | 未实现，可能显示 skipped |
+| 缺 Promptfoo/DeepEval 配置时强提醒 | 已实现：必需步骤 `skipped` 判失败 |
 | 批量运行所有 Skill | 未实现 |
-| 发布结论自动汇总 | 未实现 |
+| 发布结论自动汇总 | 已实现：`summary.md` 输出 Decision、失败项、轮次报告与证据清单 |
 
 ### 4.2 运行前必须手工完成
 
@@ -131,7 +131,7 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 2. 补齐 `SKILL.md` 的 `name`、`description`、`license`、`allowed-tools`、`metadata.owner/risk-level/version`；
 3. 生成并验证完整性锁；
 4. 通过结构校验；
-5. 准备本地模型网关和依赖；
+5. 准备可访问的 OpenAI-compatible 模型网关；检查工具链与被测执行依赖都在 Docker 镜像内；
 6. 准备合成测试数据，禁止真实 PII、密钥、生产凭证。
 
 按矩阵补充：
@@ -141,8 +141,8 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 | S0/S1 纯提示词 → L1 | 新建 `targets/<skill>/evals/promptfoo.yaml`，补正常、拒绝、PII/泄露用例 | 15-30 分钟 | 3-5 分钟 |
 | S2 纯提示词 → L2 | 在 L1 基础上，登记 DeepEval 映射或新增测试，补相关性/忠实度/幻觉用例 | 30-60 分钟 | 5-10 分钟 |
 | S3 纯提示词 → L3 | 在 L2 基础上运行 target L3：`TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh` | 25-35 分钟 | 25-35 分钟 |
-| 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`，创建 `.venv-harness` | 1-2 小时 | 5-10 分钟 |
-| 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查 | 1.5-3 小时 | 25-35 分钟 |
+| 工具型 → L2 + Agent | 声明 `metadata.tool-set` 和 `metadata.tool-permissions`，实现工具集，补 `.agent.yaml` 和 `test_agent_<skill>.py`；harness 已固化在镜像内 | 1-2 小时 | 5-10 分钟 |
+| 高风险工具型 → L2 + Agent + L3 | 在工具型基础上，再跑 Release v2；L3 不能替代工具级 Agent 检查；Garak 已固化在镜像内 | 1.5-3 小时 | 25-35 分钟 |
 | 脚本型 → L1 | 补 provider、Promptfoo 配置和契约测试（如 `ci/test_<skill>_contract.py`） | 20-40 分钟 | 1-2 分钟 |
 
 > 时间为按当前本地 qwen3、现有脚本和已有配置的估算。
@@ -160,14 +160,13 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 - [ ] Promptfoo 配置存在
 - [ ] L2 的 DeepEval 目标存在
 - [ ] 工具型有 `tool-set`、`tool-permissions`、Agent 配置和测试
-- [ ] Agent 模式已创建 `.venv-harness`
-- [ ] L3 已准备 `.venv-garak`
+- [ ] Docker 可用，模型网关地址与密钥已通过 `SKILL_API_BASE` / `SKILL_API_KEY` 配置
 - [ ] 测试数据为合成数据
 - [ ] 缺配置导致的 `skipped` 不被当作 `passed`
 
 ### 4.3 用 preflight.py 自动检查前置条件
 
-运行前先跑 `preflight`；工具型加 `--agent`，发布前加 `--release`。命令见 §5.6。
+运行前先跑 `preflight`；工具型需要 `agent: true`（由入口从 manifest 读取），发布前可加 `--l3`。入口命令见 §5.6。
 
 `preflight` 会检查：
 
@@ -177,9 +176,9 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 - 工具型是否加了 `--agent`；
 - `validate`、完整性锁、提示词审计、权限审计；
 - Promptfoo 配置、DeepEval 目标、Agent 测试；
-- 本地模型网关、`.venv-harness`、`.venv-garak`；
-- 基线轮数；`--release` 时要求至少 3 轮；
-- Docker 是否可用。
+- 模型网关可达（`SKILL_API_BASE`），工具链与 harness/Garak 均在检查镜像内；
+- 基线轮数；发布前要求至少 3 轮；
+- Docker 是否可用（宿主机唯一依赖）。
 
 输出：
 
@@ -218,8 +217,11 @@ status: failed  failures=1  warnings=0
 
 ```text
 reports/<skill>/release-<timestamp>/
-├── summary.md
+├── summary.md              # Decision、失败项、轮次报告与证据清单
 ├── summary.json
+├── round-1/                # 每轮 manual_check 的 report.md / summary.json / promptfoo.json
+├── round-2/
+├── round-3/
 └── garak/                  # 启用 --l3 时
 ```
 
@@ -247,7 +249,7 @@ reports/garak/release/<skill>/<timestamp>/
 
 ### 5.2 阅读顺序
 
-1. `summary.md` / `report.md` 的步骤结果；
+1. `summary.md` 的 `Decision` 与 `Failure Reasons`，再按 `Rounds` 链接查看每轮 `report.md`；
 2. Promptfoo 失败用例；
 3. DeepEval 或工具测试；
 4. 基线与 Delta Gate；
@@ -296,13 +298,13 @@ agent: true
 |---|---|
 | `manifest.yaml not found` | 从入口 Skill 第 1 步重新初始化 |
 | `preflight` 失败 | 按输出补 manifest、adapter、evals、tools |
-| `skill-lock` 失败 | 执行 `python scripts/skill_lock.py generate` |
+| `skill-lock` 失败 | 在容器内执行 `python scripts/skill_lock.py --targets /workspace/targets generate`，或由入口自动重建 |
 | Promptfoo 配置缺失 | 补 `targets/<skill>/evals/promptfoo.yaml` |
 | DeepEval 目标缺失 | 补 `targets/<skill>/evals/test_*.py` |
 | 工具型 capability-audit 失败 | 检查 `tools.yaml` 与 `adapter.py registry` |
-| 模型连接失败 | 检查 `http://localhost:8086/v1` |
+| 模型连接失败 | 检查容器能否访问 `SKILL_API_BASE`（默认 `http://host.docker.internal:8086/v1`）及 `SKILL_API_KEY` |
 | L3 很慢 | 使用独立 Garak 环境，避免并发跑多个目标 |
-| 出现 `skipped` | 不能当 `passed`，必须补配置或说明原因 |
+| 出现 `skipped` | 必需步骤 `skipped` 会判 `FAIL`；可选工具 `skipped` 不算通过，必须补配置或说明原因 |
 
 ---
 
@@ -311,37 +313,28 @@ agent: true
 仅在入口流程失败、需要定位时使用。
 
 ```bash
-# 结构校验
-python ci/validate_skill.py
-python ci/validate_skill.py --skill my-skill
+# 唯一入口（容器外只保留薄封装）
+./scripts/check_in_docker.sh check --targets targets --skill my-skill
+./scripts/check_in_docker.sh run --targets targets --skill my-skill --runs 3
 
-# 完整性锁
-python scripts/skill_lock.py generate
-python scripts/skill_lock.py verify
+# 容器内调试：运行前置
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/preflight.py --targets /workspace/targets --skill my-skill --level L2
 
-# 运行前置
-python scripts/preflight.py --targets targets --skill my-skill --risk S2 --level L2
+# 容器内调试：单次检查
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/manual_check.py --targets /workspace/targets --skill my-skill --level L2
 
-# 单次检查
-python scripts/manual_check.py --targets targets --skill my-skill --level L2
+# 容器内调试：基线
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/baseline.py --targets /workspace/targets trend my-skill
 
-# 权限一致性
-python scripts/capability_audit.py --targets targets --skill my-skill
-
-# 提示词质量
-python scripts/prompt_audit.py --skill my-skill
-python scripts/prompt_audit.py --skill my-skill --llm
-
-# 基线
-python scripts/baseline.py --targets targets collect my-skill --runs 3
-python scripts/baseline.py --targets targets trend my-skill
-python scripts/baseline.py --targets targets gate my-skill --tolerance 0.05
-
-# 目标服务（调试 Garak）
-python scripts/target_server.py --targets targets --skill my-skill --port 8095
+# 模型网关（OpenAI-compatible）
+export SKILL_API_BASE=https://your-gateway.example/v1
+export SKILL_API_KEY=your-key
 ```
 
-工具型 Skill 在 `preflight` 和 `manual_check` 上加 `--agent`。
+工具型 Skill 由 manifest 的 `agent: true` 自动启用 Agent 模式。
 
 ---
 
@@ -349,13 +342,16 @@ python scripts/target_server.py --targets targets --skill my-skill --port 8095
 
 ```bash
 # 批量 preflight
-python scripts/scan_all.py --targets targets
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/scan_all.py --targets /workspace/targets
 
 # 批量单次检查
-python scripts/scan_all.py --targets targets --mode check
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/scan_all.py --targets /workspace/targets --mode check
 
 # 离线只检查配置
-python scripts/scan_all.py --targets targets --skip-network
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/scan_all.py --targets /workspace/targets --skip-network
 ```
 
 批量运行不替代每个 Skill 的 3 轮基线、Delta Gate 和 L3。

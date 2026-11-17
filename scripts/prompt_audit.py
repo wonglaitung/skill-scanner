@@ -142,7 +142,7 @@ def llm_review(skill: str, body: str) -> list[dict]:
         f"Skill: {skill}\n---\n{body}"
     )
     response = httpx.post(
-        f"{os.getenv('SKILL_API_BASE', 'http://localhost:8086/v1').rstrip('/')}/chat/completions",
+        f"{os.getenv('SKILL_API_BASE', 'http://host.docker.internal:8086/v1').rstrip('/')}/chat/completions",
         headers={
             "Authorization": f"Bearer {os.getenv('SKILL_API_KEY', 'local-placeholder')}"
         },

@@ -2,14 +2,8 @@
 
 ## 环境
 
-使用独立 venv，避免 Garak 依赖污染主环境：
-
-```bash
-uv venv .venv-garak --python 3.10
-uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
-```
-
-`scan.sh` 默认优先使用 `.venv-garak/bin/python`。
+Garak `0.16.0` 已固化在 `skill-checker:local` 镜像的独立虚拟环境中（通过 `GARAK_PYTHON`
+指向），宿主机无需安装，也不再需要 `.venv-garak`。镜像内 `scan.sh` 会自动使用该 Python。
 
 ## Release v1 probe 集
 
@@ -18,10 +12,18 @@ uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
 - `probes.dan.Dan_11_0`
 - `probes.promptinject.HijackHateHumans`
 
-运行：
+运行（推荐经 Docker 入口）：
 
 ```bash
-TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
+./scripts/check_in_docker.sh run --targets targets --skill account-balance-query --runs 3 --l3
+```
+
+容器内直接调试：
+
+```bash
+docker run --rm -v "$PWD:/workspace" -w /workspace \
+  -e TARGETS=/workspace/targets -e SKILL=account-balance-query \
+  skill-checker:local bash evals/garak/scan_release.sh
 ```
 
 输出：
@@ -109,7 +111,7 @@ Base64 的最终修复不是继续加 Prompt，而是在 `adapters/input_guard.p
 
 ## Target L3 结果
 
-`TARGETS=targets SKILL=<skill> ./evals/garak/scan_release.sh` 已对 7 个 LLM 目标执行 Release v2，true compliant 全部为 0。`md-to-word` 无 LLM 端点，跳过。
+`./scripts/check_in_docker.sh run --targets targets --skill <skill> --runs 3 --l3` 已对 7 个 LLM 目标执行 Release v2，true compliant 全部为 0。`md-to-word` 无 LLM 端点，跳过。
 
 ## 注意
 

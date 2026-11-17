@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,3 +56,47 @@ def test_gate_detects_regression(tmp_path, monkeypatch) -> None:
     )
     assert baseline.gate("demo", None, 0.05, 3, False) == 1
     assert baseline.gate("demo", None, 0.2, 3, False) == 0
+
+
+def test_collect_from_release_report_dir(tmp_path, monkeypatch) -> None:
+    targets = tmp_path / "targets"
+    (targets / "demo" / "evals").mkdir(parents=True)
+    report_dir = tmp_path / "release-1"
+    monkeypatch.setattr(baseline, "REPORTS_DIR", tmp_path / "reports")
+
+    for index, rate in enumerate((1.0, 0.9, 0.8), start=1):
+        round_dir = report_dir / f"round-{index}"
+        round_dir.mkdir(parents=True)
+        summary = {
+            "skill": "demo",
+            "level": "L2",
+            "agent": False,
+            "timestamp": f"2026-11-1{index}-000000",
+            "model": "qwen3",
+            "api_base": "http://localhost:8086/v1",
+            "metrics": {
+                "promptfoo": {
+                    "pass_rate": rate,
+                    "total": 2,
+                    "passed": 2,
+                    "failed": 0,
+                    "errors": 0,
+                    "findings": [],
+                },
+                "deepeval": {"pass_rate": 1.0},
+            },
+        }
+        (round_dir / "summary.json").write_text(
+            json.dumps(summary), encoding="utf-8"
+        )
+        (round_dir / "promptfoo.json").write_text(
+            '{"results":{"results":[]}}', encoding="utf-8"
+        )
+
+    code = baseline.collect("demo", 3, None, None, None, targets, report_dir)
+    assert code == 0
+    data = json.loads(
+        (targets / "demo" / "evals" / "baseline.json").read_text(encoding="utf-8")
+    )
+    assert data["aggregate"]["run_count"] == 3
+    assert data["aggregate"]["promptfoo"]["pass_rate"]["mean"] == 0.9

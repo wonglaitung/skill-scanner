@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.3.0
+  version: 0.5.1
 ---
 
 # Skill Release Guide
@@ -38,26 +38,25 @@ metadata:
 
 确认：
 
-- Python 3.10+
-- Node.js 20+
-- Docker
-- 本地模型网关：`http://localhost:8086/v1`，模型 `qwen3`
-- Agent 型 Skill 已执行：
+- Docker 是唯一运行时依赖。Python、Node.js、Promptfoo、DeepEval、Semgrep、Garak、
+  gitleaks、Trivy 以及 harness SDK 都已固化在检查镜像里，宿主机无需安装。
+- 可访问的 OpenAI-compatible 模型网关。默认地址为
+  `http://host.docker.internal:8086/v1`，模型 `qwen3`。
+- 网关不是默认地址或需要鉴权时，先设置环境变量：
   ```bash
-  ./scripts/setup_harness_env.sh
+  export SKILL_API_BASE=https://your-gateway.example/v1
+  export SKILL_API_KEY=your-key
+  export SKILL_MODEL=your-model
   ```
-- 需要 L3 时已准备独立 Garak 环境：
-  ```bash
-  uv venv .venv-garak --python 3.10
-  uv pip install --python .venv-garak/bin/python 'garak==0.16.0'
-  ```
+- 首次运行会自动构建 `skill-checker:local` 镜像；更新依赖后可用
+  `REBUILD=1 ./scripts/check_in_docker.sh ...` 重建。
 
 测试数据只使用合成数据，禁止真实 PII、密钥、生产凭证。
 
 ## 第 1 步：初始化目标包
 
 ```bash
-python scripts/release_assistant.py init \
+./scripts/check_in_docker.sh init \
   --source /path/to/skill \
   --name my-skill \
   --owner my-team \
@@ -70,7 +69,7 @@ python scripts/release_assistant.py init \
 工具型加 `--agent`：
 
 ```bash
-python scripts/release_assistant.py init \
+./scripts/check_in_docker.sh init \
   --source /path/to/skill \
   --name my-skill \
   --owner my-team \
@@ -80,19 +79,45 @@ python scripts/release_assistant.py init \
   --targets targets
 ```
 
-生成：
+生成（按类型不同）：
 
 ```text
+# prompt（L2/L3）
+targets/my-skill/
+├── SKILL.md
+├── manifest.yaml
+├── adapter.py
+├── safety.py
+├── evals/
+│   ├── promptfoo.yaml
+│   └── test_target.py
+└── fixtures/
+    └── README.md
+
+# script（任意等级）
+targets/my-skill/
+├── SKILL.md
+├── manifest.yaml
+├── adapter.py
+├── evals/
+│   └── promptfoo.yaml
+└── fixtures/
+    └── README.md
+
+# tool（L2/L3）
 targets/my-skill/
 ├── SKILL.md
 ├── manifest.yaml
 ├── adapter.py
 ├── tools.yaml
 ├── evals/
-├── fixtures/
-└── safety.py
+│   ├── promptfoo.yaml
+│   └── test_target.py
+└── fixtures/
+    └── README.md
 ```
 
+`--source` 目录里的其他文件会原样复制。L0/L1 不生成 `test_target.py`。
 不要放到 `skills/`。已有目标包时不要覆盖，先确认。
 
 ## 第 2 步：补齐 TODO
@@ -110,7 +135,7 @@ targets/my-skill/
 ## 第 3 步：单次检查
 
 ```bash
-python scripts/release_assistant.py check \
+./scripts/check_in_docker.sh check \
   --targets targets \
   --skill my-skill
 ```
@@ -126,7 +151,7 @@ python scripts/release_assistant.py check \
 ## 第 4 步：完整发布前检查
 
 ```bash
-python scripts/release_assistant.py run \
+./scripts/check_in_docker.sh run \
   --targets targets \
   --skill my-skill \
   --runs 3
@@ -135,7 +160,7 @@ python scripts/release_assistant.py run \
 发布前需要 L3：
 
 ```bash
-python scripts/release_assistant.py run \
+./scripts/check_in_docker.sh run \
   --targets targets \
   --skill my-skill \
   --runs 3 --l3
@@ -145,16 +170,22 @@ python scripts/release_assistant.py run \
 
 1. 生成完整性锁；
 2. 运行 `preflight`；
-3. 连续跑 3 轮 `manual_check`；
-4. 采集目标基线；
+3. 连续跑 N 轮 `manual_check`，每轮输出到 `round-<i>/report.md`；
+4. 从这些轮次采集目标基线；
 5. 运行 Delta Gate；
 6. 可选执行 target L3/Garak Release v2；
 7. 输出 `reports/<skill>/release-<timestamp>/summary.md` 和 `summary.json`。
+
+`summary.md` 给出 `Decision`（PASS/FAIL）、失败步骤、`Warnings`、每轮报告路径与指标、证据清单。
+任何必需步骤失败或 skipped 都会使 `Decision = FAIL`，命令返回非 0。
 
 ## 第 5 步：解读结果
 
 重点看：
 
+- `Decision` 是否 PASS、`Failure Reasons` 是否为空；
+- `Warnings` 中的模板占位提示（用例或 adapter 是否已替换）；
+- `Rounds` 表中每轮报告路径与 Promptfoo/DeepEval 通过率；
 - preflight 是否通过；
 - manual_check 是否通过；
 - 3 轮基线和 Flaky；
@@ -170,6 +201,7 @@ python scripts/release_assistant.py run \
 
 按检查清单逐项确认：
 
+- [ ] `summary.md` 的 `Decision` 为 PASS，失败/跳过项有人工结论
 - [ ] `preflight` 通过
 - [ ] 3 轮 `manual_check` 完成
 - [ ] `baseline gate` PASS
@@ -190,4 +222,5 @@ python scripts/release_assistant.py run \
 - 不得把真实 PII、密钥、生产凭证放进 fixtures。
 - 不得在用户未确认前删除或覆盖现有目标包。
 - 不得把待验证 Skill 放进 `skills/`。
+- 不得在容器外直接运行 `release_assistant.py` 或 `manual_check.py`（入口会拒绝）。
 - 不得代替人工签核。

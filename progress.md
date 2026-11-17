@@ -5,21 +5,22 @@
 Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，最小骨架已建立。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
-- 当前版本：v2.11
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
+- 当前版本：v2.13
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.11 |
+| 方案文档 | 已完成 v2.13 |
 | 代码实现 | target-only 扫描、单入口助手、手工检查与基线工具已落地；8 个目标包 |
 | CI 流水线 | `skill-check` 已启用静态检查（validate/Ruff/pytest）；nightly 待自托管 runner |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`targets/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
 | 试点 Skill | 3 个 S2 纯提示词；1 个示例；1 个脚本型；3 个工具型：`account-balance-query`、`service-ticket-update`、`cross-skill-router` |
 | 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
 | 自动化验证 | 校验/Ruff/pytest 通过；8 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
-| 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
+| 本地模型网关 | OpenAI-compatible，通过 `SKILL_API_BASE`/`SKILL_API_KEY` 配置，容器内默认 `http://host.docker.internal:8086/v1`，模型 `qwen3` |
+| Docker 全链路 | 已完成：统一镜像 `skill-checker:local`、唯一入口 `scripts/check_in_docker.sh`；工具链、被测执行与供应链均在容器内 |
 | Garak | Release v2 通过：7 个 LLM Skill 的 4 个 probe true compliant 均为 0；md-to-word 跳过 |
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
@@ -89,6 +90,9 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-07 | 文档合并 | 以 `assistant/skill-release-guide` 为唯一用户入口；docs 内容合并为 3 份：`Skill 检查使用指南.md`、`Agent Skill 工程化检查方案与生产路线.md`、`对抗审核报告模板.md` |
 | 2026-11-07 | 助手用法案例 | `assistant/README.md` 增加真实使用案例：纯提示词导入、工具型 L2 + Agent、已有目标复检，并说明触发方式、命令、输出和边界 |
 | 2026-11-07 | README 入口 | 根 `README.md` 增加“推荐用法：让 Skill 助手做检查”，手动命令改为调试入口；详细案例仍留在 `assistant/README.md` |
+| 2026-11-17 | 文档同步修正 | 统一 `progress.md`/`README.md` 方案版本为 v2.12；README 补齐 `service-ticket-update`、`cross-skill-router` 清单，修正 semgrep 目标目录与 DeepEval 命令示例 |
+| 2026-11-17 | 发布检查闭环修正 | `release_assistant.py` 失败判定覆盖所有轮次且 summary 关联真实报告；`manual_check.py` 必需步骤 skipped 判失败；`skill_lock.py` 支持外部 `--targets`；`baseline.py` 支持按发布目录采集；首次检查不再因缺基线 FAIL；新增模板占位警告。Ruff 通过、pytest 44 passed 8 skipped；临时自定义 Skill 完成 init/check/run 冒烟 |
+| 2026-11-17 | Docker 全链路容器化 | 统一检查镜像 `skill-checker:local`（工具链 + 被测执行依赖，版本锁定、venv 隔离）；唯一宿主机入口 `scripts/check_in_docker.sh`；全面切 Docker（容器外运行被拒绝）；修复遗留 `skills/` → `targets/` 路径；网关改为可配置 OpenAI-compatible。镜像构建成功；自定义 Skill 端到端 init/check/run 3 轮全 PASS，Gate PASS，供应链扫描在容器内完成；Ruff 通过、pytest 44 passed 8 skipped |
 
 ## 当前验证（2026-11-06）
 
@@ -261,6 +265,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 沙箱网络策略 | `network none` 会阻断需要外网的 Skill | 后续接域名白名单代理 |
 | npm overrides | 强制升级传递依赖可能影响 promptfoo | 已跑配置校验与 md-to-word 5/5；持续回归 |
 | 模型型 Skill 未沙箱 | 模型调用仍走本地网关 | 后续隔离网关与权限 |
+| 本机网关为 mock | 本机 Docker 已启用，端到端验证用 mock OpenAI 网关，未验证真实模型输出质量与新探针 | 在具备真实 `qwen3` 网关的环境复测 L2/L3 与 Garak，并保留报告 |
 
 ## 维护方式
 

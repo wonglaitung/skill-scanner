@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -46,6 +47,20 @@ def minimum_level(risk: str, kind: str) -> int:
     if kind == "tool":
         return 2
     return MIN_PROMPT_LEVEL[risk]
+
+
+def api_base_url() -> str:
+    return os.getenv(
+        "SKILL_API_BASE", "http://host.docker.internal:8086/v1"
+    ).rstrip("/")
+
+
+def env_python(env_name: str, fallback: str) -> tuple[bool, str]:
+    configured = os.getenv(env_name)
+    if configured:
+        return Path(configured).exists(), configured
+    candidate = ROOT / fallback
+    return candidate.exists(), fallback
 
 
 def run_json(cmd: list[str]) -> tuple[int, dict]:
@@ -110,6 +125,8 @@ def target_preflight(args: argparse.Namespace) -> int:
         [  # nosemgrep
             sys.executable,
             "scripts/skill_lock.py",
+            "--targets",
+            str(root),
             "verify",
             "--skill",
             args.skill,
@@ -125,7 +142,7 @@ def target_preflight(args: argparse.Namespace) -> int:
         proc.stdout.strip() or proc.stderr.strip(),
     )
 
-    for key in ["skill", "promptfoo", "deepeval", "baseline"]:
+    for key in ["skill", "promptfoo", "deepeval"]:
         value = manifest.get(key)
         if value is None:
             if key == "promptfoo" and selected < 1:
@@ -206,22 +223,24 @@ def target_preflight(args: argparse.Namespace) -> int:
             add("OK", "prompt-audit", f"{prompt_data.get('warnings', 0)} warnings")
 
     if not args.skip_network:
+        api_base = api_base_url()
         try:
-            with urllib.request.urlopen("http://localhost:8086/v1/models", timeout=2):
-                add("OK", "gateway", "http://localhost:8086/v1")
+            with urllib.request.urlopen(f"{api_base}/models", timeout=2):
+                add("OK", "gateway", api_base)
         except Exception as exc:  # noqa: BLE001
-            add("FAIL", "gateway", str(exc))
+            add("FAIL", "gateway", f"{api_base}: {exc}")
 
     if manifest["agent"]:
-        harness = ROOT / ".venv-harness" / "bin" / "python"
-        add("OK" if harness.exists() else "FAIL", "harness", str(harness.relative_to(ROOT)))
+        ok, label = env_python("HARNESS_PYTHON", ".venv-harness/bin/python")
+        add("OK" if ok else "FAIL", "harness", label)
 
     if selected >= 3:
-        garak = ROOT / ".venv-garak" / "bin" / "python"
-        add("OK" if garak.exists() else "FAIL", "garak", str(garak.relative_to(ROOT)))
+        ok, label = env_python("GARAK_PYTHON", ".venv-garak/bin/python")
+        add("OK" if ok else "FAIL", "garak", label)
 
-    baseline = (target_dir / str(manifest.get("baseline") or "")).resolve()
-    if baseline.exists():
+    baseline_value = manifest.get("baseline")
+    baseline = (target_dir / str(baseline_value)).resolve() if baseline_value else None
+    if baseline and baseline.exists():
         try:
             data = json.loads(baseline.read_text(encoding="utf-8"))
             runs = data.get("aggregate", {}).get("run_count", 0) or len(data.get("runs", []))
@@ -401,19 +420,20 @@ def main() -> int:
 
     # Environment checks
     if not args.skip_network:
+        api_base = api_base_url()
         try:
-            with urllib.request.urlopen("http://localhost:8086/v1/models", timeout=2):
-                add("OK", "gateway", "http://localhost:8086/v1")
+            with urllib.request.urlopen(f"{api_base}/models", timeout=2):
+                add("OK", "gateway", api_base)
         except Exception as exc:  # noqa: BLE001
-            add("FAIL", "gateway", str(exc))
+            add("FAIL", "gateway", f"{api_base}: {exc}")
 
     if args.agent:
-        harness = ROOT / ".venv-harness" / "bin" / "python"
-        add("OK" if harness.exists() else "FAIL", "harness", str(harness.relative_to(ROOT)))
+        ok, label = env_python("HARNESS_PYTHON", ".venv-harness/bin/python")
+        add("OK" if ok else "FAIL", "harness", label)
 
     if selected_level >= 3:
-        garak = ROOT / ".venv-garak" / "bin" / "python"
-        add("OK" if garak.exists() else "FAIL", "garak", str(garak.relative_to(ROOT)))
+        ok, label = env_python("GARAK_PYTHON", ".venv-garak/bin/python")
+        add("OK" if ok else "FAIL", "garak", label)
 
     if not shutil.which("docker"):
         add("WARN", "docker", "Docker 不在 PATH，security 步骤会跳过")

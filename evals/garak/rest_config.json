@@ -1,7 +1,7 @@
 {
   "rest": {
     "RestGenerator": {
-      "uri": "http://localhost:8086/v1/chat/completions",
+      "uri": "http://host.docker.internal:8086/v1/chat/completions",
       "method": "post",
       "headers": {
         "Content-Type": "application/json"

@@ -35,7 +35,7 @@ Agent 会先补问缺失信息，然后按 `init → check → run` 执行。S �
 Agent 实际执行：
 
 ```bash
-python scripts/release_assistant.py init \
+./scripts/check_in_docker.sh init \
   --source /data/skills/customer-reply \
   --name customer-reply \
   --owner cs-team \
@@ -44,11 +44,11 @@ python scripts/release_assistant.py init \
   --level L2 \
   --targets targets
 
-python scripts/release_assistant.py check \
+./scripts/check_in_docker.sh check \
   --targets targets \
   --skill customer-reply
 
-python scripts/release_assistant.py run \
+./scripts/check_in_docker.sh run \
   --targets targets \
   --skill customer-reply \
   --runs 3
@@ -78,11 +78,11 @@ reports/customer-reply/release-<timestamp>/summary.json
 Agent 实际执行：
 
 ```bash
-python scripts/release_assistant.py check \
+./scripts/check_in_docker.sh check \
   --targets targets \
   --skill service-ticket-update
 
-python scripts/release_assistant.py run \
+./scripts/check_in_docker.sh run \
   --targets targets \
   --skill service-ticket-update \
   --runs 3 --l3
@@ -91,7 +91,7 @@ python scripts/release_assistant.py run \
 如果目标包还不存在，先初始化并带 `--agent`：
 
 ```bash
-python scripts/release_assistant.py init \
+./scripts/check_in_docker.sh init \
   --source /path/to/service-ticket-update \
   --name service-ticket-update \
   --owner owner-team \
@@ -116,11 +116,11 @@ L3 结果放在 `reports/garak/release/service-ticket-update/<timestamp>/`。
 Agent 实际执行：
 
 ```bash
-python scripts/release_assistant.py check \
+./scripts/check_in_docker.sh check \
   --targets targets \
   --skill write-report
 
-python scripts/release_assistant.py run \
+./scripts/check_in_docker.sh run \
   --targets targets \
   --skill write-report \
   --runs 3
@@ -134,5 +134,7 @@ python scripts/release_assistant.py run \
 - 用户必须提供 S 等级和 Owner；Agent 只解释和检查，不代替定级。
 - Agent 不编造业务测试用例，不把 skipped 当通过，不代替 Owner 或安全团队签核。
 - 检查使用合成数据，禁止真实 PII、密钥、生产凭证。
-- 本地模型网关默认 `http://localhost:8086/v1`，模型 `qwen3`。
+- 检查全部在 Docker 容器内运行，宿主机只需 Docker。
+- 模型网关默认 `http://host.docker.internal:8086/v1`（OpenAI-compatible），
+  可用 `SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL` 覆盖。
 - 目标包统一放 `targets/`，不要放回 `skills/`。
