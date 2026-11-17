@@ -33,6 +33,10 @@ metadata:
 - 模型网关地址、Key、模型名（非默认时）
 - 源目录是否含 `node_modules` 等大依赖目录，以及是否全量复制
 
+类型 `prompt` / `script` / `tool` 是本项目自定义取值（非业界标准）：纯提示词、脚本型（确定性脚本）、
+工具型（LLM Agent 调工具）；定义与例子见
+[`docs/Skill 检查使用指南.md` §0](../../docs/Skill%20检查使用指南.md)。
+
 不要自行决定风险等级或 Owner。等级与最低检查见
 [`docs/Skill 检查使用指南.md`](../../docs/Skill%20检查使用指南.md)。
 脚本型的最低 L 为 L1，不因 S 等级提高；脚本型没有 LLM 端点，Garak L3 会跳过。

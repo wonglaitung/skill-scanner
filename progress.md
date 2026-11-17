@@ -97,6 +97,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-17 | skill-release-guide 完善 | 依脚本型 Skill 实测补齐入口 Skill：Docker/网关前置排障（WSL 集成、403、Key 保密）、大依赖目录复制确认、脚本型 adapter 与基于真实行为的 Promptfoo 用例要求、模板警告与结论清单；版本升至 0.6.0 |
 | 2026-11-17 | 完整性锁排除安装产物 | `skill_lock.py` 排除 `node_modules`；脚本型 adapter 在依赖缺失时按需 `npm install`；目标包锁不再包含安装产物，clone 后仍可校验；check 复测通过 |
 | 2026-11-17 | 移除存量目标包与文档同步 | 应用户要求，用 `git filter-branch` 从全部 git 历史移除 `targets/` 目录（含 8 个存量目标包、inventory、锁、README）并 force push；文档同步改为“targets 运行时生成或外部私有目录”，删除失效的 targets/README 链接，历史验证结果标注为存量记录；代码未改造，后续如需批量扫描需自行补 inventory |
+| 2026-11-17 | 补充 Skill 类型定义 | 在 `docs/Skill 检查使用指南.md` §0 说明 `type` 是项目自定义分类（非业界标准），给出 prompt/script/tool 的定义、执行形态与历史试点例子；README、AGENTS、入口 Skill 同步简述 |
 
 ## 当前验证（2026-11-06）
 

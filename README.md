@@ -111,7 +111,11 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
 ## 分级模型
 
 - **S0-S3** 业务风险等级；**L0-L3** 检查深度；`agent: true` 是执行标志，不是等级。
-- 最低检查：S2 纯提示词 L2、工具型 L2 + Agent、脚本型 L1；S3/高风险工具发布前 L3。
+- `type` 是项目自定义的 Skill 类型（非业界标准）：`prompt` 纯提示词（LLM 驱动的提示词）、
+  `script` 脚本型（确定性脚本，不调 LLM）、`tool` 工具型（LLM Agent 调用工具）。
+  定义与例子见 [`docs/Skill 检查使用指南.md` §0](docs/Skill%20检查使用指南.md)。
+- 最低检查由**类型 × 风险**共同决定：类型定手段、风险定深度。例如 S2 纯提示词 L2、
+  工具型 L2 + Agent、脚本型 L1；S3 纯提示词与高风险工具发布前 L3。二维速查见指南 §4。
 - 工具型示例：`./scripts/check_in_docker.sh check --targets targets --skill account-balance-query`
 
 完整定义、最低检查矩阵、运行前置、报告解读与排障见

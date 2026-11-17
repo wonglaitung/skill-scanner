@@ -16,6 +16,38 @@
 
 ---
 
+## 0. type：Skill 类型（项目自定义分类）
+
+`type` 是本项目 `manifest.yaml` 中的字段，取值 `prompt` / `script` / `tool`，用来选择检查路径。
+这是**项目自定义的工程分类，不是业界标准术语**：OWASP LLM Top 10、NIST AI RMF 等框架按攻击面或风险分类，并不这样划分。
+它回答的是"这个 Skill 以什么形态执行"，与风险等级 S 相互独立，二者共同决定最低检查（见 §4）。
+
+| type | 含义 | 执行形态 | 历史试点例子（目标包已从仓库移除，仅作说明） |
+|---|---|---|---|
+| `prompt` | 纯提示词 | system prompt 驱动 LLM，无本地脚本、无工具调用 | `write-report`（汇报生成）、`system-specification`（规格书） |
+| `script` | 脚本型 | 确定性程序：输入 → 本地脚本 → 输出，不调用 LLM | `md-to-word`（Markdown 转 Word，依赖 python-docx） |
+| `tool` | 工具型 | LLM Agent 在运行时决定调用哪些工具，做多步编排 | `account-balance-query`（只读查询）、`service-ticket-update`（写操作）、`cross-skill-router`（跨 Skill 路由） |
+
+初始化时的对应关系：
+
+```bash
+# 纯提示词
+./scripts/check_in_docker.sh init --source <路径> --name <名> --owner <Owner> \
+  --risk S2 --type prompt --level L2 --targets <目录>
+
+# 脚本型
+./scripts/check_in_docker.sh init --source <路径> --name <名> --owner <Owner> \
+  --risk S2 --type script --level L1 --targets <目录>
+
+# 工具型（必须 Agent 模式，init 时加 --agent）
+./scripts/check_in_docker.sh init --source <路径> --name <名> --owner <Owner> \
+  --risk S2 --type tool --level L2 --agent --targets <目录>
+```
+
+工具型必须设置 `agent: true`（由 `--agent` 写入 manifest）；脚本型没有 LLM 端点，L3 的 Garak 会跳过。
+
+---
+
 ## 1. S：风险等级
 
 | 等级 | 含义 |
@@ -85,7 +117,11 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 
 ## 4. 最低检查矩阵
 
-| Skill 类型 | 最低检查 |
+最低检查由 **类型（`type`） × 风险等级（`S`）** 两个维度共同决定，而不是只看其中一个：
+类型决定"用什么手段查"（脚本走代码安全、工具走 Agent 对抗），风险决定"查多深"（L 级别）。
+下表的每一行都是一个"类型 × 风险"组合；同一类型在不同风险下要求不同，同一风险在不同类型下要求也不同。
+
+| 类型 × 风险组合 | 最低检查 |
 |---|---|
 | S0/S1 纯提示词 | L1 |
 | S2 纯提示词 | L2 |
@@ -94,9 +130,18 @@ Agent 模式不能替代 L0-L3，也不改变 L 级别。
 | 高风险工具型 | L2 + Agent，发布前 L3 |
 | 脚本型 | L1 |
 
+二维速查（行=类型，列=风险；S 越高越深，具体组合以本矩阵为准）：
+
+| 类型 \ 风险 | S0/S1 | S2 | S3 |
+|---|---|---|---|
+| `prompt` 纯提示词 | L1 | L2 | L3 |
+| `script` 脚本型 | L1 | L1 | L1（无 LLM 端点，L3 跳过） |
+| `tool` 工具型 | L2 + Agent | L2 + Agent | L2 + Agent + 发布前 L3 |
+
 说明：
 
 - “高风险工具型”通常指 S3，或包含写操作、资金操作、外部副作用、跨 Skill 高权限调用。
+- 脚本型没有 LLM 端点，风险再高也不做 Garak，故 L3 无意义；它仍以 SAST/SCA/契约测试为主。
 - L1/L2 已包含 L0，不需要单独再跑 L0。
 - 发布前还应满足 3 轮基线和 Delta Gate；这是发布附加要求，不改变最低检查矩阵。
 
