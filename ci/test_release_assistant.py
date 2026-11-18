@@ -44,13 +44,22 @@ def test_release_assistant_init(tmp_path: Path) -> None:
             str(targets),
         ],
         cwd=ROOT,
-        env={**os.environ, "SKILL_IN_DOCKER": "1"},
+        env={
+            **os.environ,
+            "SKILL_IN_DOCKER": "1",
+            "SKILL_API_KEY": "fake-secret-value",
+        },
         text=True,
         capture_output=True,
         timeout=120,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert (targets / "demo-skill" / "manifest.yaml").exists()
+    assert "[1/2] 初始化目标包结构 | 开始" in proc.stdout
+    assert "[2/2] 生成完整性锁 | OK" in proc.stdout
+    assert "输入 | cwd=" in proc.stdout
+    assert "SKILL_API_KEY=<set>" in proc.stdout
+    assert "fake-secret-value" not in proc.stdout
 
 
 def test_decide_failures_covers_every_round_and_l3() -> None:
@@ -82,6 +91,13 @@ def test_write_summary_links_real_reports_and_failures(tmp_path: Path) -> None:
         "timestamp": "2026-11-17-000000",
         "steps": {"preflight": 0, "manual_check": [0, 1], "gate": 0},
         "l3_enabled": False,
+        "logs": [
+            {
+                "step": "前置校验 preflight",
+                "path": "reports/logs/preflight.log",
+                "exit": 0,
+            }
+        ],
         "warnings": ["Promptfoo 用例仍是模板占位，需替换为业务用例"],
         "rounds": [
             {
@@ -117,6 +133,7 @@ def test_write_summary_links_real_reports_and_failures(tmp_path: Path) -> None:
     assert "round-2/report.md" in text
     assert "bad output" in text
     assert "模板占位" in text
+    assert "reports/logs/preflight.log" in text
 
 
 def test_detect_template_warnings(tmp_path: Path) -> None:

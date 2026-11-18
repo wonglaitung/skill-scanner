@@ -5,6 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 IMAGE="${CHECK_IMAGE:-skill-checker:local}"
+NAME="${CHECK_CONTAINER:-skill-check}"
+DETACH="${DETACH:-0}"
 API_BASE="${SKILL_API_BASE:-http://host.docker.internal:8086/v1}"
 API_KEY="${SKILL_API_KEY:-local-placeholder}"
 MODEL="${SKILL_MODEL:-qwen3}"
@@ -36,18 +38,33 @@ for ((i = 0; i < ${#args[@]}; i++)); do
   fi
 done
 
-exec docker run --rm \
-  --add-host host.docker.internal:host-gateway \
-  -v "$ROOT:/workspace" \
-  "${SOURCE_MOUNTS[@]}" \
-  "${TARGET_MOUNTS[@]}" \
-  -e SKILL_IN_DOCKER=1 \
-  -e SKILL_API_BASE="$API_BASE" \
-  -e SKILL_API_KEY="$API_KEY" \
-  -e SKILL_MODEL="$MODEL" \
-  -e JUDGE_API_BASE="$JUDGE_BASE" \
-  -e JUDGE_MODEL="$JUDGE_MODEL" \
-  --user "$(id -u):$(id -g)" \
-  -w /workspace \
-  "$IMAGE" \
+if docker container inspect "$NAME" >/dev/null 2>&1; then
+  docker rm -f "$NAME" >/dev/null
+fi
+
+RUN_ARGS=(
+  --add-host host.docker.internal:host-gateway
+  -v "$ROOT:/workspace"
+  "${SOURCE_MOUNTS[@]}"
+  "${TARGET_MOUNTS[@]}"
+  -e SKILL_IN_DOCKER=1
+  -e PYTHONUNBUFFERED=1
+  -e SKILL_API_BASE="$API_BASE"
+  -e SKILL_API_KEY="$API_KEY"
+  -e SKILL_MODEL="$MODEL"
+  -e JUDGE_API_BASE="$JUDGE_BASE"
+  -e JUDGE_MODEL="$JUDGE_MODEL"
+  --user "$(id -u):$(id -g)"
+  -w /workspace
+  "$IMAGE"
   python scripts/release_assistant.py "$@"
+)
+
+if [[ "$DETACH" == "1" ]]; then
+  docker run -d --name "$NAME" "${RUN_ARGS[@]}"
+  echo "container: $NAME"
+  echo "follow logs: docker logs -f $NAME"
+  echo "cleanup: docker rm -f $NAME"
+else
+  exec docker run --rm --name "$NAME" "${RUN_ARGS[@]}"
+fi

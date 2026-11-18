@@ -6,6 +6,8 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -14,17 +16,118 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(cmd: list[str], env: dict[str, str] | None = None, timeout: int = 3600) -> int:
+VISIBLE_ENV = (
+    "SKILL_IN_DOCKER",
+    "PYTHONUNBUFFERED",
+    "SKILL_API_BASE",
+    "SKILL_API_KEY",
+    "SKILL_MODEL",
+    "JUDGE_API_BASE",
+    "JUDGE_MODEL",
+    "TARGETS",
+    "SKILL",
+    "GARAK_REPORT_PREFIX",
+    "SKILL_MAX_TOKENS",
+    "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE",
+)
+SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "AUTH")
+
+
+def format_env(env: dict[str, str]) -> str:
+    merged = {key: os.environ[key] for key in VISIBLE_ENV if key in os.environ}
+    merged.update(env)
+    parts: list[str] = []
+    for key in sorted(merged):
+        value = merged[key]
+        if any(marker in key.upper() for marker in SENSITIVE_ENV_MARKERS):
+            parts.append(f"{key}=<set>" if value else f"{key}=<unset>")
+        else:
+            parts.append(f"{key}={value}")
+    return " ".join(parts)
+
+
+def run(
+    cmd: list[str],
+    env: dict[str, str] | None = None,
+    timeout: int = 3600,
+    step: tuple[int, int, str] | None = None,
+    log_path: Path | None = None,
+) -> int:
+    if step is not None:
+        current, total, label = step
+        print(
+            f"\n=== [{current}/{total}] {label} | 开始 {datetime.now():%H:%M:%S} ===",
+            flush=True,
+        )
     print("+ " + " ".join(cmd), flush=True)
-    proc = subprocess.run(  # nosemgrep
-        cmd,
-        cwd=ROOT,
-        env={**os.environ, **(env or {})},
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-    return proc.returncode
+    print(f"  输入 | cwd={ROOT}", flush=True)
+    print(f"  输入 | env: {format_env(env or {})}", flush=True)
+    if log_path is not None:
+        print(f"  输入 | log: {log_path}", flush=True)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    started = time.monotonic()
+    log_file = None
+    if log_path is not None:
+        log_file = log_path.open("w", encoding="utf-8")
+    code: int | None = None
+    proc: subprocess.Popen[str] | None = None
+    try:
+        proc = subprocess.Popen(  # nosemgrep
+            cmd,
+            cwd=ROOT,
+            env={**os.environ, **(env or {})},
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+        )
+        stdout = proc.stdout
+        assert stdout is not None
+
+        def pump() -> None:
+            for line in stdout:
+                print(line, end="", flush=True)
+                if log_file is not None:
+                    log_file.write(line)
+                    log_file.flush()
+
+        pump_thread = threading.Thread(target=pump, daemon=True)
+        pump_thread.start()
+        try:
+            code = proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+            pump_thread.join(timeout=5)
+            raise
+        pump_thread.join()
+    finally:
+        if log_file is not None:
+            log_file.close()
+        if step is not None:
+            elapsed = time.monotonic() - started
+            status = "OK" if code == 0 else ("FAIL" if code is not None else "ERROR")
+            print(
+                f"=== [{current}/{total}] {label} | {status} | {elapsed:.1f}s ===",
+                flush=True,
+            )
+            if log_path is not None:
+                print(f"  输出 | log: {log_path} | exit={code}", flush=True)
+    return code if code is not None else 1
+
+
+def run_tracked(
+    cmd: list[str],
+    step: tuple[int, int, str],
+    log_path: Path,
+    result: dict,
+    env: dict[str, str] | None = None,
+    timeout: int = 3600,
+) -> int:
+    code = run(cmd, env=env, timeout=timeout, step=step, log_path=log_path)
+    result["logs"].append({"step": step[2], "path": str(log_path), "exit": code})
+    return code
 
 
 def load_manifest(targets: Path, skill: str) -> dict:
@@ -73,7 +176,7 @@ def command_init(args: argparse.Namespace) -> int:
         cmd.append("--agent")
     if args.force:
         cmd.append("--force")
-    code = run(cmd, timeout=120)
+    code = run(cmd, timeout=120, step=(1, 2, "初始化目标包结构"))
     if code != 0:
         return code
     run(
@@ -85,6 +188,7 @@ def command_init(args: argparse.Namespace) -> int:
             "generate",
         ],
         timeout=120,
+        step=(2, 2, "生成完整性锁"),
     )
     print(f"\nnext: fill targets/{args.name}, then run:")
     print(
@@ -104,8 +208,13 @@ def command_check(args: argparse.Namespace) -> int:
             "generate",
         ],
         timeout=120,
+        step=(1, 3, "生成完整性锁"),
     )
-    code = run(base_args(args.targets, args.skill, manifest), timeout=300)
+    code = run(
+        base_args(args.targets, args.skill, manifest),
+        timeout=300,
+        step=(2, 3, "前置校验 preflight"),
+    )
     if code != 0:
         return code
     cmd = [
@@ -124,14 +233,22 @@ def command_check(args: argparse.Namespace) -> int:
         cmd.append("--llm-audit")
     if args.max_tokens:
         cmd.extend(["--max-tokens", str(args.max_tokens)])
-    return run(cmd, timeout=3600)
+    return run(cmd, timeout=3600, step=(3, 3, "手工检查 manual_check"))
 
 
 def command_run(args: argparse.Namespace) -> int:
     manifest = load_manifest(args.targets, args.skill)
+    total_steps = 4 + args.runs + (1 if args.l3 else 0)
+    started_all = time.monotonic()
+    print(
+        f"\n######## 发布检查 {args.skill} [{manifest.get('level', 'L1')}] "
+        f"共 {total_steps} 步 | 开始 {datetime.now():%H:%M:%S} ########",
+        flush=True,
+    )
     timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     release_dir = ROOT / "reports" / args.skill / f"release-{timestamp}"
     release_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir = release_dir / "logs"
     result: dict = {
         "skill": args.skill,
         "targets": str(args.targets),
@@ -139,11 +256,12 @@ def command_run(args: argparse.Namespace) -> int:
         "manifest": manifest,
         "steps": {},
         "rounds": [],
+        "logs": [],
         "l3_enabled": bool(args.l3),
         "warnings": detect_template_warnings(args.targets, args.skill),
     }
 
-    run(
+    run_tracked(
         [
             sys.executable,
             "scripts/skill_lock.py",
@@ -152,11 +270,25 @@ def command_run(args: argparse.Namespace) -> int:
             "generate",
         ],
         timeout=120,
+        step=(1, total_steps, "生成完整性锁"),
+        log_path=logs_dir / "01-skill-lock.log",
+        result=result,
     )
-    code = run(base_args(args.targets, args.skill, manifest), timeout=300)
+    code = run_tracked(
+        base_args(args.targets, args.skill, manifest),
+        timeout=300,
+        step=(2, total_steps, "前置校验 preflight"),
+        log_path=logs_dir / "02-preflight.log",
+        result=result,
+    )
     result["steps"]["preflight"] = code
     if code != 0:
         write_summary(release_dir, result)
+        print(
+            f"######## 发布检查结束 | 耗时 {time.monotonic() - started_all:.1f}s | "
+            f"{result['decision']} ########",
+            flush=True,
+        )
         return 1
 
     manual_cmd = [
@@ -181,8 +313,17 @@ def command_run(args: argparse.Namespace) -> int:
         round_dir = release_dir / f"round-{index + 1}"
         round_dir.mkdir(parents=True, exist_ok=True)
         round_cmd = [*manual_cmd, "--out", str(round_dir)]
-        print(f"\n=== manual_check round {index + 1}/{args.runs} ===", flush=True)
-        code = run(round_cmd, timeout=3600)
+        code = run_tracked(
+            round_cmd,
+            timeout=3600,
+            step=(
+                2 + index + 1,
+                total_steps,
+                f"手工检查 第 {index + 1}/{args.runs} 轮",
+            ),
+            log_path=logs_dir / f"round-{index + 1}.log",
+            result=result,
+        )
         manual_codes.append(code)
         result["rounds"].append(
             {
@@ -209,6 +350,9 @@ def command_run(args: argparse.Namespace) -> int:
             str(release_dir),
         ],
         timeout=300,
+        step=(3 + args.runs, total_steps, "采集基线"),
+        log_path=logs_dir / "baseline-collect.log",
+        result=result,
     )
     result["steps"]["baseline_collect"] = code
 
@@ -227,6 +371,9 @@ def command_run(args: argparse.Namespace) -> int:
             str(last_report),
         ],
         timeout=300,
+        step=(4 + args.runs, total_steps, "Delta Gate 判定"),
+        log_path=logs_dir / "gate.log",
+        result=result,
     )
     result["steps"]["gate"] = code
 
@@ -236,10 +383,13 @@ def command_run(args: argparse.Namespace) -> int:
             "SKILL": args.skill,
             "GARAK_REPORT_PREFIX": str(release_dir / "garak"),
         }
-        code = run(
+        code = run_tracked(
             ["bash", "evals/garak/scan_release.sh"],
             env=env,
             timeout=3600,
+            step=(5 + args.runs, total_steps, "Garak L3 发布前扫描"),
+            log_path=logs_dir / "garak-l3.log",
+            result=result,
         )
         result["steps"]["l3"] = code
         summary = release_dir / "garak_summary.json"
@@ -247,6 +397,11 @@ def command_run(args: argparse.Namespace) -> int:
             result["garak"] = json.loads(summary.read_text(encoding="utf-8"))
 
     write_summary(release_dir, result)
+    print(
+        f"######## 发布检查结束 | 耗时 {time.monotonic() - started_all:.1f}s | "
+        f"{result['decision']} ########",
+        flush=True,
+    )
     return 1 if decide_failures(result) else 0
 
 
@@ -371,6 +526,14 @@ def write_summary(out: Path, result: dict) -> None:
         lines.extend(
             ["", "## Garak", "", f"- status: {result['garak'].get('status')}"]
         )
+
+    lines.extend(["", "## Logs", ""])
+    logs = result.get("logs", [])
+    if logs:
+        for item in logs:
+            lines.append(f"- [{item['step']}] {item['path']} (exit={item['exit']})")
+    else:
+        lines.append("- 无")
 
     lines.extend(["", "## Evidence", "", f"- summary.json：{out / 'summary.json'}"])
     for rnd in rounds:
