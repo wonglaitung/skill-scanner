@@ -5,21 +5,22 @@
 Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，最小骨架已建立。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
-- 当前版本：v2.11
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
+- 当前版本：v2.13
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.11 |
-| 代码实现 | target-only 扫描、单入口助手、手工检查与基线工具已落地；8 个目标包 |
+| 方案文档 | 已完成 v2.13 |
+| 代码实现 | target-only 扫描、单入口助手、手工检查与基线工具已落地；目标包不入库，由 `init` 本地生成或 `--targets` 指向外部目录 |
 | CI 流水线 | `skill-check` 已启用静态检查（validate/Ruff/pytest）；nightly 待自托管 runner |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`targets/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
-| 试点 Skill | 3 个 S2 纯提示词；1 个示例；1 个脚本型；3 个工具型：`account-balance-query`、`service-ticket-update`、`cross-skill-router` |
+| 试点 Skill | 存量目标包（历史试点的纯提示词/示例/脚本型/工具型）已从仓库移除并改写历史；重新测试时由 `init` 生成或用 `--targets` 指向私有目录 |
 | 手工工具 | `manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已接入 |
 | 自动化验证 | 校验/Ruff/pytest 通过；8 个 S2 均完成 3 轮基线；Judge 校准 20 条一致率 95% |
-| 本地模型网关 | 已具备，`http://localhost:8086/v1`，模型 `qwen3`；真实评测已跑 |
+| 本地模型网关 | OpenAI-compatible，通过 `SKILL_API_BASE`/`SKILL_API_KEY` 配置，容器内默认 `http://host.docker.internal:8086/v1`，模型 `qwen3` |
+| Docker 全链路 | 已完成：统一镜像 `skill-checker:local`、唯一入口 `scripts/check_in_docker.sh`；工具链、被测执行与供应链均在容器内 |
 | Garak | Release v2 通过：7 个 LLM Skill 的 4 个 probe true compliant 均为 0；md-to-word 跳过 |
 | Agent harness SDK | 已启用：`wonglaitung/harness`，pin `c4cf29f` |
 | 合规审计 | 暂无明确依据，先做工程基线 |
@@ -89,6 +90,15 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-07 | 文档合并 | 以 `assistant/skill-release-guide` 为唯一用户入口；docs 内容合并为 3 份：`Skill 检查使用指南.md`、`Agent Skill 工程化检查方案与生产路线.md`、`对抗审核报告模板.md` |
 | 2026-11-07 | 助手用法案例 | `assistant/README.md` 增加真实使用案例：纯提示词导入、工具型 L2 + Agent、已有目标复检，并说明触发方式、命令、输出和边界 |
 | 2026-11-07 | README 入口 | 根 `README.md` 增加“推荐用法：让 Skill 助手做检查”，手动命令改为调试入口；详细案例仍留在 `assistant/README.md` |
+| 2026-11-17 | 文档同步修正 | 统一 `progress.md`/`README.md` 方案版本为 v2.12；README 补齐 `service-ticket-update`、`cross-skill-router` 清单，修正 semgrep 目标目录与 DeepEval 命令示例 |
+| 2026-11-17 | 发布检查闭环修正 | `release_assistant.py` 失败判定覆盖所有轮次且 summary 关联真实报告；`manual_check.py` 必需步骤 skipped 判失败；`skill_lock.py` 支持外部 `--targets`；`baseline.py` 支持按发布目录采集；首次检查不再因缺基线 FAIL；新增模板占位警告。Ruff 通过、pytest 44 passed 8 skipped；临时自定义 Skill 完成 init/check/run 冒烟 |
+| 2026-11-17 | Docker 全链路容器化 | 统一检查镜像 `skill-checker:local`（工具链 + 被测执行依赖，版本锁定、venv 隔离）；唯一宿主机入口 `scripts/check_in_docker.sh`；全面切 Docker（容器外运行被拒绝）；修复遗留 `skills/` → `targets/` 路径；网关改为可配置 OpenAI-compatible。镜像构建成功；自定义 Skill 端到端 init/check/run 3 轮全 PASS，Gate PASS，供应链扫描在容器内完成；Ruff 通过、pytest 44 passed 8 skipped |
+| 2026-11-17 | 脚本型目标包检查闭环验证 | 用真实脚本型 Skill 验证：实现 `adapter.py` 调用目标脚本并把模板用例替换为 3 条基于真实行为的业务回归用例；外部 OpenAI-compatible 网关接入（修复 preflight 探测缺 Authorization 与 UA 导致的 403）；3 轮检查全 PASS、Gate PASS、模板警告消除、基线重建。验证后该私有目标包未纳入仓库 |
+| 2026-11-17 | skill-release-guide 完善 | 依脚本型 Skill 实测补齐入口 Skill：Docker/网关前置排障（WSL 集成、403、Key 保密）、大依赖目录复制确认、脚本型 adapter 与基于真实行为的 Promptfoo 用例要求、模板警告与结论清单；版本升至 0.6.0 |
+| 2026-11-17 | 完整性锁排除安装产物 | `skill_lock.py` 排除 `node_modules`；脚本型 adapter 在依赖缺失时按需 `npm install`；目标包锁不再包含安装产物，clone 后仍可校验；check 复测通过 |
+| 2026-11-17 | 移除存量目标包与文档同步 | 应用户要求，用 `git filter-branch` 从全部 git 历史移除 `targets/` 目录（含 8 个存量目标包、inventory、锁、README）并 force push；文档同步改为“targets 运行时生成或外部私有目录”，删除失效的 targets/README 链接，历史验证结果标注为存量记录；代码未改造，后续如需批量扫描需自行补 inventory |
+| 2026-11-17 | 补充 Skill 类型定义 | 在 `docs/Skill 检查使用指南.md` §0 说明 `type` 是项目自定义分类（非业界标准），给出 prompt/script/tool 的定义、执行形态与历史试点例子；README、AGENTS、入口 Skill 同步简述 |
+| 2026-11-17 | 纯提示词 L3 实测与工具修复 | 用纯提示词 Skill（humanizer-zh）跑 L3 3 轮：Promptfoo/DeepEval/供应链通过，Garak 原始 ASR 3.9%-5.5% 但归类后 true compliant=0。修复：`scaffold_target.py` 纯提示词模板改为内联（不再依赖已删的 targets）；`garak_summary.py` 兼容 text=None；`scan.sh`/`scan_release.sh` 以归类结果为准、原始退出码非零不中断 summary。入口 Skill 升至 0.7.0，补充 L3 耗时、原始 ASR vs true compliant、缺 summary 轮次处理与初始化残留清理 |
 
 ## 当前验证（2026-11-06）
 
@@ -261,6 +271,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 沙箱网络策略 | `network none` 会阻断需要外网的 Skill | 后续接域名白名单代理 |
 | npm overrides | 强制升级传递依赖可能影响 promptfoo | 已跑配置校验与 md-to-word 5/5；持续回归 |
 | 模型型 Skill 未沙箱 | 模型调用仍走本地网关 | 后续隔离网关与权限 |
+| 本机网关为 mock | 本机 Docker 已启用，端到端验证用 mock OpenAI 网关，未验证真实模型输出质量与新探针 | 在具备真实 `qwen3` 网关的环境复测 L2/L3 与 Garak，并保留报告 |
 
 ## 维护方式
 

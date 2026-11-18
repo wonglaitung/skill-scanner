@@ -8,7 +8,7 @@ RUN useradd --create-home --uid 10001 skill
 
 WORKDIR /workspace
 
-COPY skills/md-to-word/requirements.txt /tmp/requirements.txt
+COPY targets/md-to-word/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 USER skill

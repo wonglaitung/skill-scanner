@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.12 |
+| 文档版本 | v2.13 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
-| 关联文档 | `docs/README.md`、`docs/Skill 检查使用指南.md`、`progress.md` |
+| 关联文档 | [文档索引](README.md)、[使用指南](Skill%20检查使用指南.md)、[进度](../progress.md)、[入口 Skill](../assistant/skill-release-guide/SKILL.md) |
 | 维护人 | 安全工程 / DevOps / Skill Owner |
 
 ---
@@ -440,7 +440,7 @@ defaultTest:
     provider:
       id: openai:chat:local-judge
       config:
-        apiBaseUrl: http://localhost:8086/v1
+        apiBaseUrl: http://host.docker.internal:8086/v1
         apiKeyEnvar: LOCAL_LLM_API_KEY
         temperature: 0
 ```
@@ -473,7 +473,7 @@ from deepeval.models import LocalModel
 
 judge = LocalModel(
     model="local-judge",
-    base_url="http://localhost:8086/v1",
+    base_url="http://host.docker.internal:8086/v1",
     api_key="local-placeholder",
     temperature=0,
 )
@@ -496,7 +496,7 @@ from deepeval.test_case import LLMTestCase, ToolCall
 
 judge = LocalModel(
     model="local-judge",
-    base_url="http://localhost:8086/v1",
+    base_url="http://host.docker.internal:8086/v1",
     api_key="local-placeholder",
     temperature=0,
 )
@@ -621,7 +621,7 @@ from harness.testing import RecordingHarness
 async def run_skill(user_input: str):
     agent = AgentHarness(
         model="local-skill-model",
-        base_url="http://localhost:8086/v1",
+        base_url="http://host.docker.internal:8086/v1",
         tools=[...],
     )
     recorder = RecordingHarness(agent)
@@ -633,7 +633,7 @@ async def run_skill(user_input: str):
 - 复用范围是「执行 + 确定性校验 + 运行时防护」，不包括评测编排与打分。
 - Promptfoo 仍负责回归、断言与 redteam；DeepEval 仍负责指标评分；Garak 仍负责发布前独立扫描。
 - Skill 是通用包装格式，不绑定开发语言或 SDK；若 Skill 不是由该 SDK 执行，只复用其中的库能力，不要求迁移 Skill。
-- 该 SDK 目前为 Alpha，必须锁定 `harness-sdk==0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt` 安装；优先放在项目本地 `.venv-harness/`，不污染全局环境；禁止浮动版本，License 为 MIT，需保留声明。
+- 该 SDK 目前为 Alpha，必须锁定 `harness-sdk==0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt` 安装；已固化在检查镜像的独立虚拟环境中；禁止浮动版本，License 为 MIT，需保留声明。
 - 本项目把适配层目录命名为 `adapters/`，避免与 `wonglaitung/harness` 这个 Agent SDK 重名。
 
 #### 7.2.2 Adapter 契约
@@ -720,7 +720,7 @@ Garak 是发布前的独立扫描器，不作为 PR 门禁。它使用固定的�
 {
   "rest": {
     "RestGenerator": {
-      "uri": "http://localhost:8086/v1/chat/completions",
+      "uri": "http://host.docker.internal:8086/v1/chat/completions",
       "method": "post",
       "headers": { "Content-Type": "application/json" },
       "req_template_json_object": {
@@ -1023,7 +1023,7 @@ def decide(report, baseline):
 ```text
 skill-scanner/
 ├── docs/
-├── targets/
+├── targets/                  # 运行时生成或外部私有目录，不入库
 │   └── my_skill/
 │       ├── SKILL.md
 │       ├── scripts/
@@ -1033,7 +1033,10 @@ skill-scanner/
 │   ├── skill_adapter.py      # SkillAdapter 契约实现
 │   ├── mock_tools.py         # 确定性工具返回
 │   └── sandbox/
-│       └── Dockerfile
+│       ├── Dockerfile        # 脚本执行沙箱
+│       └── Dockerfile.checks # 统一检查镜像（工具链 + 被测执行依赖）
+├── scripts/
+│   └── check_in_docker.sh    # 宿主机唯一入口
 ├── evals/
 │   ├── promptfooconfig.yaml
 │   ├── redteam.yaml
@@ -1068,7 +1071,7 @@ BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 SYSTEM_PROMPT = (BASE_DIR / "skills" / "my_skill" / "SKILL.md").read_text(
     encoding="utf-8"
 )
-API_BASE = os.environ.get("SKILL_API_BASE", "http://localhost:8086/v1")
+API_BASE = os.environ.get("SKILL_API_BASE", "http://host.docker.internal:8086/v1")
 MODEL = os.environ.get("SKILL_MODEL", "local-skill-model")
 API_KEY = os.environ.get("SKILL_API_KEY", "local-placeholder")
 
@@ -1187,7 +1190,7 @@ trivy fs --scanners vuln,misconfig --format sarif --output reports/trivy.sarif .
 trivy fs --format cyclonedx --output reports/sbom.cdx.json .
 
 # 3. 配置本地模型网关
-export SKILL_API_BASE=http://localhost:8086/v1
+export SKILL_API_BASE=http://host.docker.internal:8086/v1
 export SKILL_MODEL=local-skill-model
 export SKILL_API_KEY=local-placeholder
 
@@ -1472,7 +1475,7 @@ D 对抗运营与独立审计
 
 ### 16.4 Phase B：评测可靠性与门禁（2-3 周）
 
-**当前进展（进行中）**：8 个 S2 均完成 3 轮基线；Agent 模式已覆盖只读、写操作、跨 Skill 三类工具 Skill；提示词确定性/LLM 辅助审计已接入；Garak Release v1 已覆盖 7 个 LLM Skill，true compliant 均为 0；Release v2 target L3 已完成：7 个 LLM 目标 true compliant 全为 0；md-to-word 跳过；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已落地；Judge 首轮校准 20 条，一致率 95%。待做：门禁报告与连续 2 周稳定性。
+**当前进展（进行中）**：8 个 S2 均完成 3 轮基线；Agent 模式已覆盖只读、写操作、跨 Skill 三类工具 Skill；提示词确定性/LLM 辅助审计已接入；Garak Release v1 已覆盖 7 个 LLM Skill，true compliant 均为 0；Release v2 target L3 已完成：7 个 LLM 目标 true compliant 全为 0；md-to-word 跳过；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；Quarantine 已落地；Judge 首轮校准 20 条，一致率 95%；检查与被测 Skill 执行已全链路 Docker 化（统一镜像 `skill-checker:local`，唯一入口 `scripts/check_in_docker.sh`，网关通过 `SKILL_API_BASE`/`SKILL_API_KEY` 配置）。待做：门禁报告与连续 2 周稳定性。
 
 #### 目标
 
@@ -1578,7 +1581,7 @@ harness-sdk @ git+https://github.com/wonglaitung/harness.git@c4cf29f#subdirector
 - 必须锁定 `harness-sdk==0.1.0`（Alpha）与 commit `c4cf29f`。
 - 禁止使用 `main`、`latest`、`@master` 等浮动版本。
 - 升级 harness 视为依赖变更：重新跑 Agent 用例、更新 `requirements-harness.txt` 和基线。
-- 保留 MIT 许可声明，优先使用项目本地 `.venv-harness/` 或容器运行。
+- 保留 MIT 许可声明；已固化在检查镜像内，仅在开发 harness 本身时才用本地 `.venv-harness/`。
 
 #### 16.5.4 Adapter 设计
 
@@ -1906,7 +1909,8 @@ Garak target L3 扩展（待接入）：
 ## 附录 B：工具与版本管理
 
 - Semgrep、Ruff、ShellCheck、gitleaks、Trivy、Promptfoo、DeepEval、Garak 均需在依赖文件中锁定版本；
-- 本地模型网关的模型版本、推理参数与 Promptfoo/Garak 配置一并纳入基线；
+- 检查镜像 `adapters/sandbox/Dockerfile.checks` 固化 Python 3.12、Node 22、Promptfoo 0.125.1、Ruff 0.15.14、DeepEval 4.3.2、Semgrep 1.85.0、Garak 0.16.0、gitleaks 8.21.2、Trivy 0.76.2；工具依赖冲突通过独立虚拟环境隔离；
+- 模型网关的 URL 与密钥通过 `SKILL_API_BASE` / `SKILL_API_KEY` 注入，默认 OpenAI-compatible 格式；网关地址与模型版本纳入基线；
 - 若复用 `wonglaitung/harness` SDK，需锁定 `harness-sdk` 版本（Alpha）、隔离依赖并保留 MIT 许可声明；其 Mock/录制、gate、security、guardrails 能力通过 `adapters/` 接入；
 - 每月检查一次官方变更与废弃参数；
 - 升级前在独立分支跑全量 L2，通过后再更新基线；
@@ -1934,3 +1938,12 @@ Garak target L3 扩展（待接入）：
 8. 对抗性测试不再作为方案主体，而是提示词与语义检查中的一个子域。
 
 ---
+
+## 相关文档
+
+- 文档索引：[`docs/README.md`](README.md)
+- 定级、报告与排障：[`docs/Skill 检查使用指南.md`](Skill%20检查使用指南.md)
+- 用户入口：[`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md)
+- 使用案例：[`assistant/README.md`](../assistant/README.md)
+- L3 独立扫描：[`evals/garak/README.md`](../evals/garak/README.md)
+- 当前进度：[`progress.md`](../progress.md)

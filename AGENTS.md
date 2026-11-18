@@ -2,31 +2,31 @@
 
 ## 项目
 
-Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，target-only 扫描与单入口流程已落地。
+Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，target-only 扫描、单入口流程与 Docker 全链路已落地。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
 - 当前进度：`progress.md`
 
 ## 开始工作前必读
 
-1. `docs/Agent Skill 工程化检查方案与生产路线.md`：唯一方案源，工具链、门禁、目录、路线图、Phase A-D 以它为准。
-2. `progress.md`：当前阶段、已完成事项、待办与风险。
-3. `assistant/skill-release-guide/SKILL.md`：唯一用户入口，初始化、检查、基线、Gate、L3 与报告。
-4. `docs/Skill 检查使用指南.md`：S 风险、L 深度、Agent 标志、最低检查矩阵、报告解读与排障。
-5. `docs/README.md`：文档索引；只保留当前有效文档。
+1. [`docs/Agent Skill 工程化检查方案与生产路线.md`](docs/Agent%20Skill%20工程化检查方案与生产路线.md)：唯一方案源，工具链、门禁、目录、路线图、Phase A-D 以它为准。
+2. [`progress.md`](progress.md)：当前阶段、已完成事项、待办与风险。
+3. [`assistant/skill-release-guide/SKILL.md`](assistant/skill-release-guide/SKILL.md)：唯一用户入口，初始化、检查、基线、Gate、L3 与报告。
+4. [`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)：S 风险、L 深度、Agent 标志、最低检查矩阵、报告解读与排障。
+5. [`docs/README.md`](docs/README.md)：文档索引；只保留当前有效文档。
 
 ## 当前阶段
 
 2 周试点实施：
 
-- 已导入 3 个 S2 纯提示词 Skill：`write-report`、`system-specification`、`manager-report`。
-- 另有示例 Skill `expense-policy-qa`。
-- 另有脚本型 S2 Skill `md-to-word`，用于验证 SAST 与脚本适配。
+- 存量目标包（历史试点的纯提示词/示例/脚本型/工具型 Skill）已从仓库移除；
+  重新测试时由 `init` 在本地生成，或用 `--targets <私有路径>` 指向仓库外目录。
 - 安全团队主导。
 - 先告警，不阻断 PR。
-- 使用本地 OpenAI-compatible 模型网关（`http://localhost:8086/v1`，模型 `qwen3`）。
+- 使用可配置的 OpenAI-compatible 模型网关（`SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL`），容器内默认 `http://host.docker.internal:8086/v1`，模型 `qwen3`。
 - Agent 模式已覆盖 3 类工具 Skill：只读查询、写操作、跨 Skill 只读路由。
+- 检查与被测 Skill 执行全链路在 Docker 容器内完成；宿主机唯一入口 `scripts/check_in_docker.sh`。
 
 ## 目录约定
 
@@ -34,16 +34,19 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 ```text
 docs/
-targets/                 # 目标包（8 个）
 assistant/              # 内部辅助 Skill（不参与目标检查）
 adapters/               # Promptfoo/Garak/DeepEval 适配层
+adapters/sandbox/Dockerfile.checks  # 统一检查镜像（工具链 + 被测执行依赖）
 evals/                  # 用例、配置、基线
 ci/                     # 校验与门禁脚本
 scripts/                # 手工检查与基线工具
 reports/                # 测试报告与证据（产物不入库）
+scripts/check_in_docker.sh  # 宿主机唯一入口
 progress.md
 AGENTS.md
 ```
+
+`targets/` 不是仓库固定内容：由 `init` 在本地生成，或用 `--targets <私有路径>` 指向仓库外目录。
 
 适配层统一叫 `adapters/`，不要改回 `harness/`，避免与 `wonglaitung/harness` Agent SDK 重名。
 
@@ -68,25 +71,31 @@ AGENTS.md
 - Skill 是通用包装格式，不绑定开发语言或 SDK。
 - `wonglaitung/harness` 只作为可选执行层复用（Mock/录制、gate、security、guardrails、tracing），不要求 Skill 迁移。
 - 所有模型调用走本地 OpenAI-compatible 网关，禁止访问外部模型。
-- 本地模型网关默认 `http://localhost:8086/v1`，可用 `SKILL_API_BASE` 覆盖。
+- 模型网关通过 `SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL` 配置（OpenAI-compatible），容器内默认 `http://host.docker.internal:8086/v1`。
+- 检查全链路容器化：宿主机只依赖 Docker；`release_assistant.py` / `manual_check.py` 仅在容器内运行（`SKILL_IN_DOCKER=1`）。
 - Garak 只做发布前独立扫描，不进入 PR 门禁。
 - DeepEval 用于 L2 指标化评分，分数纳入基线。
 - 测试数据默认使用合成数据，禁止真实 PII、密钥、生产凭证。
-- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt`；优先项目本地 `.venv-harness/`，禁止污染全局环境；禁止浮动版本，保留 MIT 许可声明。
+- 复用 `harness-sdk` 时锁定 `0.1.0` 与 commit `c4cf29f`，使用 `requirements-harness.txt`；已固化在检查镜像的独立虚拟环境中，禁止浮动版本，保留 MIT 许可声明。
 - 未经明确要求，不要提交（commit）或推送（push）。
 - 人工模式技术底座完整前，不引入 CI；先完善 `manual_check`、`baseline`、Agent 模式与 SOP。
 
 ## 分级模型
 
-统一使用 **S + L + Agent**，详见 `docs/Skill 检查使用指南.md`。
+统一使用 **S + L + Agent**，权威定义见
+[`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)。
 
 - **S0-S3**：业务风险等级
 - **L0-L3**：检查深度
-- **`--agent`**：Agent 执行标志，不是等级
+- **`agent: true`**：Agent 执行标志（写入 manifest），不是等级
+- **`type`**：项目自定义的 Skill 类型（非业界标准），取值 `prompt`/`script`/`tool`，
+  分别指纯提示词、脚本型（确定性脚本）、工具型（LLM Agent 调工具）；详见
+  [`docs/Skill 检查使用指南.md` §0](docs/Skill%20检查使用指南.md)
 
-最低检查：
+最低检查由 **类型 × 风险** 共同决定：类型决定检查手段，风险决定深度（L 级别）。
+下表每行都是一个组合，完整二维速查见 [`docs/Skill 检查使用指南.md` §4](docs/Skill%20检查使用指南.md)。
 
-| Skill 类型 | 最低检查 |
+| 类型 × 风险组合 | 最低检查 |
 |---|---|
 | S0/S1 纯提示词 | L1 |
 | S2 纯提示词 | L2 |
@@ -107,78 +116,36 @@ AGENTS.md
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
 8. Agent 模式复用 `wonglaitung/harness`：Agent 阶段 4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill；全局安全边界已追加到 Skill 提示词。
+9. 检查与被测执行全链路 Docker 化：统一镜像 `skill-checker:local`，唯一入口 `scripts/check_in_docker.sh`，网关通过 `SKILL_API_BASE`/`SKILL_API_KEY` 配置。
 
-## 命令（部分已可用）
+## 命令（Docker 入口）
 
 ```bash
-# 已可用
-python ci/validate_skill.py
-ruff check adapters ci evals scripts targets
-pytest -q
+# 宿主机唯一入口（首次自动构建镜像；REBUILD=1 可强制重建）
+./scripts/check_in_docker.sh init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
+./scripts/check_in_docker.sh check --targets targets --skill my-skill
+./scripts/check_in_docker.sh run --targets targets --skill my-skill --runs 3
 
-# 单入口发布助手
-python scripts/release_assistant.py init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
-python scripts/release_assistant.py check --targets targets --skill my-skill
-python scripts/release_assistant.py run --targets targets --skill my-skill --runs 3
+# 发布前 L3
+./scripts/check_in_docker.sh run --targets targets --skill my-skill --runs 3 --l3
 
-# 手工检查（推荐）
-python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
-python scripts/manual_check.py --targets targets --skill write-report --level L2
-python scripts/scan_all.py --targets targets
-python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
-python scripts/manual_check.py --targets targets --skill service-ticket-update --level L2 --agent
-python scripts/manual_check.py --targets targets --skill cross-skill-router --level L2 --agent
-python scripts/manual_check.py --targets targets --skill system-specification --level L2 --max-tokens 1024
-python scripts/baseline.py --targets targets collect write-report --runs 3
-python scripts/baseline.py --targets targets trend write-report
-python scripts/baseline.py --targets targets diff write-report --tolerance 0.05
-python scripts/baseline.py --targets targets gate write-report --tolerance 0.05
+# 模型网关（OpenAI-compatible，默认 http://host.docker.internal:8086/v1）
+export SKILL_API_BASE=https://your-gateway.example/v1
+export SKILL_API_KEY=your-key
+export SKILL_MODEL=your-model
 
-# Judge 校准（需本地 qwen3 网关）
-JUDGE_MODEL=qwen3 JUDGE_API_BASE=http://localhost:8086/v1 \
-  python scripts/judge_calibration.py
+# 容器内调试其他命令
+docker run --rm -v "$PWD:/workspace" -w /workspace skill-checker:local \
+  python scripts/baseline.py --targets /workspace/targets trend write-report
 
-# Promptfoo（需本地 qwen3 网关）
-SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
-  npx promptfoo eval -c targets/write-report/evals/promptfoo.yaml --max-concurrency 1
-
-# DeepEval（需本地 qwen3 网关）
-RUN_LLM_EVALS=1 JUDGE_MODEL=qwen3 SKILL_API_BASE=http://localhost:8086/v1 \
-  DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300 \
-  pytest -q targets/write-report/evals/test_write_report.py
-
-# Garak target L3
-TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
-
-# 运行时沙箱
+# 独立脚本沙箱
 ./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
 ./scripts/sandbox_escape_check.sh
-
-# Skill 完整性锁
-python scripts/skill_lock.py verify
-python scripts/capability_audit.py --skill account-balance-query
-python scripts/prompt_audit.py --skill write-report
-python scripts/prompt_audit.py --skill write-report --llm
 
 # 密码学签名（私钥不入库）
 python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals/keys/public.pem
 python scripts/sign_skills.py sign --key /secure/skills.pem
 python scripts/sign_skills.py verify --public evals/keys/public.pem
-
-# Agent 本地隔离环境
-./scripts/setup_harness_env.sh
-./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
-
-
-# 严格网络白名单（仅允许本地模型网关）
-docker compose -f adapters/sandbox/docker-compose.model.yml up -d --build
-
-# 供应链扫描（Docker）
-./ci/run_security.sh
-
-# 尚未安装/接入
-semgrep --config p/python --config p/javascript --config p/owasp-top-ten targets/ --error
-shellcheck targets/**/*.sh
 ```
 
 ## 进度更新要求
@@ -190,7 +157,7 @@ shellcheck targets/**/*.sh
 
 ## 验证要求
 
-- 当前没有可运行测试；不要声称测试通过。
+- 现有 pytest 测试（44 passed, 8 skipped）；新增代码后必须实际运行，不要只写结论。
 - 新增代码后必须运行 Ruff，并在可用时运行 pytest。
 - 修改评测配置后必须实际运行 Promptfoo/DeepEval，保留报告。
 - 修改文档后检查 Mermaid 代码块与 Markdown 代码围栏是否配对。

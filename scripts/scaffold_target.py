@@ -10,7 +10,55 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT / "targets"
+
+PROMPT_ADAPTER_TEMPLATE = '''from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+
+import httpx
+
+from safety import SAFETY_PROMPT
+
+ROOT = Path(__file__).resolve().parent
+SYSTEM_PROMPT = (ROOT / "SKILL.md").read_text(encoding="utf-8") + SAFETY_PROMPT
+
+
+def run_prompt(user_input: str) -> dict:
+    api_base = os.getenv("SKILL_API_BASE", "http://host.docker.internal:8086/v1").rstrip("/")
+    response = httpx.post(
+        f"{api_base}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.getenv('SKILL_API_KEY', 'local-placeholder')}"
+        },
+        json={
+            "model": os.getenv("SKILL_MODEL", "qwen3"),
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_input},
+            ],
+            "temperature": 0,
+            "max_tokens": int(os.getenv("SKILL_MAX_TOKENS", "2048")),
+        },
+        timeout=float(os.getenv("SKILL_TIMEOUT", "180")),
+    )
+    response.raise_for_status()
+    return {
+        "output": response.json()["choices"][0]["message"]["content"],
+        "metadata": {"trace_id": response.json().get("id")},
+    }
+
+
+def call_api(prompt: str, options: dict, context: dict) -> dict:
+    del options, context
+    return run_prompt(prompt)
+
+
+def run(user_input: str) -> dict:
+    return run_prompt(user_input)
+'''
 
 
 def parse_frontmatter(path: Path) -> dict:
@@ -25,7 +73,7 @@ def parse_frontmatter(path: Path) -> dict:
 
 def adapter_template(kind: str) -> str:
     if kind == "prompt":
-        return (TEMPLATES / "write-report" / "adapter.py").read_text(encoding="utf-8")
+        return PROMPT_ADAPTER_TEMPLATE
     if kind == "script":
         return '''from __future__ import annotations
 
@@ -146,7 +194,8 @@ adapter: adapter.py
     )
     (target_dir / "adapter.py").write_text(adapter_template(args.type), encoding="utf-8")
     if args.type == "prompt":
-        shutil.copy2(TEMPLATES / "write-report" / "safety.py", target_dir / "safety.py")
+        safety_source = ROOT / "adapters" / "safety_prompt.py"
+        shutil.copy2(safety_source, target_dir / "safety.py")
     if args.type == "tool":
         (target_dir / "tools.yaml").write_text(
             "tool_set: default\ntools: []\n", encoding="utf-8"

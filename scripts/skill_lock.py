@@ -9,9 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS_DIR = ROOT / "targets"
-LOCK_PATH = TARGETS_DIR / "skills.lock.json"
 EXCLUDED_SUFFIXES = {".pyc", ".log"}
-EXCLUDED_DIRS = {"__pycache__", "evals", "fixtures"}
+EXCLUDED_DIRS = {"__pycache__", "evals", "fixtures", "node_modules"}
 
 
 def sha256_file(path: Path) -> str:
@@ -48,36 +47,43 @@ def build_skill(skill_dir: Path) -> dict:
     return {"aggregate": aggregate, "files": files}
 
 
-def load_lock() -> dict:
-    if not LOCK_PATH.exists():
-        return {"skills": {}}
-    return json.loads(LOCK_PATH.read_text(encoding="utf-8"))
+def lock_path(targets: Path) -> Path:
+    return targets / "skills.lock.json"
 
 
-def generate() -> int:
-    skills = {}
-    for skill_dir in sorted(TARGETS_DIR.iterdir()):
+def load_lock(targets: Path) -> dict:
+    path = lock_path(targets)
+    if not path.exists():
+        return {"version": 1, "skills": {}}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def generate(targets: Path) -> int:
+    lock = load_lock(targets)
+    skills = lock.get("skills", {})
+    for skill_dir in sorted(targets.iterdir()):
         if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").exists():
             continue
         skills[skill_dir.name] = build_skill(skill_dir)
 
-    LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
-    LOCK_PATH.write_text(
+    path = lock_path(targets)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         json.dumps({"version": 1, "skills": skills}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    print(f"lock written: {LOCK_PATH} ({len(skills)} skills)")
+    print(f"lock written: {path} ({len(skills)} skills)")
     return 0
 
 
-def verify(skill: str | None) -> int:
-    lock = load_lock()
+def verify(skill: str | None, targets: Path) -> int:
+    lock = load_lock(targets)
     locked = lock.get("skills", {})
     names = [skill] if skill else sorted(locked)
 
     failed = False
     for name in names:
-        skill_dir = TARGETS_DIR / name
+        skill_dir = targets / name
         if not skill_dir.exists():
             print(f"[FAIL] missing skill: {name}")
             failed = True
@@ -105,17 +111,21 @@ def verify(skill: str | None) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Skill 文件完整性锁")
+    parser.add_argument("--targets", type=Path, default=TARGETS_DIR)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("generate")
+    generate_parser = sub.add_parser("generate")
+    generate_parser.add_argument("--targets", type=Path, default=argparse.SUPPRESS)
 
     verify_parser = sub.add_parser("verify")
     verify_parser.add_argument("--skill", default=None)
+    verify_parser.add_argument("--targets", type=Path, default=argparse.SUPPRESS)
 
     args = parser.parse_args()
+    targets = args.targets.expanduser().resolve()
     if args.command == "generate":
-        return generate()
-    return verify(args.skill)
+        return generate(targets)
+    return verify(args.skill, targets)
 
 
 if __name__ == "__main__":

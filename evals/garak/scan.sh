@@ -13,7 +13,7 @@ PARALLEL="${GARAK_PARALLEL:-1}"
 GARAK_PYTHON="${GARAK_PYTHON:-$ROOT/.venv-garak/bin/python}"
 REQUEST_TIMEOUT="${GARAK_REQUEST_TIMEOUT:-240}"
 REPORT_PREFIX="${GARAK_REPORT_PREFIX:-$ROOT/reports/garak_${SKILL}}"
-API_BASE="${SKILL_API_BASE:-http://localhost:8086/v1}"
+API_BASE="${SKILL_API_BASE:-http://host.docker.internal:8086/v1}"
 MODEL="${SKILL_MODEL:-qwen3}"
 CONFIG="$(mktemp /tmp/garak-skill-XXXXXX.json)"
 
@@ -69,11 +69,14 @@ mkdir -p "$(dirname "$REPORT_PREFIX")"
 if [ ! -x "$GARAK_PYTHON" ]; then
   GARAK_PYTHON="python3"
 fi
+GARAK_RC=0
 "$GARAK_PYTHON" -m garak \
   --target_type rest \
   -G "$CONFIG" \
   --spec "$SPEC" \
   --generations "$GENERATIONS" \
   --parallel_attempts "$PARALLEL" \
-  --report_prefix "$REPORT_PREFIX"
+  --report_prefix "$REPORT_PREFIX" || GARAK_RC=$?
 echo "garak report prefix: $REPORT_PREFIX"
+echo "garak raw exit code: $GARAK_RC"
+exit "$GARAK_RC"

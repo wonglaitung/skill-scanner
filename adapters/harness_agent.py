@@ -89,7 +89,7 @@ class HarnessAgentAdapter:
         return cls(
             skill_path=Path(os.environ.get("SKILL_PATH", DEFAULT_SKILL_PATH)),
             model=os.environ.get("SKILL_MODEL", "qwen3"),
-            api_base=os.environ.get("SKILL_API_BASE", "http://localhost:8086/v1"),
+            api_base=os.environ.get("SKILL_API_BASE", "http://host.docker.internal:8086/v1"),
             tools=build_tools(os.environ.get("SKILL_TOOL_SET", "default")),
             max_iterations=int(os.environ.get("SKILL_MAX_STEPS", "10")),
             api_key=os.environ.get("SKILL_API_KEY", "local-placeholder"),

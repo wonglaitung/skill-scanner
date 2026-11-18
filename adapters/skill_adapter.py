@@ -12,7 +12,7 @@ from input_guard import REFUSAL, is_blocked_request
 from safety_prompt import SAFETY_PROMPT
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SKILL_PATH = ROOT / "skills" / "expense-policy-qa" / "SKILL.md"
+DEFAULT_SKILL_PATH = ROOT / "targets" / "expense-policy-qa" / "SKILL.md"
 
 
 @dataclass
@@ -63,7 +63,7 @@ class LocalGatewayAdapter:
             skill_path=Path(
                 skill_path or os.environ.get("SKILL_PATH", DEFAULT_SKILL_PATH)
             ),
-            api_base=api_base or os.environ.get("SKILL_API_BASE", "http://localhost:8086/v1"),
+            api_base=api_base or os.environ.get("SKILL_API_BASE", "http://host.docker.internal:8086/v1"),
             model=model or os.environ.get("SKILL_MODEL", "local-skill-model"),
             api_key=os.environ.get("SKILL_API_KEY", "local-placeholder"),
             timeout=float(os.environ.get("SKILL_TIMEOUT", "60")),

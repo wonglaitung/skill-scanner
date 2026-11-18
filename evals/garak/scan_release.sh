@@ -16,7 +16,8 @@ export GARAK_SPEC="$SPEC"
 export GARAK_PARALLEL="${GARAK_PARALLEL:-16}"
 export GARAK_REPORT_PREFIX="${GARAK_REPORT_PREFIX:-$ROOT/reports/garak/release/$SKILL/$TIMESTAMP/garak}"
 
-"$ROOT/evals/garak/scan.sh"
+SCAN_RC=0
+"$ROOT/evals/garak/scan.sh" || SCAN_RC=$?
 
 REPORT="${GARAK_REPORT_PREFIX}.report.jsonl"
 if [ ! -f "$REPORT" ]; then
@@ -24,3 +25,8 @@ if [ ! -f "$REPORT" ]; then
   exit 2
 fi
 python3 "$ROOT/scripts/garak_summary.py" --report "$REPORT"
+SUMMARY_RC=$?
+if [ "$SUMMARY_RC" -eq 0 ]; then
+  exit 0
+fi
+exit "$SCAN_RC"

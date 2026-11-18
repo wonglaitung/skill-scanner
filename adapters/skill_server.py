@@ -97,7 +97,7 @@ def main() -> int:
     args = parser.parse_args()
 
     adapter = LocalGatewayAdapter.from_env(
-        skill_path=f"skills/{args.skill}/SKILL.md",
+        skill_path=f"targets/{args.skill}/SKILL.md",
         model=args.model,
         api_base=args.api_base,
     )

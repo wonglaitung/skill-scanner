@@ -33,6 +33,13 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def report_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def summarize_values(values: list[float]) -> dict:
     if not values:
         return {"mean": None, "std": None, "min": None, "max": None, "n": 0}
@@ -111,10 +118,12 @@ def matching_summaries(
     agent: bool | None,
     report: Path | None,
     total: int | None = None,
+    report_dir: Path | None = None,
 ) -> tuple[list[tuple[Path, dict]], dict]:
-    paths = sorted((REPORTS_DIR / skill).glob("*/summary.json"))
+    root = report_dir if report_dir is not None else (REPORTS_DIR / skill)
+    paths = sorted(root.glob("*/summary.json"))
     if not paths:
-        raise FileNotFoundError(f"no reports found for {skill}")
+        raise FileNotFoundError(f"no reports found under {root}")
 
     summaries = [(path.parent, load_json(path)) for path in paths]
     if report is not None:
@@ -163,8 +172,11 @@ def collect(
     agent: bool | None,
     report: Path | None,
     targets: Path | None = None,
+    report_dir: Path | None = None,
 ) -> int:
-    selected, _ = matching_summaries(skill, runs, level, agent, report)
+    selected, _ = matching_summaries(
+        skill, runs, level, agent, report, report_dir=report_dir
+    )
     if not selected:
         print(f"no matching reports for {skill}", file=sys.stderr)
         return 2
@@ -181,7 +193,7 @@ def collect(
         run_entries.append(
             {
                 "timestamp": data.get("timestamp") or path.name,
-                "report": str(path.relative_to(ROOT)),
+                "report": report_path(path),
                 "promptfoo": metrics.get("promptfoo", {}),
                 "deepeval": metrics.get("deepeval", {}),
                 "cases": promptfoo_cases(path / "promptfoo.json", quarantine),
@@ -502,6 +514,7 @@ def main() -> int:
     collect_parser.add_argument("--level", default=None)
     collect_parser.add_argument("--agent", action="store_true", default=None)
     collect_parser.add_argument("--report", type=Path, default=None)
+    collect_parser.add_argument("--report-dir", type=Path, default=None)
 
     save_parser = sub.add_parser("save")
     save_parser.add_argument("skill")
@@ -527,7 +540,15 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.command == "collect":
-        return collect(args.skill, args.runs, args.level, args.agent, args.report, args.targets)
+        return collect(
+            args.skill,
+            args.runs,
+            args.level,
+            args.agent,
+            args.report,
+            args.targets,
+            args.report_dir,
+        )
     if args.command == "save":
         return save(args.skill, args.report, args.targets)
     if args.command == "diff":

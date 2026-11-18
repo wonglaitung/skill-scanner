@@ -8,19 +8,19 @@ echo "== SKILL.md validation =="
 python3 ci/validate_skill.py
 
 echo "== Ruff =="
-ruff check adapters ci evals skills scripts
+ruff check adapters ci evals scripts targets
 
 if command -v semgrep >/dev/null 2>&1; then
   echo "== Semgrep =="
   semgrep --config p/python --config p/javascript --config p/owasp-top-ten \
-    adapters ci skills scripts --error
+    adapters ci scripts targets --error
 else
   echo "[SKIP] semgrep not installed"
 fi
 
 if command -v shellcheck >/dev/null 2>&1; then
   echo "== ShellCheck =="
-  mapfile -t shell_files < <(find skills -name '*.sh' -type f 2>/dev/null)
+  mapfile -t shell_files < <(find targets -name '*.sh' -type f 2>/dev/null)
   if [ "${#shell_files[@]}" -gt 0 ]; then
     shellcheck "${shell_files[@]}"
   else

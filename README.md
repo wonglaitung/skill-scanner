@@ -1,8 +1,8 @@
 # skill-scanner
 
-Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段，CI 仅做静态检查。
+Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段；检查与被测 Skill 执行全链路在 Docker 容器内完成，CI 仅做静态检查。
 
-- 方案文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.12）
+- 方案文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
 - 当前进度：`progress.md`
 - Agent 工作约定：`AGENTS.md`
 
@@ -12,14 +12,14 @@ Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、
 - 用 Promptfoo 做确定性回归（边界、PII、AI 腔、格式）
 - 用 DeepEval 做指标化评分（相关性、忠实度、幻觉）
 - 用 Garak 对 **Skill 包装端点**做发布前扫描
-- 用 Semgrep / Ruff 做静态检查
-- 为脚本型 Skill 提供 Promptfoo provider 与契约测试
+- 用 Semgrep / Ruff 做静态检查，用 gitleaks / Trivy 做供应链扫描
+- 为脚本型与工具型 Skill 提供容器内执行环境
 - 保存基线并对比回退
 - 生成可审计的 Markdown/JSON 报告
 
 ## 推荐用法：让 Skill 助手做检查
 
-首次使用先完成下面的依赖和本地模型网关配置，然后把 `assistant/skill-release-guide/` 加载到支持 Skill 的 Agent 环境，用自然语言说明目标，不需要自己拼命令：
+先完成下面的 Docker 与模型网关配置，然后把 `assistant/skill-release-guide/` 加载到支持 Skill 的 Agent 环境，用自然语言说明目标，不需要自己拼命令：
 
 ```text
 使用 skill-release-guide 检查 /data/skills/customer-reply。
@@ -34,191 +34,98 @@ Skill 会补问缺失信息，依次执行 `init → check → run`，并输出 
 - 报告解读与排障：[`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)
 - 流程定义：[`assistant/skill-release-guide/SKILL.md`](assistant/skill-release-guide/SKILL.md)
 
-## 手动快速开始（调试用）
+## 快速开始（Docker 唯一入口）
 
-没有 Agent 环境或需要定位问题时，使用下面命令。正常检查优先走上面的 Skill 入口。
+宿主机只需 Docker。Python、Node.js、Promptfoo、DeepEval、Semgrep、Garak、gitleaks、Trivy
+和 harness SDK 都已固化在 `skill-checker:local` 镜像内。
 
-### 1. 依赖
+### 1. 模型网关
 
-```bash
-pip install -r requirements-dev.txt -r requirements-eval.txt
-npm install
-```
-
-需要 Python 3.10+、Node.js 20+。
-
-### 2. 本地模型网关
-
-默认地址：
+使用 OpenAI-compatible 接口。默认地址：
 
 ```text
-http://localhost:8086/v1
+http://host.docker.internal:8086/v1
 模型：qwen3
 ```
 
-所有模型调用只走本地网关，不访问外部模型。
-
-### 3. 命令
+不是默认地址或需要鉴权时：
 
 ```bash
-# 单入口（Skill 助手内部会调用）
-python scripts/release_assistant.py init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
-python scripts/release_assistant.py check --targets targets --skill my-skill
-python scripts/release_assistant.py run --targets targets --skill my-skill --runs 3
+export SKILL_API_BASE=https://your-gateway.example/v1
+export SKILL_API_KEY=your-key
+export SKILL_MODEL=your-model
+```
 
-# 手动调试（不建议作为完整流程）
-# 运行前检查
-python scripts/preflight.py --targets targets --skill write-report --risk S2 --level L2
+### 2. 命令
 
-# 单目标检查
-python scripts/manual_check.py --targets targets --skill write-report --level L2
-
-# 批量检查
-python scripts/scan_all.py --targets targets
-
-# 工具型
-python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
+```bash
+# 首次运行自动构建镜像；更新依赖后可用 REBUILD=1 重建
+./scripts/check_in_docker.sh init --source /path/to/skill --name my-skill --owner my-team --risk S2 --type prompt --level L2 --targets targets
+./scripts/check_in_docker.sh check --targets targets --skill my-skill
+./scripts/check_in_docker.sh run --targets targets --skill my-skill --runs 3
 
 # 发布前 L3
-TARGETS=targets SKILL=account-balance-query ./evals/garak/scan_release.sh
-
+./scripts/check_in_docker.sh run --targets targets --skill my-skill --runs 3 --l3
 ```
+
+每轮 `manual_check` 在容器内执行结构校验、完整性锁、权限/提示词审计、Semgrep、
+供应链扫描（gitleaks/npm audit/Trivy/SBOM）、Promptfoo 与 DeepEval。
 
 输出：
 
 ```text
-reports/<skill>/<timestamp>/
+reports/<skill>/release-<timestamp>/
+├── summary.md              # Decision、失败项、轮次报告与证据清单
 ├── summary.json
-├── report.md
-├── run.log
-├── promptfoo.json
-└── garak.report.jsonl
+├── round-1/
+│   ├── report.md
+│   ├── summary.json
+│   ├── run.log
+│   ├── promptfoo.json
+│   ├── trivy.sarif
+│   └── sbom.cdx.json
+├── round-2/
+├── round-3/
+└── garak/                  # 启用 --l3 时
 ```
 
-### 4. 基线
+### 3. 独立能力（可选）
 
 ```bash
-python scripts/baseline.py --targets targets collect manager-report --runs 3
-python scripts/baseline.py --targets targets trend manager-report
-python scripts/baseline.py --targets targets diff manager-report --tolerance 0.05
-python scripts/baseline.py --targets targets gate manager-report --tolerance 0.05
-python scripts/capability_audit.py --skill account-balance-query
-python scripts/prompt_audit.py --skill write-report
-JUDGE_MODEL=qwen3 python scripts/judge_calibration.py
-python scripts/baseline.py list
-```
-
-### 5. 运行时沙箱
-
-脚本型 Skill 在 Docker 中运行，默认 `network none`、只读根文件系统、非 root、CPU/内存/超时限制：
-
-```bash
+# 脚本执行沙箱（network none、只读根、非 root）
 ./scripts/run_sandboxed.sh -c "import docx; print('sandbox ok')"
 ./scripts/sandbox_escape_check.sh
-```
 
-逃逸检查覆盖：非 root、工作区只读、`/etc/shadow` 不可读、无外网、无 Docker socket。
+# 完整性锁
+docker run --rm -v "$PWD:/workspace" skill-checker:local \
+  python scripts/skill_lock.py --targets /workspace/targets verify
 
-沙箱镜像与配置：
-
-- `adapters/sandbox/Dockerfile`：脚本执行沙箱
-- `adapters/sandbox/Dockerfile.model`：模型型 Skill 端点沙箱
-- `adapters/sandbox/docker-compose.yml`
-
-模型型 Skill 端点沙箱待接入 `targets/` 目标包。
-
-### 6. 供应链扫描
-
-```bash
-./ci/run_security.sh
-```
-
-包含：
-
-- gitleaks：密钥扫描
-- npm audit：Node 依赖漏洞
-- Trivy：依赖漏洞、IaC、配置错误
-- SBOM：`reports/sbom.cdx.json`
-- Skill 文件完整性锁：`python scripts/skill_lock.py verify`
-
-密码学签名（可选，私钥不入库）：
-
-```bash
+# 密码学签名（私钥不入库）
 python scripts/sign_skills.py keygen --private /secure/skills.pem --public evals/keys/public.pem
 python scripts/sign_skills.py sign --key /secure/skills.pem
 python scripts/sign_skills.py verify --public evals/keys/public.pem
 ```
 
-`manual_check.py` 在检测到 `evals/keys/public.pem` 与 `evals/skills.lock.sig` 时会自动验签。生产环境私钥应由 KMS/HSM 或独立签名服务托管。
-
-需要 Docker。Garak、Trivy、gitleaks 建议使用独立镜像/容器，避免污染主环境。
-
-### 7. 单独运行各工具
-
-```bash
-# 结构校验
-python ci/validate_skill.py
-python ci/validate_skill.py --skill write-report
-
-# 静态检查
-ruff check adapters ci evals scripts targets
-semgrep --config p/python --config p/owasp-top-ten adapters ci skills scripts --error
-
-# Promptfoo
-SKILL_API_BASE=http://localhost:8086/v1 SKILL_MODEL=qwen3 \
-  npx promptfoo eval -c targets/write-report/evals/promptfoo.yaml --max-concurrency 1
-
-# DeepEval
-```
+容器外直接运行 `release_assistant.py` 或 `manual_check.py` 会被拒绝（要求 `SKILL_IN_DOCKER=1`）。
 
 ## 分级模型
 
-完整说明见 [`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)。
+- **S0-S3** 业务风险等级；**L0-L3** 检查深度；`agent: true` 是执行标志，不是等级。
+- `type` 是项目自定义的 Skill 类型（非业界标准）：`prompt` 纯提示词（LLM 驱动的提示词）、
+  `script` 脚本型（确定性脚本，不调 LLM）、`tool` 工具型（LLM Agent 调用工具）。
+  定义与例子见 [`docs/Skill 检查使用指南.md` §0](docs/Skill%20检查使用指南.md)。
+- 最低检查由**类型 × 风险**共同决定：类型定手段、风险定深度。例如 S2 纯提示词 L2、
+  工具型 L2 + Agent、脚本型 L1；S3 纯提示词与高风险工具发布前 L3。二维速查见指南 §4。
+- 工具型示例：`./scripts/check_in_docker.sh check --targets targets --skill account-balance-query`
 
-- **S0-S3**：业务风险等级
-- **L0-L3**：检查深度
-- **`--agent`**：Agent 执行标志，不是等级
+完整定义、最低检查矩阵、运行前置、报告解读与排障见
+[`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)；流程入口见
+[`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)。
 
-### S：风险等级
+## 已有 Skill（历史试点，目标包已从仓库移除）
 
-| 等级 | 含义 |
-|---|---|
-| S0 | 无风险/纯展示 |
-| S1 | 低风险 |
-| S2 | 中高风险，默认重点检查 |
-| S3 | 高风险，必须完整检查 |
-
-### L：检查深度
-
-L1 包含 L0，L2 包含 L1，L3 包含 L2。
-
-| 级别 | 查什么 |
-|---|---|
-| L0 | 结构、完整性锁、静态检查、供应链、权限审计、提示词审计 |
-| L1 | L0 + Promptfoo 回归 |
-| L2 | L1 + DeepEval 指标 |
-| L3 | L2 + Garak 独立扫描 |
-
-### Agent：执行方式
-
-```bash
-python scripts/manual_check.py --targets targets --skill account-balance-query --level L2 --agent
-```
-
-Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
-
-### 最低检查
-
-| Skill 类型 | 最低检查 |
-|---|---|
-| S0/S1 纯提示词 | L1 |
-| S2 纯提示词 | L2 |
-| S3 纯提示词 | L3 |
-| 工具型 Skill | L2 + Agent |
-| 高风险工具型 | L2 + Agent，发布前 L3 |
-| 脚本型 | L1 |
-
-## 已有 Skill
+以下为历史试点清单，仅作参考；当前仓库不附带任何目标包。重新测试时由 `init` 生成，
+或用 `--targets <私有路径>` 指向你自己的目标包目录。
 
 | Skill | 类型 | 说明 |
 |---|---|---|
@@ -228,37 +135,41 @@ Agent 只用于工具型 Skill，不是 L4，也不能替代 L0-L3。
 | `expense-policy-qa` | 纯提示词 | 费用报销问答（示例） |
 | `md-to-word` | 提示词 + 脚本 | Markdown 转 Word |
 | `account-balance-query` | 提示词 + 工具 | Agent 工具调用测试 Skill |
+| `service-ticket-update` | 提示词 + 工具 | 服务工单状态与备注更新（写操作、含权限边界） |
+| `cross-skill-router` | 提示词 + 工具 | 跨 Skill 只读路由与委托（含提权防护） |
 
 ## 目录结构
 
 ```text
-docs/                 方案、分级指南、扫描指南、模板
-targets/               目标包（8 个）
-targets/              目标包（8 个）
-adapters/             Promptfoo/Garak/DeepEval 适配器
-evals/                用例、配置、基线
-ci/                   校验、静态检查、测试
-scripts/              手工检查与基线工具
-reports/              运行产物（不入库）
-progress.md           项目进度
-AGENTS.md             Agent 工作约定
+docs/                       方案、分级指南、扫描指南、模板
+adapters/                   Promptfoo/Garak/DeepEval 适配层
+adapters/sandbox/           Dockerfile.checks、脚本沙箱、模型端点沙箱
+assistant/                  唯一用户入口 skill-release-guide
+evals/                      用例、配置、基线
+ci/                         校验、静态检查、测试
+scripts/check_in_docker.sh  宿主机唯一入口
+scripts/                    容器内检查与基线工具
+reports/                    运行产物（不入库）
+progress.md                 项目进度
+AGENTS.md                   Agent 工作约定
 ```
 
-## 当前结果
+`targets/` 不是仓库的固定内容：它由 `init` 在本地生成，或用 `--targets <私有路径>`
+指向仓库外的目标包目录。存量目标包已从仓库移除，你可拿它们重新测试。
+
+## 当前结果（历史验证记录，存量目标包已移除）
 
 | 检查 | 结果 |
 |---|---|
+| Docker 全链路 | 自定义 Skill `init/check/run` 3 轮通过，Gate PASS |
 | SKILL.md 结构校验 | 8 个全部通过 |
 | 多轮基线 | 8 个 S2 各 3 轮，Delta Gate 全部 PASS |
-| Promptfoo | write-report 8/8、system-specification 8/8、manager-report 8/8、expense-policy-qa 5/5、md-to-word 5/5、account-balance-query 15/15、service-ticket-update 10/10、cross-skill-router 9/9 |
+| Promptfoo | write 8/8、system 8/8、manager 8/8、expense 5/5、md 5/5、account 15/15、ticket 10/10、cross 9/9 |
 | DeepEval | account 7/7；write/system/ticket/cross 均通过 |
 | Garak Release v2 | 7 个 LLM Skill，4 个 probe，true compliant 0 |
 | Judge 校准 | 20 条，一致率 95% |
 | Semgrep / Ruff | 0 findings / 0 errors |
-| gitleaks | 0 leaks |
-| npm audit / Trivy | 0 vulnerabilities / 0 findings |
-| SBOM | 622 components（CycloneDX） |
-| 沙箱 | 脚本转换、逃逸检查、模型端点沙箱通过 |
+| gitleaks / Trivy / SBOM | 容器内完成；SBOM 622 components |
 | Skill 完整性锁 | 8 个全部匹配 |
 | 密码学签名 | Ed25519 签名/验签通过，篡改检测符合预期 |
 
@@ -270,24 +181,20 @@ AGENTS.md             Agent 工作约定
 - 网页/文件/RAG/记忆注入尚未覆盖。
 - 输入护栏会拒绝编码/解码和训练数据复述请求；未来合法场景需要白名单。
 - 私钥托管/轮换、模型网关按 Skill 隔离、可观测性、报告签名/归档仍未闭环。
-- 全流程默认不在沙箱内执行；Docker/gVisor 脚本是独立能力。
+- Trivy 发现的问题按告警处理，不阻断 PR。
 - 目前是人工/半自动检查，不单独作为自动发布审批依据。
 
 ## 依赖锁定
 
-- `harness-sdk` 必须锁定版本与 commit，使用 `requirements-harness.txt`。
-- 推荐项目本地隔离环境，不污染全局：
-  ```bash
-  ./scripts/setup_harness_env.sh
-  ./scripts/with_harness.sh python -c "import harness; print(harness.__file__)"
-  ```
-- 禁止使用浮动分支或 `latest`。
-- 升级 harness 时重新跑 Agent 用例并更新基线。
+检查镜像内固定：Python 3.12、Node 22、Promptfoo 0.125.1、Ruff 0.15.14、
+DeepEval 4.3.2、Semgrep 1.85.0、Garak 0.16.0、gitleaks 8.21.2、Trivy 0.76.2。
+harness-sdk 锁定 `0.1.0` 与 commit `c4cf29f`，使用独立虚拟环境。
+禁止浮动分支或 `latest`；升级依赖后必须重建镜像并重跑基线与 Agent 用例。
 
 ## 安全约束
 
 - 只使用合成数据，禁止真实 PII、密钥、生产凭证。
-- 所有模型调用走本地网关。
+- 模型调用走可配置的 OpenAI-compatible 网关，禁止访问未授权 endpoint。
 - 扫描目标必须获得授权，只允许白名单 endpoint。
 - 未经验证不要声称测试通过。
 
@@ -298,3 +205,5 @@ AGENTS.md             Agent 工作约定
 - [`Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)：定级、运行前置、报告解读与排障
 - [`对抗审核报告模板.md`](docs/对抗审核报告模板.md)
 - [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)：唯一用户入口，从放置目标到报告生成
+- [`assistant/README.md`](assistant/README.md)：三种典型使用案例
+- [`evals/garak/README.md`](evals/garak/README.md)：发布前 L3 独立扫描
