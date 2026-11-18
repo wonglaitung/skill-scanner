@@ -10,6 +10,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 from datetime import datetime
@@ -71,43 +72,74 @@ def run_step(
         }
 
     started = time.time()
+    print(f"\n--- [{name}] 开始 {datetime.now():%H:%M:%S} ---", flush=True)
+    print("  输入 | " + " ".join(cmd), flush=True)
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             cmd,
             cwd=ROOT,
             env=env,
-            capture_output=True,
             text=True,
-            timeout=timeout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=1,
         )
-        status = "passed" if proc.returncode == 0 else "failed"
+        stdout = proc.stdout
+        stderr = proc.stderr
+        assert stdout is not None and stderr is not None
+        out_chunks: list[str] = []
+        err_chunks: list[str] = []
+
+        def pump(stream, chunks: list[str]) -> None:
+            for line in stream:
+                print(line, end="", flush=True)
+                chunks.append(line)
+
+        out_thread = threading.Thread(target=pump, args=(stdout, out_chunks), daemon=True)
+        err_thread = threading.Thread(target=pump, args=(stderr, err_chunks), daemon=True)
+        out_thread.start()
+        err_thread.start()
+        try:
+            code = proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+            out_thread.join(timeout=5)
+            err_thread.join(timeout=5)
+            elapsed = round(time.time() - started, 2)
+            print(f"--- [{name}] TIMEOUT | {elapsed}s ---", flush=True)
+            return {
+                "name": name,
+                "status": "timeout",
+                "required": required,
+                "cmd": cmd,
+                "elapsed_seconds": elapsed,
+                "stdout": "".join(out_chunks),
+                "stderr": "".join(err_chunks),
+            }
+        out_thread.join()
+        err_thread.join()
+        status = "passed" if code == 0 else "failed"
+        elapsed = round(time.time() - started, 2)
+        print(f"--- [{name}] {status.upper()} | {elapsed}s ---", flush=True)
         return {
             "name": name,
             "status": status,
             "required": required,
             "cmd": cmd,
-            "returncode": proc.returncode,
-            "elapsed_seconds": round(time.time() - started, 2),
-            "stdout": proc.stdout,
-            "stderr": proc.stderr,
+            "returncode": code,
+            "elapsed_seconds": elapsed,
+            "stdout": "".join(out_chunks),
+            "stderr": "".join(err_chunks),
         }
     except FileNotFoundError:
+        print(f"--- [{name}] SKIPPED (command not found) ---", flush=True)
         return {
             "name": name,
             "status": "skipped",
             "required": required,
             "reason": "command not found",
             "cmd": cmd,
-        }
-    except subprocess.TimeoutExpired as exc:
-        return {
-            "name": name,
-            "status": "timeout",
-            "required": required,
-            "cmd": cmd,
-            "elapsed_seconds": round(time.time() - started, 2),
-            "stdout": exc.stdout or "",
-            "stderr": exc.stderr or "",
         }
 
 

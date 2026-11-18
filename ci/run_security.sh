@@ -52,6 +52,8 @@ if command -v trivy >/dev/null 2>&1; then
     --skip-dirs reports \
     --scanners vuln,misconfig \
     --include-dev-deps \
+    --skip-db-update \
+    --skip-check-update \
     --format sarif \
     --output "$REPORT_REL/trivy.sarif" \
     . || status=1
@@ -65,6 +67,8 @@ if command -v trivy >/dev/null 2>&1; then
     --skip-dirs reports \
     --format cyclonedx \
     --include-dev-deps \
+    --skip-db-update \
+    --skip-check-update \
     --output "$REPORT_REL/sbom.cdx.json" \
     . || status=1
 elif command -v docker >/dev/null 2>&1; then

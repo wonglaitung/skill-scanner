@@ -17,6 +17,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DEEPEVAL_PYTHON=/opt/venvs/deepeval/bin/python \
     GARAK_PYTHON=/opt/venvs/garak/bin/python \
     HARNESS_PYTHON=/opt/venvs/harness/bin/python \
+    TRIVY_CACHE_DIR=/opt/trivy-cache \
     HOME=/tmp \
     PATH=/opt/checks/node_modules/.bin:$PATH
 
@@ -29,7 +30,9 @@ RUN curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEA
       | tar -xz -C /usr/local/bin gitleaks \
  && curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
       | tar -xz -C /usr/local/bin trivy \
- && chmod +x /usr/local/bin/gitleaks /usr/local/bin/trivy
+ && chmod +x /usr/local/bin/gitleaks /usr/local/bin/trivy \
+ && mkdir -p "$TRIVY_CACHE_DIR" \
+ && trivy fs --download-db-only
 
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
@@ -41,14 +44,17 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY requirements-dev.txt requirements-eval.txt requirements-harness.txt /opt/checks/req/
-COPY targets/md-to-word/requirements.txt /opt/checks/req/script.txt
+COPY requirements-script.txt /opt/checks/req/script.txt
 RUN python -m venv /opt/venvs/deepeval \
  && python -m venv /opt/venvs/garak \
  && python -m venv /opt/venvs/harness \
  && /opt/venvs/deepeval/bin/pip install --no-cache-dir \
       -r /opt/checks/req/requirements-dev.txt \
       -r /opt/checks/req/requirements-eval.txt \
- && /opt/venvs/garak/bin/pip install --no-cache-dir "garak==${GARAK_VERSION}" \
+  && /opt/venvs/garak/bin/pip install --no-cache-dir \
+      --index-url https://download.pytorch.org/whl/cpu \
+      "torch==2.14.1+cpu" \
+  && /opt/venvs/garak/bin/pip install --no-cache-dir "garak==${GARAK_VERSION}" \
  && /opt/venvs/harness/bin/pip install --no-cache-dir \
       -r /opt/checks/req/requirements-harness.txt \
  && pip install --no-cache-dir \
@@ -56,5 +62,7 @@ RUN python -m venv /opt/venvs/deepeval \
       -r /opt/checks/req/script.txt \
       "setuptools<81" \
       "semgrep==${SEMGREP_VERSION}"
+
+RUN trivy fs --scanners misconfig --skip-db-update /opt/checks >/dev/null 2>&1 || true
 
 WORKDIR /workspace
