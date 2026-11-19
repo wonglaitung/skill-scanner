@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.7.0
+  version: 0.8.0
 ---
 
 # Skill Release Guide
@@ -56,7 +56,22 @@ metadata:
   export SKILL_MODEL=your-model
   ```
 - 首次运行会自动构建 `skill-checker:local` 镜像；更新依赖后可用
-  `REBUILD=1 ./scripts/check_in_docker.sh ...` 重建。
+  `REBUILD=1 ./scripts/check_in_docker.sh ...` 重建。镜像已内置各工具依赖与 Trivy 漏洞库，
+  重建仅在依赖变更时需要。
+
+实时查看进度：
+
+- `check_in_docker.sh` 会为每个容器命名 `skill-check`（可用 `CHECK_CONTAINER` 覆盖）。
+  前台运行时，阶段进度与各组件输入/输出会实时打印；若在另一终端观察，用
+  `docker logs -f skill-check`。
+- 长流程（尤其 `--l3`，3 轮 Garak 常需 30-60 分钟）可用 `DETACH=1` 后台启动：
+  ```bash
+  DETACH=1 ./scripts/check_in_docker.sh run --targets targets --skill my-skill --runs 3 --l3
+  docker logs -f skill-check
+  ```
+  结束后用 `docker rm -f skill-check` 清理。每步完整输出也落盘到
+  `reports/<skill>/release-*/logs/`，`summary.md` 会链接这些日志。
+- 发现任何步骤 FAIL：先按报告定位真因、修根因，再重跑；不要用 `tail -1` 等轮询掩盖失败信号。
 
 前置排障：
 

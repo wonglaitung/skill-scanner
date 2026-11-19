@@ -5,14 +5,14 @@
 Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，最小骨架已建立。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
-- 当前版本：v2.13
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.14）
+- 当前版本：v2.14
 
 ## 当前状态
 
 | 项 | 状态 |
 |---|---|
-| 方案文档 | 已完成 v2.13 |
+| 方案文档 | 已完成 v2.14 |
 | 代码实现 | target-only 扫描、单入口助手、手工检查与基线工具已落地；目标包不入库，由 `init` 本地生成或 `--targets` 指向外部目录 |
 | CI 流水线 | `skill-check` 已启用静态检查（validate/Ruff/pytest）；nightly 待自托管 runner |
 | SAST | Semgrep 已跑 `adapters/`、`ci/`、`targets/md-to-word`、`scripts/`：发现并修复 1 个 subprocess 污点参数问题后为 0 findings；gitleaks/Trivy/ShellCheck 未安装 |
@@ -99,6 +99,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 | 2026-11-17 | 移除存量目标包与文档同步 | 应用户要求，用 `git filter-branch` 从全部 git 历史移除 `targets/` 目录（含 8 个存量目标包、inventory、锁、README）并 force push；文档同步改为“targets 运行时生成或外部私有目录”，删除失效的 targets/README 链接，历史验证结果标注为存量记录；代码未改造，后续如需批量扫描需自行补 inventory |
 | 2026-11-17 | 补充 Skill 类型定义 | 在 `docs/Skill 检查使用指南.md` §0 说明 `type` 是项目自定义分类（非业界标准），给出 prompt/script/tool 的定义、执行形态与历史试点例子；README、AGENTS、入口 Skill 同步简述 |
 | 2026-11-17 | 纯提示词 L3 实测与工具修复 | 用纯提示词 Skill（humanizer-zh）跑 L3 3 轮：Promptfoo/DeepEval/供应链通过，Garak 原始 ASR 3.9%-5.5% 但归类后 true compliant=0。修复：`scaffold_target.py` 纯提示词模板改为内联（不再依赖已删的 targets）；`garak_summary.py` 兼容 text=None；`scan.sh`/`scan_release.sh` 以归类结果为准、原始退出码非零不中断 summary。入口 Skill 升至 0.7.0，补充 L3 耗时、原始 ASR vs true compliant、缺 summary 轮次处理与初始化残留清理 |
+| 2026-11-19 | humanizer-zh 完整检查 PASS 与修复固化 | S3/prompt/L3 + 发布前 L3：3 轮 manual_check、baseline、Delta Gate、Garak L3 全通过，正式报告 `reports/humanizer-zh/release-2026-11-19-011612/summary.md` Decision=PASS、warnings=[]、Garak status=review（归类后 true compliant 0）。按 FAIL 原则修根因：judge 配到每条 llm-rubric 断言（全局 `defaultTest.options.provider` 会污染字符串断言）、Trivy DB/checks 固化进镜像、baseline/gate 的 `run_tracked` 调用 bug；镜像已内置 DB，security 不再每次下载。文档固化：主方案 v2.14 修正 judge 配置写法，入口 Skill v0.8.0 补 `docker logs -f skill-check`、`DETACH=1` 与 FAIL 处理提示 |
 | 2026-11-18 | 检查进度与输入输出可见性 | `release_assistant.py` 的 `run()` 增加阶段化输出（`[当前/总数] 标签`、开始时间、耗时、OK/FAIL）与结构化输入记录（命令、cwd、脱敏环境变量、日志路径）；新增 `run_tracked()` 把各子命令 stdout/stderr 实时转发并落盘到 `reports/<skill>/release-*/logs/*.log`，`summary.md` 链接全部日志；密钥类环境变量仅显示 `<set>`，不明文打印；init/check/run 标注总步数，`run` 增加总体横幅与结束汇总；`check_in_docker.sh` 注入 `PYTHONUNBUFFERED=1`。Ruff 全通过；`ci/test_release_assistant.py` 5 passed（含密钥脱敏与日志链接断言）；全量 pytest 40 passed / 5 failed（失败源于 `targets/` 已清空、存量目标包缺失，与本次改动无关） |
 
 ## 当前验证（2026-11-06）

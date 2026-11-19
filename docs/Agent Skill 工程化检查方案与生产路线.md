@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.13 |
+| 文档版本 | v2.14 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | [文档索引](README.md)、[使用指南](Skill%20检查使用指南.md)、[进度](../progress.md)、[入口 Skill](../assistant/skill-release-guide/SKILL.md) |
@@ -435,17 +435,23 @@ npx promptfoo@latest view
 本地模型网关接入（L2 使用语义断言时）：
 
 ```yaml
-defaultTest:
-  options:
-    provider:
-      id: openai:chat:local-judge
-      config:
-        apiBaseUrl: http://host.docker.internal:8086/v1
-        apiKeyEnvar: LOCAL_LLM_API_KEY
-        temperature: 0
+tests:
+  - vars:
+      user_input: "..."
+    assert:
+      - type: llm-rubric
+        value: 输出保留原意且无 AI 腔
+        provider:
+          id: openai:chat:local-judge
+          config:
+            apiBaseUrl: http://host.docker.internal:8086/v1
+            apiKey: "${SKILL_API_KEY}"
+            model: qwen3
+            temperature: 0
+            showThinking: false
 ```
 
-说明：`prompts` 中被测目标由 `adapters/promptfoo_provider.py` 包装并调用本地网关；`defaultTest.options.provider` 只配置 `llm-rubric` 等模型断言的裁判模型。若直接测裸模型而非 Skill 包装，也可用 `openai:chat:<model>` 加 `apiBaseUrl` 作为 provider。
+说明：`prompts` 中被测目标由 `adapters/promptfoo_provider.py` 包装并调用本地网关。裁判模型（judge）必须配置在**每条 `llm-rubric` 断言的 `provider` 上**，不要放在全局 `defaultTest.options.provider`：后者会把 `not-contains` / `contains` 等纯字符串断言也交给 LLM 评判，导致说明段复述被禁词时字符串断言被误判失败。judge 走同一个 OpenAI-compatible 网关，用 `SKILL_API_KEY` 即可，无需 `OPENAI_API_KEY`。若直接测裸模型而非 Skill 包装，也可用 `openai:chat:<model>` 加 `apiBaseUrl` 作为被测 provider。
 
 ### 6.3 指标化语义评分（L2）
 

@@ -2,7 +2,7 @@
 
 Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、试点验证**阶段；检查与被测 Skill 执行全链路在 Docker 容器内完成，CI 仅做静态检查。
 
-- 方案文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
+- 方案文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.14）
 - 当前进度：`progress.md`
 - Agent 工作约定：`AGENTS.md`
 

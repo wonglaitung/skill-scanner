@@ -5,7 +5,7 @@
 Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施」阶段，target-only 扫描、单入口流程与 Docker 全链路已落地。
 
 - 仓库：https://github.com/wonglaitung/skill-scanner
-- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.13）
+- 方案主文档：`docs/Agent Skill 工程化检查方案与生产路线.md`（v2.14）
 - 当前进度：`progress.md`
 
 ## 开始工作前必读
