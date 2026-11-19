@@ -16,8 +16,6 @@ from harness.testing import RecordingConfig, RecordingHarness
 from harness.tools.base import Tool
 
 from harness_tools import build_tools
-from input_guard import REFUSAL, is_blocked_request
-from safety_prompt import SAFETY_PROMPT
 from skill_adapter import ROOT, SkillRunResult, ToolCallRecord
 
 DEFAULT_SKILL_PATH = ROOT / "skills" / "account-balance-query" / "SKILL.md"
@@ -56,7 +54,7 @@ class HarnessAgentAdapter:
         api_key: str = "local-placeholder",
         record_dir: Path | None = None,
     ) -> None:
-        self.system_prompt = Path(skill_path).read_text(encoding="utf-8") + SAFETY_PROMPT
+        self.system_prompt = Path(skill_path).read_text(encoding="utf-8")
         self.trace = TraceHook()
         self.gate = DeterministicGate()
         self.agent = AgentHarness(
@@ -99,11 +97,6 @@ class HarnessAgentAdapter:
         )
 
     async def invoke(self, user_input: str) -> SkillRunResult:
-        if is_blocked_request(user_input):
-            return SkillRunResult(
-                output=REFUSAL,
-                metadata={"blocked": True, "guard": "encoding"},
-            )
         try:
             if self.recorder is not None:
                 result = await self.recorder.run(user_input)

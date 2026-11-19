@@ -8,9 +8,6 @@ from typing import Any
 
 import httpx
 
-from input_guard import REFUSAL, is_blocked_request
-from safety_prompt import SAFETY_PROMPT
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SKILL_PATH = ROOT / "targets" / "expense-policy-qa" / "SKILL.md"
 
@@ -45,7 +42,7 @@ class LocalGatewayAdapter:
         self.skill_path = Path(skill_path)
         if not self.skill_path.is_absolute():
             self.skill_path = (ROOT / self.skill_path).resolve()
-        self.system_prompt = self.skill_path.read_text(encoding="utf-8") + SAFETY_PROMPT
+        self.system_prompt = self.skill_path.read_text(encoding="utf-8")
         self.api_base = api_base.rstrip("/")
         self.model = model
         self.api_key = api_key
@@ -75,11 +72,6 @@ class LocalGatewayAdapter:
     def invoke(
         self, user_input: str, context: dict[str, Any] | None = None
     ) -> SkillRunResult:
-        if is_blocked_request(user_input):
-            return SkillRunResult(
-                output=REFUSAL,
-                metadata={"blocked": True, "guard": "encoding"},
-            )
         started_at = time.perf_counter()
         payload = {
             "model": self.model,

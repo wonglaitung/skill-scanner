@@ -386,7 +386,7 @@ def command_run(args: argparse.Namespace) -> int:
         code = run_tracked(
             ["bash", "evals/garak/scan_release.sh"],
             env=env,
-            timeout=3600,
+            timeout=int(os.environ.get("SKILL_GARAK_TIMEOUT", "7200")),
             step=(5 + args.runs, total_steps, "Garak L3 发布前扫描"),
             log_path=logs_dir / "garak-l3.log",
             result=result,

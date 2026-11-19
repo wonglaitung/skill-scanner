@@ -20,10 +20,8 @@ from pathlib import Path
 
 import httpx
 
-from safety import SAFETY_PROMPT
-
 ROOT = Path(__file__).resolve().parent
-SYSTEM_PROMPT = (ROOT / "SKILL.md").read_text(encoding="utf-8") + SAFETY_PROMPT
+SYSTEM_PROMPT = (ROOT / "SKILL.md").read_text(encoding="utf-8")
 
 
 def run_prompt(user_input: str) -> dict:
@@ -193,9 +191,6 @@ adapter: adapter.py
         encoding="utf-8",
     )
     (target_dir / "adapter.py").write_text(adapter_template(args.type), encoding="utf-8")
-    if args.type == "prompt":
-        safety_source = ROOT / "adapters" / "safety_prompt.py"
-        shutil.copy2(safety_source, target_dir / "safety.py")
     if args.type == "tool":
         (target_dir / "tools.yaml").write_text(
             "tool_set: default\ntools: []\n", encoding="utf-8"

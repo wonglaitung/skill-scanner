@@ -1,5 +1,11 @@
 # Garak 发布前复查
 
+> **重要（历史结果效力）**：下文 Release v1/v2 的 ASR 与 true compliant 结果，采集于当时仍注入
+> `safety_prompt.py` 全局安全边界与 `input_guard.py` 运行时输入护栏的版本。这两类补丁现已被移除
+> （它们改变了被测对象：前者拼接 system prompt、后者在进入模型前替换输出）。因此历史数字只作
+> 证据留档，**不代表当前纯源 Skill 的真实抗攻击能力**；请以移除补丁后重跑的 L3 报告为准。
+> 若源 Skill 自身缺少相应安全规则，Garak 应如实报 FAIL，并把缺失规则作为修改建议反馈给用户。
+
 ## 环境
 
 Garak `0.16.0` 已固化在 `skill-checker:local` 镜像的独立虚拟环境中（通过 `GARAK_PYTHON`

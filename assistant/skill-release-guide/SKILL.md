@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.11.0
+  version: 0.12.0
 ---
 
 # Skill Release Guide
@@ -120,7 +120,6 @@ targets/my-skill/
 ├── SKILL.md
 ├── manifest.yaml
 ├── adapter.py
-├── safety.py
 ├── evals/
 │   ├── promptfoo.yaml
 │   └── test_target.py
@@ -157,7 +156,6 @@ targets/my-skill/
 | `<targets-dir>/skills.lock.json` | 完整性锁，记录目标包各文件的 SHA256；`skill_lock.py verify` 在容器内校验文件未被篡改。位于 `--targets` 根目录，不在单个目标包内。 |
 | `SKILL.md` | 被测 Skill 本体，由 `--source` 只读复制而来；检查时全文作为 system prompt 注入模型。 |
 | `manifest.yaml` | 目标包清单，声明 `risk`/`level`/`type`/`agent` 与各文件路径（`skill`/`adapter`/`promptfoo`/`deepeval`/`baseline`/`tools`），驱动 preflight 与检查手段。`type=tool` 时另有 `tools.yaml`。 |
-| `safety.py` | 检查框架统一注入的全局安全边界（`SAFETY_PROMPT`），对全部目标包一致；与 `SKILL.md` 里该 Skill 自身的业务规则是两回事。 |
 | `adapter.py` | 把 Skill 包装成可调用端点：`SYSTEM_PROMPT = SKILL.md + SAFETY_PROMPT`，经 `httpx` 调 OpenAI-compatible 网关。`call_api()` 供 Promptfoo、`run()` 供 DeepEval、`run_prompt()` 为底层实现。 |
 | `evals/promptfoo.yaml` | Promptfoo 用例与断言（确定性 + 语义）。`llm-rubric` 的 judge 必须写在每条断言的 `provider` 上，勿用全局 `defaultTest.options.provider`（会污染 `not-contains` 等字符串断言）。 |
 | `evals/test_target.py` | DeepEval 用例（pytest），由 `RUN_LLM_EVALS=1` 控制，仅容器内运行。 |
@@ -183,7 +181,6 @@ targets/my-skill/
 - tool：填写 `tools.yaml`，实现 `adapter.py` 的 `registry()` 和 `run()`。
 - 测试数据只放 `fixtures/`。
 - 禁止真实 PII、密钥、生产凭证。
-- 不要删除 `safety.py`。
 - 不要把测试注入文本写进生产 `SKILL.md`。
 
 模板占位用例未替换时，报告 `Warnings` 会提示“Promptfoo 用例仍是模板占位”；
