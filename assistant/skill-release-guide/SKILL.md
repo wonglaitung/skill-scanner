@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.8.0
+  version: 0.10.0
 ---
 
 # Skill Release Guide
@@ -275,6 +275,25 @@ L3 耗时与判定：
 
 只能给出“证据是否齐全”和“未通过项”，不能代替 Owner 或安全团队签核。
 
+### 报告位置（最后必须告知用户）
+
+每次给出结论时，明确列出本次报告路径，不要只说结论：
+
+- 正式报告：`reports/<skill>/release-<timestamp>/summary.md`（人读）与同目录 `summary.json`（机器读）。
+- 定位本次目录：取时间戳最大的 `release-*`，或从 `run` 输出的 `summary: ...` 一行获取。
+- 每轮证据：`round-<i>/report.md`、`round-<i>/summary.json`；L3 另有
+  `round-<i>/garak.report.jsonl` 与 `garak_summary.json`。
+- 步骤日志：`logs/` 下各步骤 `.log`，`summary.md` 的 `## Logs` 段有完整链接。
+- 注意：报告固定写在仓库 `reports/` 下，与 `--targets` 指向本地还是外部目录无关；
+  `reports/` 产物不入库。
+
+示例：
+
+```
+报告：reports/write-report/release-2026-11-19-054102/summary.md
+Decision: FAIL（失败项：3 轮 manual_check，根因 F-010，人工判定可接受，待 Owner 签核）
+```
+
 ## 禁止
 
 - 不得自行确定 S、Owner 或发布结论。
@@ -282,6 +301,7 @@ L3 耗时与判定：
 - 不得编造业务测试用例。
 - 不得把真实 PII、密钥、生产凭证放进 fixtures。
 - 不得在用户未确认前删除或覆盖现有目标包。
+- **不得修改 `--source` 指向的源 Skill 目录**：源目录是用户资产，只读复制进目标包。发现问题只给出「修改建议版本」（写入目标包副本或单独说明），由用户自行决定是否应用到源文件；`init --force` 只覆盖目标包，不触碰源目录。
 - 不得把待验证 Skill 放进 `skills/`。
 - 不得在容器外直接运行 `release_assistant.py` 或 `manual_check.py`（入口会拒绝）。
 - 不得把模板占位用例当作有效检查结论。
