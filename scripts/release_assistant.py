@@ -336,7 +336,7 @@ def command_run(args: argparse.Namespace) -> int:
         )
     result["steps"]["manual_check"] = manual_codes
 
-    code = run(
+    code = run_tracked(
         [
             sys.executable,
             "scripts/baseline.py",
@@ -357,7 +357,7 @@ def command_run(args: argparse.Namespace) -> int:
     result["steps"]["baseline_collect"] = code
 
     last_report = release_dir / f"round-{args.runs}" / "summary.json"
-    code = run(
+    code = run_tracked(
         [
             sys.executable,
             "scripts/baseline.py",
