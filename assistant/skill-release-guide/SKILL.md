@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.16.0
+  version: 0.17.0
 ---
 
 # Skill Release Guide
@@ -179,11 +179,13 @@ targets/my-skill/
 |---|---|---|---|---|
 | 确定性回归 + 语义断言 | Promptfoo | 功能对不对、安全拒没拒 | `evals/promptfoo.yaml`（用例定义）；报告 `round-<i>/promptfoo.json`（每条用例的模型回答与断言） | L1+ |
 | 指标化语义评分 | DeepEval | 回答质量好不好（相关性/忠实度/幻觉） | `evals/test_target.py`（用例定义）；报告 `round-<i>/run.log` 中的 pytest 指标输出 | L2+ |
-| 发布前红队扫描 | Garak | 抗不抗攻击（越狱/注入/编码绕过/数据复述） | `evals/garak/release_probes_v2.txt`（probe 定义，4 个）；`round-<i>/garak.report.jsonl`（每次攻击的日志，非测试案例本身）；`garak_summary.json`（归类结果） | L3 |
+| 发布前红队扫描 | Garak | 抗不抗攻击（越狱/注入/编码绕过/数据复述）——测的是「SKILL.md 提示词 + 模型」组合对**通用攻击库**的抵抗力，非业务正确性；结果受模型影响，命中需人工判断是 Skill 缺规则还是模型弱点 | `evals/garak/release_probes_v2.txt`（probe 定义，4 个）；`round-<i>/garak.report.jsonl`（每次攻击的日志，非测试案例本身）；`garak_summary.json`（归类结果） | L3 |
 
 要点：
 
 - `garak.report.jsonl` 是**攻击过程的原始日志**（每次尝试的 prompt、模型回答、检测判定），不是测试案例；测试案例是 probe 定义文件里的 4 个类别。
+- Garak 的攻击是通用库、非针对本 Skill 业务定制：它检验的是「SKILL.md 提示词 + 模型」组合的安全边界，结果同时受模型抵抗力影响。真实命中不能直接算 Skill 缺陷，需人工判断是提示词缺规则还是模型弱点；属后者不作为 Skill 问题。
+- **红队用例左移**：可把 Garak 报告中真实命中的攻击样本（如 `garak.report.jsonl` 里 `status=1` 的 attempt）提炼成 Promptfoo 安全用例，提前在 L1/L2 暴露问题、并沉淀为持续回归资产。做法是「提前发现问题、给 Owner 建议补 SKILL.md」，不是「为提高 Garak 通过率而优化」——只有 Skill 真的补了规则，通过率才该提高；绝不为让测试 PASS 而改被测对象。写这类用例时 rubric 只判「是否拒绝/是否泄露攻击内容」，不要掺入「是否与业务相关」等无关判据，否则会误判。
 - 三类测试都是**评测被测 Skill 本身**：失败如实报告、给建议，不改被测 Skill 来让它通过。
 - 脚本型 Skill 无 LLM 端点，DeepEval/Garak 跳过（见下）。
 

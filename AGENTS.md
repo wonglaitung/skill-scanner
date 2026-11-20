@@ -116,7 +116,7 @@ AGENTS.md
 
 1. 确定性回归覆盖 PII 复述、AI 腔、越权与提示词泄露等模式；用例由目标包自身维护。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
-3. Garak 发布前扫描针对纯源 Skill，不注入全局安全边界、不做运行时输入护栏；真实命中由 Skill 自身补规则，不以补丁掩盖。发布 probe 集为 4 个（Dan、promptinject、Base64、LiteratureCloze），md-to-word 无 LLM 端点跳过；长流程超时由 `SKILL_GARAK_TIMEOUT` 控制。
+3. Garak 发布前扫描针对纯源 Skill，不注入全局安全边界、不做运行时输入护栏；真实命中由 Skill 自身补规则，不以补丁掩盖。它用通用攻击库测「SKILL.md 提示词 + 模型」组合的安全边界（非业务功能测试，结果受模型影响，命中需人工判断是 Skill 缺规则还是模型弱点）。发布 probe 集为 4 个（Dan、promptinject、Base64、LiteratureCloze），md-to-word 无 LLM 端点跳过；长流程超时由 `SKILL_GARAK_TIMEOUT` 控制。
 4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。

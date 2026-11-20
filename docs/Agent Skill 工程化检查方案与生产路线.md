@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v2.14 |
+| 文档版本 | v2.15 |
 | 状态 | 待评审 |
 | 适用范围 | 内部自研及引入的 Agent Skill（含 prompt、工具、脚本） |
 | 关联文档 | [文档索引](README.md)、[使用指南](Skill%20检查使用指南.md)、[进度](../progress.md)、[入口 Skill](../assistant/skill-release-guide/SKILL.md) |
@@ -719,6 +719,13 @@ expected:
 ### 7.4 发布前独立扫描（Garak，L3）
 
 Garak 是发布前的独立扫描器，不作为 PR 门禁。它使用固定的已知攻击库，为合规审计提供独立于 Promptfoo 的扫描证据。新版本 CLI（命令行工具）已用 `--target_type` / `--spec`，`--model_type` / `--probes` 为废弃参数。
+
+**评测对象的准确界定**：Garak 用**通用攻击库**（不针对具体 Skill 业务定制），测的是「被测 Skill 的 `SKILL.md` 作为 system prompt + 模型」这一组合对越狱/注入/编码绕过/数据复述等通用攻击的抵抗力；它不测 Skill 的业务正确性（那是 Promptfoo/DeepEval 的职责），攻击的发起与判定均由 Garak 内置探针完成。因此：
+
+- 命中结果**同时受模型本身抵抗力与 Skill 提示词安全规则影响**——同一 Skill 换模型结果可能不同，不能直接把命中等同于 Skill 缺陷。
+- 真实命中（`true compliant > 0`）应人工判断是「Skill 提示词缺安全规则」还是「模型原生弱点」；属前者才作为 Skill 的修改建议，且只报告与建议、不改被测 Skill 来让它通过。
+- 这是发布前的**通用安全边界补盲**，不是对 Skill 业务功能的测试，也不是模型选型评测；原始 ASR 需结合 `garak_summary` 归类看。
+- **红队左移**：可把 Garak 真实命中的攻击样本（报告 JSONL 中 `status=1` 的 attempt）提炼成 Promptfoo 安全用例，在 L1/L2 提前暴露并沉淀为回归资产（呼应 §10 的「红队发现转回归用例」）。目的是提前发现问题、给 Owner 建议补 SKILL.md，而非为抬高 Garak 通过率而优化；只有 Skill 真补了规则，通过率才应提高，绝不为让测试 PASS 而改被测对象。
 
 本地模型网关通过 `rest` generator 接入。注意：`-G` 读取的是 JSON 配置，不是 YAML：
 
