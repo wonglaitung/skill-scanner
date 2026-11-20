@@ -236,7 +236,11 @@ def command_check(args: argparse.Namespace) -> int:
         cmd.append("--llm-audit")
     if args.max_tokens:
         cmd.extend(["--max-tokens", str(args.max_tokens)])
-    return run(cmd, timeout=3600, step=(3, 3, "手工检查 manual_check"))
+    return run(
+        cmd,
+        timeout=int(os.environ.get("SKILL_MANUAL_TIMEOUT", "7200")),
+        step=(3, 3, "手工检查 manual_check"),
+    )
 
 
 def command_run(args: argparse.Namespace) -> int:
@@ -318,7 +322,7 @@ def command_run(args: argparse.Namespace) -> int:
         round_cmd = [*manual_cmd, "--out", str(round_dir)]
         code = run_tracked(
             round_cmd,
-            timeout=3600,
+            timeout=int(os.environ.get("SKILL_MANUAL_TIMEOUT", "7200")),
             step=(
                 2 + index + 1,
                 total_steps,

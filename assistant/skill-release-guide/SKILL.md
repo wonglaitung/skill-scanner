@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.18.0
+  version: 0.19.0
 ---
 
 # Skill Release Guide
@@ -71,6 +71,8 @@ metadata:
   ```
   结束后用 `docker rm -f skill-check` 清理。每步完整输出也落盘到
   `reports/<skill>/release-*/logs/`，`summary.md` 会链接这些日志。
+- 超时可配：单轮 `manual_check`（含指标化 DeepEval）由 `SKILL_MANUAL_TIMEOUT` 控制，
+  Garak L3 由 `SKILL_GARAK_TIMEOUT` 控制，默认均为 7200 秒；慢环境调高。
 - 发现任何步骤 FAIL：先按报告定位真因、修根因，再重跑；不要用 `tail -1` 等轮询掩盖失败信号。
 
 前置排障：
