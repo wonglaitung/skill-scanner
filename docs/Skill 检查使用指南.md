@@ -4,7 +4,17 @@
 
 本工具是**评测工具**：目的是找出被测 Skill 的真实问题、给出修改建议，供 Owner 判断；不是为了让被测 Skill 通过测试而优化成绩。被测对象（源 Skill）只读，检查链路不改源、不注入安全补丁，FAIL 是有效结果、如实报告。
 
-完整操作流程在 [`assistant/skill-release-guide/SKILL.md`](../assistant/skill-release-guide/SKILL.md) 维护；本文按**用户旅程**说明每个阶段要做什么、怎么看结果、出问题怎么办。
+## 两种使用方式
+
+推荐**用技能让 AI 引导完成**：把 [`assistant/skill-release-guide`](../assistant/skill-release-guide/SKILL.md) 加载到支持 Skill 的 Agent 环境，用自然语言说明目标，AI 会补问缺失信息、依次执行 `init → check → run`、解读报告并给出建议。你不必自己拼命令；S 等级、Owner 和业务用例仍需你决定或确认（AI 不自行定级、不编造业务用例）。
+
+```text
+使用 skill-release-guide 检查 /path/to/skill。
+名称 my-skill，Owner my-team，风险 S2，类型 prompt，检查 L2。
+先做单次检查，通过后跑 3 轮基线。
+```
+
+本文按**用户旅程**说明每个阶段在做什么、怎么看结果、出问题怎么办——无论用技能还是手动，旅程相同。手动命令（Docker 入口）作为技能不可用时的备用与调试手段，见阶段 9。
 
 ## 旅程地图
 
@@ -27,7 +37,7 @@ flowchart TD
     J --> M["9 排障：命令 / FAQ"]
 ```
 
-用户侧统一使用 **S + L + Agent**，不使用内部代号。
+旅程的每个阶段既可由 `skill-release-guide` 技能引导 AI 完成（推荐），也可用手动命令完成（阶段 9）。用户侧统一使用 **S + L + Agent**，不使用内部代号。
 
 ---
 
@@ -327,7 +337,9 @@ reports/<skill>/release-<timestamp>/
 | L3 很慢 / 超时 | 调高 `SKILL_GARAK_TIMEOUT`；避免并发多个目标 |
 | 出现 `skipped` | 必需步骤 `skipped` 判 FAIL；可选工具 `skipped` 不算通过，须补配置或说明 |
 
-### 9.2 手动调试命令（仅在入口失败、需定位时使用）
+### 9.2 手动命令（技能不可用或需定位时使用）
+
+推荐路径是让 `skill-release-guide` 技能引导 AI 完成；以下命令是手动备用与调试手段。
 
 ```bash
 # 唯一入口
