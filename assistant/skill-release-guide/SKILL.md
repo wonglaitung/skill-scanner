@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.13.0
+  version: 0.14.0
 ---
 
 # Skill Release Guide
@@ -192,7 +192,7 @@ targets/my-skill/
 `test_target.py` 必须真正引入指标类，由本地 judge 评分，不要只写 `assert "x" in output`。范式：
 
 ```python
-from deepeval.metrics import AnswerRelevancyMetric, HallucinationMetric
+from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, HallucinationMetric
 from deepeval.models import LocalModel
 from deepeval.test_case import LLMTestCase
 
@@ -210,6 +210,18 @@ def test_answer_relevancy():
     metric.measure(LLMTestCase(input=question, actual_output=out))
     assert metric.score >= THRESHOLD
 
+def test_faithfulness():
+    # retrieval_context：已知正确事实（用户给的合成数据）
+    # penalize_ambiguous_claims=True 是必须的：默认把「无依据的声称」判为 borderline 且算通过，
+    # 会漏掉编造内容；开启后 borderline 不算通过，能真正拦住。
+    metric = FaithfulnessMetric(
+        threshold=THRESHOLD, model=JUDGE, penalize_ambiguous_claims=True
+    )
+    metric.measure(
+        LLMTestCase(input=question, actual_output=out, retrieval_context=context)
+    )
+    assert metric.score >= THRESHOLD
+
 def test_hallucination():
     # context 为已知正确事实（用户给的合成数据），用于判断输出是否编造
     metric = HallucinationMetric(threshold=THRESHOLD, model=JUDGE)
@@ -222,6 +234,8 @@ def test_hallucination():
 - judge 走同一个 OpenAI-compatible 网关（`JUDGE_API_BASE`/`JUDGE_MODEL`），无需外部 key；`LocalModel` 的 `api_key` 用占位即可。
 - **分数方向**：deepeval 4.3+ 中所有指标统一为 `1=通过`、`threshold` 是最低通过分，判据一律 `score >= threshold`。不要用旧版「幻觉是违规比例、`score <= 1-threshold`」的写法。`FaithfulnessMetric` 需要 `retrieval_context`，`HallucinationMetric` 需要 `context`（已知事实）；
   `AnswerRelevancyMetric` 只需 `input` + `actual_output`。
+- 指标内部是 QAG：judge 先把回答拆成原子陈述/声明（相关性拆 statements；忠实度从 context 抽 truths、从回答抽 claims；幻觉逐条对照 context），再对每条做 YES/NO/BORDERLINE 裁决，`score = 通过裁决数 / 总数`，最后由 judge 写理由。所以一行 `measure()` 会多次调用本地 judge，较慢。
+- **忠实度必须开 `penalize_ambiguous_claims=True`**：默认 `passing=(YES, BORDERLINE)`，把「回答里有但 context 没有」的编造内容判为 borderline 也算通过（实测这种编造会让分数虚高到 1.0）；开启后 borderline 不算过，实测同样输入降到 0.6 并判失败。
 - 确定性断言（数字、PII、提示词泄露）仍可保留，与指标用例并行：前者查具体事实，后者查语义质量。
 - 指标 FAIL 是**被测 Skill 的真实问题**，只报告与建议，不改被测 Skill 来让它通过。
 
