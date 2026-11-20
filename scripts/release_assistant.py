@@ -13,6 +13,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from manual_check import suggest_for_finding  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -543,9 +546,11 @@ def write_summary(out: Path, result: dict) -> None:
             for item in findings[:10]:
                 excerpt = item.get("output_excerpt") or ""
                 suffix = f"；输出摘要：{excerpt}" if excerpt else ""
+                sev, advice = suggest_for_finding(item.get("input"), item.get("reason"))
                 lines.append(
                     f"- {item.get('input', '-')} -> {item.get('reason', '-')}{suffix}"
                 )
+                lines.append(f"  - 建议级别：{sev}；修改建议：{advice}")
 
     if result.get("garak"):
         lines.extend(

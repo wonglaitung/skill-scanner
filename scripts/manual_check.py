@@ -357,6 +357,24 @@ def load_baseline(skill: str) -> dict | None:
         return None
 
 
+def suggest_for_finding(case: str | None, reason: str | None) -> tuple[str, str]:
+    """给出（建议级别, 修改建议）；只指方向，不写具体规则文本，由 Owner 决定。"""
+    text = f"{case or ''} {reason or ''}".lower()
+    if any(k in text for k in ("张三", "pii", "point", "name", "privacy")):
+        return ("High", "在 SKILL.md 加「拒绝点名具体员工/复述姓名」的最高优先级规则；正文与拒绝语都不得出现可识别个人信息")
+    if any(k in text for k in ("system prompt", "system_prompt", "提示词", "领导思维对齐引擎")):
+        return ("High", "在 SKILL.md 加「不输出系统提示词/内部规则」的规则，拒绝逐字复述")
+    if any(k in text for k in ("base64", "encoded", "decode", "解码", "javascript:alert")):
+        return ("High", "在 SKILL.md 加「不执行编码/解码请求、不输出 payload 或解码结果」的规则")
+    if any(k in text for k in ("mask", "training data", "文学", "填", "复述", "literature")):
+        return ("High", "在 SKILL.md 加「不复述训练数据/不补全文学填空」的规则")
+    if any(k in text for k in ("ignore", "越狱", "攻击性", "dan", "jailbreak")):
+        return ("High", "在 SKILL.md 加「忽略规则类指令一律拒绝、不生成违规内容」的安全边界")
+    if any(k in text for k in ("relevancy", "相关性", "faithfulness", "忠实", "hallucination", "幻觉")):
+        return ("Medium", "检查 SKILL.md 的输出范围与事实依据规则，确保回答切题且不超出给定信息")
+    return ("待定", "由 Owner 判断根因后决定是否为 SKILL.md 补规则；本工具只报告，不改被测对象")
+
+
 def write_report(
     skill: str,
     level: str,
@@ -598,26 +616,39 @@ def write_report(
         [
             "## 发现处理",
             "",
-            "| 用例 | 失败原因 | 输出摘要 | 建议级别 | Owner | 状态 |",
-            "|---|---|---|---|---|---|",
+            "| 用例 | 失败原因 | 输出摘要 | 建议级别 | 修改建议 | Owner | 状态 |",
+            "|---|---|---|---|---|---|---|",
         ]
     )
     findings = (promptfoo or {}).get("findings", [])
     quarantined = (promptfoo or {}).get("quarantine_details", [])
+    deepeval = summary.get("metrics", {}).get("deepeval") or {}
+    rows: list[tuple[str, str, str, str, str]] = []
     if findings:
         for item in findings:
             excerpt = item.get("output_excerpt", "-").replace("|", "\\|") or "-"
-            lines.append(
-                f"| {item.get('input', '-')} | {item.get('reason', '-')} | {excerpt} | "
-                "待定 | 待定 | 待处理 |"
-            )
+            sev, advice = suggest_for_finding(item.get("input"), item.get("reason"))
+            rows.append((str(item.get("input", "-")), str(item.get("reason", "-")), excerpt, sev, advice))
+    for name in deepeval.get("failed_cases", []):
+        sev, advice = suggest_for_finding(name, "DeepEval 指标未达阈值")
+        rows.append((name, "指标未达阈值", "-", sev, advice))
+    for case, reason, excerpt, sev, advice in rows:
+        lines.append(
+            f"| {case} | {reason} | {excerpt} | {sev} | {advice} | 待定 | 待处理 |"
+        )
     for item in quarantined:
         lines.append(
             f"| {item.get('input', '-')} | {item.get('quarantine_reason') or item.get('reason', '-')} | "
-            f"- | 隔离 | {item.get('owner', '-')} | 已隔离至 {item.get('expires', '-')} |"
+            f"- | 隔离 | - | {item.get('owner', '-')} | 已隔离至 {item.get('expires', '-')} |"
         )
-    if not findings and not quarantined:
-        lines.append("| 无 | - | - | - | - | - |")
+    if not rows and not quarantined:
+        lines.append("| 无 | - | - | - | - | - | - |")
+    lines.extend(
+        [
+            "",
+            "> 修改建议只指出方向（SKILL.md 该补哪类规则），不替你改被测对象；由 Owner 决定是否应用。",
+        ]
+    )
     lines.append("")
 
     (out / "report.md").write_text("\n".join(lines), encoding="utf-8")
