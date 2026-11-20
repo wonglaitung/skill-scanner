@@ -55,3 +55,24 @@ def test_parse_deepeval_extracts_failed_case_names() -> None:
     result = manual_check.parse_deepeval(text, 1)
     assert result["failed_cases"] == ["test_pii", "test_leak"]
     assert result["failed"] == 2
+
+
+def test_parse_deepeval_extracts_failure_details() -> None:
+    text = (
+        "======== FAILURES ========\n"
+        "_______ test_pii _______\n"
+        "    assert 'x' not in out\n"
+        "E   AssertionError: assert 'x' not in 'x shown'\n"
+        "_______ test_leak _______\n"
+        "E   assert 0.07 >= 0.7\n"
+        "[deepeval] FaithfulnessMetric: score=0.073 reason=fabricated details\n"
+        "======== short test summary ========\n"
+        "FAILED x/test_target.py::test_pii\n"
+        "FAILED x/test_target.py::test_leak\n"
+        "1 passed, 2 failed"
+    )
+    result = manual_check.parse_deepeval(text, 1)
+    details = {d["case"]: d["reason"] for d in result["failed_details"]}
+    assert "AssertionError" in details["test_pii"]
+    assert "0.073" in details["test_leak"]
+    assert "fabricated" in details["test_leak"]

@@ -279,6 +279,49 @@ def parse_promptfoo(
         "findings": findings,
     }
 
+def deepeval_reason(name: str, deepeval: dict) -> str:
+    for item in deepeval.get("failed_details", []):
+        if item.get("case") == name:
+            return item.get("reason", "断言失败")
+    return "指标/断言未达阈值"
+
+
+def _parse_pytest_failure_details(text: str, failed_cases: list[str]) -> list[dict]:
+    """从 pytest FAILURES 段提取每个失败用例的断言详情与指标理由。"""
+    if not failed_cases:
+        return []
+    start = text.find("FAILURES")
+    end = text.find("short test summary", start) if start >= 0 else -1
+    segment = text[start:end] if start >= 0 and end > start else ""
+    details = []
+    for name in failed_cases:
+        marker = f"{name} "
+        pos = segment.find(marker)
+        if pos < 0:
+            details.append({"case": name, "reason": "断言失败（详情见 run.log）"})
+            continue
+        block = segment[pos : pos + 2500]
+        next_head = re.search(r"\n_{5,}\s+test_\w+\s+_{5,}", block[10:])
+        if next_head:
+            block = block[: next_head.start() + 10]
+        assertions, metric_reasons = [], []
+        for line in block.splitlines():
+            line = line.strip()
+            if line.startswith("E ") and not line.startswith("E         "):
+                assertions.append(line[2:].strip())
+            elif line.startswith("[deepeval]"):
+                metric_reasons.append(line.strip())
+        reason = (
+            " / ".join(metric_reasons[:1] + assertions[:1])
+            if metric_reasons and assertions
+            else (metric_reasons[0] if metric_reasons else (assertions[0] if assertions else "断言失败"))
+        )
+        if len(reason) > 300:
+            reason = reason[:300] + "…"
+        details.append({"case": name, "reason": reason})
+    return details
+
+
 def parse_deepeval(text: str, returncode: int) -> dict:
     match = re.search(
         r"Pass Rate:\s*([\d.]+)%\s*\|\s*Passed:\s*(\d+)\s*\|\s*Failed:\s*(\d+)",
@@ -303,6 +346,7 @@ def parse_deepeval(text: str, returncode: int) -> dict:
             "passed": passed,
             "failed": failed,
             "failed_cases": failed_cases,
+            "failed_details": _parse_pytest_failure_details(text, failed_cases),
         }
 
     return {"pass_rate": 1.0 if returncode == 0 else 0.0, "raw_exit_code": returncode}
@@ -427,7 +471,7 @@ def write_report(
                 {
                     "source": "DeepEval",
                     "case": name,
-                    "reason": "指标/断言未达阈值；详见 run.log 中的 pytest 输出",
+                    "reason": deepeval_reason(name, deepeval),
                     "excerpt": "",
                 }
             )
@@ -528,7 +572,7 @@ def write_report(
             ]
         )
         for name in deepeval.get("failed_cases", []):
-            lines.append(f"- 失败用例：{name}")
+            lines.append(f"- 失败用例：{name} —— {deepeval_reason(name, deepeval)}")
 
     baseline = (
         json.loads(baseline_path.read_text(encoding="utf-8"))
@@ -653,8 +697,9 @@ def write_report(
             sev, advice = suggest_for_finding(item.get("input"), item.get("reason"))
             rows.append((str(item.get("input", "-")), str(item.get("reason", "-")), excerpt, sev, advice))
     for name in deepeval.get("failed_cases", []):
-        sev, advice = suggest_for_finding(name, "DeepEval 指标未达阈值")
-        rows.append((name, "指标未达阈值", "-", sev, advice))
+        reason = deepeval_reason(name, deepeval)
+        sev, advice = suggest_for_finding(name, reason)
+        rows.append((name, reason, "-", sev, advice))
     for case, reason, excerpt, sev, advice in rows:
         lines.append(
             f"| {case} | {reason} | {excerpt} | {sev} | {advice} | 待定 | 待处理 |"
