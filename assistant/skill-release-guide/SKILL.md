@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.12.0
+  version: 0.13.0
 ---
 
 # Skill Release Guide
@@ -173,7 +173,7 @@ targets/my-skill/
 
 `init` 只生成骨架，不会替你写业务用例。
 
-- prompt：确认 adapter、Promptfoo、DeepEval 用例。
+- prompt：确认 adapter、Promptfoo、DeepEval 用例。DeepEval 必须真正使用指标类（`AnswerRelevancyMetric` 等），不能只用普通 `assert` 冒充指标评分——写法见下方「DeepEval 指标用例」。
 - script：实现 `adapter.py` 的 `run()`，调用 `SKILL.md` 声明的脚本（如 `node scripts/validate.mjs`），
   用 `subprocess.run` 的 list 形式并设超时，把脚本 stdout 作为 `result["output"]`；
   Promptfoo 用例必须基于脚本真实行为设计（合法输入、错误输入、边界输入），
@@ -186,6 +186,44 @@ targets/my-skill/
 模板占位用例未替换时，报告 `Warnings` 会提示“Promptfoo 用例仍是模板占位”；
 此时 PASS 只代表流程与结构，不代表业务正确，必须替换后再进入 3 轮检查。
 脚本型不生成 DeepEval（`manifest.yaml` 中 `deepeval: null`），不必强求。
+
+### DeepEval 指标用例
+
+`test_target.py` 必须真正引入指标类，由本地 judge 评分，不要只写 `assert "x" in output`。范式：
+
+```python
+from deepeval.metrics import AnswerRelevancyMetric, HallucinationMetric
+from deepeval.models import LocalModel
+from deepeval.test_case import LLMTestCase
+
+JUDGE = LocalModel(
+    model=os.getenv("JUDGE_MODEL", os.getenv("SKILL_MODEL", "qwen3")),
+    base_url=os.getenv("JUDGE_API_BASE", os.getenv("SKILL_API_BASE", "http://host.docker.internal:8086/v1")),
+    api_key=os.getenv("JUDGE_API_KEY", os.getenv("SKILL_API_KEY", "local-placeholder")),
+    temperature=0,
+)
+THRESHOLD = 0.7
+
+def test_answer_relevancy():
+    out = module.run(question)["output"]
+    metric = AnswerRelevancyMetric(threshold=THRESHOLD, model=JUDGE)
+    metric.measure(LLMTestCase(input=question, actual_output=out))
+    assert metric.score >= THRESHOLD
+
+def test_hallucination():
+    # context 为已知正确事实（用户给的合成数据），用于判断输出是否编造
+    metric = HallucinationMetric(threshold=THRESHOLD, model=JUDGE)
+    metric.measure(LLMTestCase(input=question, actual_output=out, context=context))
+    assert metric.score >= THRESHOLD
+```
+
+要点：
+
+- judge 走同一个 OpenAI-compatible 网关（`JUDGE_API_BASE`/`JUDGE_MODEL`），无需外部 key；`LocalModel` 的 `api_key` 用占位即可。
+- **分数方向**：deepeval 4.3+ 中所有指标统一为 `1=通过`、`threshold` 是最低通过分，判据一律 `score >= threshold`。不要用旧版「幻觉是违规比例、`score <= 1-threshold`」的写法。`FaithfulnessMetric` 需要 `retrieval_context`，`HallucinationMetric` 需要 `context`（已知事实）；
+  `AnswerRelevancyMetric` 只需 `input` + `actual_output`。
+- 确定性断言（数字、PII、提示词泄露）仍可保留，与指标用例并行：前者查具体事实，后者查语义质量。
+- 指标 FAIL 是**被测 Skill 的真实问题**，只报告与建议，不改被测 Skill 来让它通过。
 
 ## 第 3 步：单次检查
 
