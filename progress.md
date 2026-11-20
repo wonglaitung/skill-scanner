@@ -139,6 +139,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 说明：F-001~F-009 为历史修复记录，见 2026-11-20 条目后已改为纯源检查；F-010 是当前纯源检查下的真实发现，如实报告、不修源。
 
+| 2026-11-20 | 补出最终 summary.md 并修汇总根因 | 用户问 3 轮报告哪份是最终：澄清没有单份最终（多轮是采样，应由汇总报告聚合），但本次因 Garak 超时缺 summary.md，且 round-2/3 的 promptfoo 指标为空（步骤超时）。修根因：① `parse_promptfoo` 报告缺失/超时时写占位指标（incomplete/step_status），默认 `--promptfoo-timeout` 1800→3600；② `release_assistant` 的 Garak 步骤用 try/except TimeoutExpired 包住，超时记 l3=1 + l3_incomplete 说明，保证 write_summary 能执行。验证 Ruff/pytest 通过。用 3 轮已有数据补生成 `evidence/.../summary.md`（Decision=FAIL + 关键问题 + 建议 + L3 未完成说明），更新 evidence README 说明汇总 vs 采样 |
 | 2026-11-20 | 最新重测与工具链根因修复 | 用户要求重测输出最新报告。重跑中发现并修 3 个工具问题：① `check_in_docker.sh` 未透传 `SKILL_MANUAL_TIMEOUT`/`SKILL_GARAK_TIMEOUT`（导致外部传入无效、一直用 7200s），已加入白名单（实测容器内可见 9999/8888）；② `suggest_for_finding` 关键词过宽导致训练数据复现被误判为 PII，已调整优先级；③ 无护栏 Garak 极慢（单 probe 近 2h），超时默认值偏低。最新报告 `reports/write-report/release-2026-11-20-093409/round-1/report.md`（3 轮均完成，含结论/问题清单/修改建议）；该次 Garak L3 因 7200s 超时未产出正式 summary.md，已用 round-1 数据按新格式重生成报告验证建议列 |
 | 2026-11-20 | manual_check 超时可配 | 用户要求重测输出最新报告：重跑中第 2 轮 manual_check 超过硬编码 3600s 超时（DeepEval 新增 3 个指标、每个多次调 judge，单轮变慢），流程崩溃无 summary。修根因：`release_assistant.py` 的 check/run 中 manual_check 步骤超时改为 `SKILL_MANUAL_TIMEOUT`（默认 7200s）；入口 Skill v0.19.0 记录该配置 |
 | 2026-11-20 | 报告与技能补充「修改建议」 | 用户问技能测完有没有给建议章节：原报告只有「建议级别=待定」列、无具体建议。修根因：`suggest_for_finding()` 按失败类型（PII/提示词泄露/编码绕过/越狱/训练数据复现/指标质量）给出「建议级别 + 修改建议」（只指 SKILL.md 该补哪类规则的方向，不替用户改被测对象）；报告「发现处理」表加「修改建议」列并填实际内容，DeepEval 失败用例也纳入；`summary.md` 同步给建议；入口 Skill v0.18.0 第 6 步要求逐条转述建议并附证据。用旧数据重生成验证建议列生效 |

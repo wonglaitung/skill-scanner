@@ -203,13 +203,36 @@ def _build_finding(item: dict, input_text: str | None, raw_error: str | None) ->
     }
 
 
-def parse_promptfoo(path: Path, quarantine: list[dict] | None = None) -> dict:
+def parse_promptfoo(
+    path: Path, quarantine: list[dict] | None = None, step_status: str | None = None
+) -> dict:
     if not path.exists():
-        return {}
+        # 报告缺失时给出占位指标（含状态），避免 baseline 聚合时把该轮当成数据完整。
+        return {
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "errors": 0,
+            "pass_rate": None,
+            "findings": [],
+            "quarantine_details": [],
+            "incomplete": True,
+            "step_status": step_status or "no-report",
+        }
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return {}
+        return {
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "errors": 0,
+            "pass_rate": None,
+            "findings": [],
+            "quarantine_details": [],
+            "incomplete": True,
+            "step_status": "invalid-json",
+        }
 
     quarantine = quarantine or []
     results = data.get("results", {}).get("results", [])
@@ -783,7 +806,9 @@ def run_target_check(args: argparse.Namespace) -> int:
             timeout=args.promptfoo_timeout,
         )
         steps.append(step)
-        summary["metrics"]["promptfoo"] = parse_promptfoo(out / "promptfoo.json")
+        summary["metrics"]["promptfoo"] = parse_promptfoo(
+            out / "promptfoo.json", step_status=step["status"]
+        )
 
     if selected >= 2 and manifest.get("deepeval"):
         target = (target_dir / str(manifest["deepeval"])).resolve()
@@ -862,7 +887,7 @@ def main() -> int:
     parser.add_argument("--skill-timeout", type=int, default=180)
     parser.add_argument("--max-tokens", type=int, default=2048)
     parser.add_argument("--deepeval-timeout", type=int, default=300)
-    parser.add_argument("--promptfoo-timeout", type=int, default=1800)
+    parser.add_argument("--promptfoo-timeout", type=int, default=3600)
     parser.add_argument("--out", default=None)
     parser.add_argument("--full-garak", action="store_true")
     parser.add_argument("--agent", action="store_true", help="Agent 工具调用模式")
@@ -1073,7 +1098,9 @@ def main() -> int:
                 timeout=args.promptfoo_timeout,
             )
             promptfoo_metrics = parse_promptfoo(
-                out / "promptfoo.json", quarantine_entries
+                out / "promptfoo.json",
+                quarantine_entries,
+                step_status=promptfoo_step["status"],
             )
             if (
                 promptfoo_step["status"] in {"failed", "error"}

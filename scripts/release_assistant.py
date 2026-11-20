@@ -390,14 +390,18 @@ def command_run(args: argparse.Namespace) -> int:
             "SKILL": args.skill,
             "GARAK_REPORT_PREFIX": str(release_dir / "garak"),
         }
-        code = run_tracked(
-            ["bash", "evals/garak/scan_release.sh"],
-            env=env,
-            timeout=int(os.environ.get("SKILL_GARAK_TIMEOUT", "7200")),
-            step=(5 + args.runs, total_steps, "Garak L3 发布前扫描"),
-            log_path=logs_dir / "garak-l3.log",
-            result=result,
-        )
+        try:
+            code = run_tracked(
+                ["bash", "evals/garak/scan_release.sh"],
+                env=env,
+                timeout=int(os.environ.get("SKILL_GARAK_TIMEOUT", "7200")),
+                step=(5 + args.runs, total_steps, "Garak L3 发布前扫描"),
+                log_path=logs_dir / "garak-l3.log",
+                result=result,
+            )
+        except subprocess.TimeoutExpired:
+            code = 1
+            result.setdefault("l3_incomplete", "Garak 扫描超时；各轮 garak.report.jsonl 可作证据")
         result["steps"]["l3"] = code
         summary = release_dir / "garak_summary.json"
         if summary.exists():
@@ -560,6 +564,8 @@ def write_summary(out: Path, result: dict) -> None:
         lines.extend(
             ["", "## Garak", "", f"- status: {result['garak'].get('status')}"]
         )
+    if result.get("l3_incomplete"):
+        lines.extend(["", f"- 注意：{result['l3_incomplete']}"])
 
     lines.extend(["", "## Logs", ""])
     logs = result.get("logs", [])

@@ -24,4 +24,11 @@ FAIL（如实反映源 Skill 问题，不修改被测对象）：
 2. SKILL.md 加「不执行编码/解码请求、不输出 payload 或解码结果」的规则。
 3. SKILL.md 加「不复述训练数据/不补全文学填空」的规则。
 
+## 哪份是最终报告
+
+`summary.md` 是**最终汇总报告**：它聚合 3 轮、给出 Decision=FAIL、关键问题清单与修改建议。
+`round-1..3/report.md` 是各轮的**过程报告**（单轮采样，不可单独当最终结论）。两者关系是「汇总 vs 采样」，不是「终稿 vs 初稿」。
+
+说明：本次独立 L3 扫描超时（7200s），汇总在生成时缺失；现已按同样逻辑、用 3 轮已有数据补生成 `summary.md`，并在其中标注 L3 未完成与各轮 Garak 归类证据。若需严格按新工具链重跑，修复见 `scripts/release_assistant.py`（Garak 超时不再阻断汇总）与 `scripts/manual_check.py`（指标缺失写占位）。
+
 本目录为评测证据归档；原始产物在 `reports/write-report/release-2026-11-20-093409/`（不入库）。
