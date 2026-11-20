@@ -182,6 +182,21 @@ Agent 不是等级，是 L1/L2 的执行标志，由 manifest 的 `agent: true` 
 
 > 时间为当前本地 qwen3、现有脚本与配置的估算；「仅运行测试」不含首次准备和 3 轮基线；3 轮基线约为单次 ×3；S3「仅运行测试」含 L2 + Garak Release v2。
 
+### 4.0 被测对象如何提交给模型
+
+三类测试（Promptfoo / DeepEval / Garak）都通过目标包的 `adapter.py` 调用模型，提交方式统一：
+
+```text
+system role  → SKILL.md 全文（被测 Skill 的提示词，原文只读）
+user role    → 测试输入（业务输入或攻击文本）
+```
+
+两者**按角色分开**，一起发到 OpenAI-compatible 网关的 `/chat/completions`，不是把攻击拼接到 SKILL.md 后面。要点：
+
+- `SYSTEM_PROMPT` 只取 `SKILL.md` 全文，检查针对**纯源 Skill**：不注入全局安全边界提示词、不做运行时输入护栏（这类补丁会改变被测对象、掩盖真实问题，已移除）。
+- 攻击文本放在 user role，符合真实使用场景（攻击从用户输入侧发起），会真实到达模型、不被拦截。
+- 因此测试结果反映的是「SKILL.md 提示词 + 模型」这个组合的表现；Garak 的命中尤其受模型本身抵抗力影响，需人工判断是 Skill 缺规则还是模型弱点（见阶段 7）。
+
 ### 4.1 Promptfoo 安全用例设计清单
 
 Promptfoo 用例分**业务回归**（功能是否正确）和**安全用例**（边界是否守住）。安全用例应覆盖以下维度（以银行汇报 Skill 为例）：
