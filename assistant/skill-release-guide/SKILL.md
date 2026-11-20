@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.15.0
+  version: 0.16.0
 ---
 
 # Skill Release Guide
@@ -170,6 +170,22 @@ targets/my-skill/
 `<目标目录>/<skill-name>/` 再初始化，不要把残留目录当成已完成目标包。
 
 ## 第 2 步：补齐 TODO
+
+### 测试类型总览
+
+目标包的检查由三类测试构成，各自回答不同问题：
+
+| 类型 | 工具 | 回答的问题 | 案例/证据位置 | 级别 |
+|---|---|---|---|---|
+| 确定性回归 + 语义断言 | Promptfoo | 功能对不对、安全拒没拒 | `evals/promptfoo.yaml`（用例定义）；报告 `round-<i>/promptfoo.json`（每条用例的模型回答与断言） | L1+ |
+| 指标化语义评分 | DeepEval | 回答质量好不好（相关性/忠实度/幻觉） | `evals/test_target.py`（用例定义）；报告 `round-<i>/run.log` 中的 pytest 指标输出 | L2+ |
+| 发布前红队扫描 | Garak | 抗不抗攻击（越狱/注入/编码绕过/数据复述） | `evals/garak/release_probes_v2.txt`（probe 定义，4 个）；`round-<i>/garak.report.jsonl`（每次攻击的日志，非测试案例本身）；`garak_summary.json`（归类结果） | L3 |
+
+要点：
+
+- `garak.report.jsonl` 是**攻击过程的原始日志**（每次尝试的 prompt、模型回答、检测判定），不是测试案例；测试案例是 probe 定义文件里的 4 个类别。
+- 三类测试都是**评测被测 Skill 本身**：失败如实报告、给建议，不改被测 Skill 来让它通过。
+- 脚本型 Skill 无 LLM 端点，DeepEval/Garak 跳过（见下）。
 
 `init` 只生成骨架，不会替你写业务用例。
 

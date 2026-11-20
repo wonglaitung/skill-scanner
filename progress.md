@@ -139,6 +139,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 说明：F-001~F-009 为历史修复记录，见 2026-11-20 条目后已改为纯源检查；F-010 是当前纯源检查下的真实发现，如实报告、不修源。
 
+| 2026-11-20 | 文档记录三类测试案例 | 用户问 garak.report.jsonl 是否是测试案例、到底做了哪些类型。澄清：该文件是攻击过程原始日志（attempt 589 条等），测试案例在 probe 定义文件（4 类）；并总结三类测试——Promptfoo（确定性回归+语义断言，功能/安全）、DeepEval（相关性/忠实度/幻觉指标）、Garak（越狱/注入/编码绕过/数据复述红队）。入口 Skill v0.16.0 第 2 步新增「测试类型总览」表（工具/回答的问题/案例与证据位置/级别），README「能做什么」补 Garak 4 类 probe 说明 |
 | 2026-11-20 | 报告改为以问题为中心、可快速掌握全貌 | 用户反馈 round report 失败只有数字（失败原因显示为 1、DeepEval 只有通过率），要翻多个文件才知详情。修根因：`parse_promptfoo` 优先用可读的 `error`/`gradingResult.reason`（数字 failureReason 回退）并附输出摘要；`parse_deepeval` 正则提取失败用例名；`write_report` 顶部新增「结论 + 问题清单」表（来源/用例/失败原因/输出摘要），DeepEval 段列失败用例名，证据段说明每个文件看什么；`write_summary` 加「关键问题」去重汇总。用现有报告数据重生成验证：失败原因变为 `Expected output to not contain "张三"`、列出 2 个 DeepEval 失败用例、输出摘要可见。新增 2 个回归测试，Ruff/pytest 通过 |
 | 2026-11-20 | 目标包文件加用途注释 | 用户建议在目标包文件顶部用注释说明用途/工具/原理。给 `adapter.py`、`evals/test_target.py`、`evals/promptfoo.yaml`、`manifest.yaml` 加文件头注释，并同步到 `scripts/scaffold_target.py` 模板（后续 init 自带）。`SKILL.md` 不加注释（被测对象，全文注入 system prompt，加注释会改变被测提示词）；JSON（baseline/skills.lock）不支持注释。注释改了文件哈希，已重新生成 skills.lock.json；preflight 通过。入口 Skill v0.15.0 记录该约定 |
 | 2026-11-20 | 忠实度指标改严格模式并解释内部机制 | 用户问「拆解→裁决→算比例→写理由」具体怎么做：用真实运行在容器内演示三指标中间产物（statements/truths/claims/verdicts/reason）。发现默认 `FaithfulnessMetric` 把「无依据的声称」判 borderline 且算通过，编造内容仍得 1.0；改 `penalize_ambiguous_claims=True` 后实测同样输入降到 0.6、success=False。目标包用例已改，入口 Skill v0.14.0 补齐 Faithfulness 范式（含严格模式必要性）与 QAG 机制说明。当前 6 个测试 4/5 通过（严格忠实度对真实输出得 0.073，因生成内容大量编造细节——作为真实发现，不改被测 Skill） |

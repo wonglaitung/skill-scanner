@@ -11,7 +11,7 @@ Agent Skill 工程化检查与对抗审核工具。当前处于**手工触发、
 - 校验 `SKILL.md` 结构与元数据
 - 用 Promptfoo 做确定性回归（边界、PII、AI 腔、格式）
 - 用 DeepEval 做指标化评分（相关性、忠实度、幻觉）
-- 用 Garak 对 **Skill 包装端点**做发布前扫描
+- 用 Garak 对 **Skill 包装端点**做发布前红队扫描（越狱、注入、编码绕过、数据复述 4 类 probe）
 - 用 Semgrep / Ruff 做静态检查，用 gitleaks / Trivy 做供应链扫描
 - 为脚本型与工具型 Skill 提供容器内执行环境
 - 保存基线并对比回退
