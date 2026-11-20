@@ -111,12 +111,12 @@ AGENTS.md
 
 1. F-001~F-009 已修复并复测；write-report 8/8、system-specification 8/8、account-balance-query 15/15。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
-3. Garak Release v2 已通过：4 个 probe 覆盖 7 个 LLM Skill，true compliant 均为 0；输入护栏覆盖 Base64、编码解码、训练数据复述；md-to-word 跳过。
+3. Garak Release v2 历史结果（true compliant 0）基于当时的全局安全边界与运行时输入护栏；这两类补丁现已移除（它们改变被测对象、掩盖源 Skill 真实问题）。当前检查针对纯源 Skill：已实测 write-report 的 Garak true compliant 为 42/18/66（Base64 解码、训练数据复述），需由 Skill 自身补规则；md-to-word 跳过。
 4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. Agent 模式复用 `wonglaitung/harness`：Agent 阶段 4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill；全局安全边界已追加到 Skill 提示词。
+8. Agent 模式复用 `wonglaitung/harness`：Agent 阶段 4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill；不再向 Skill 提示词追加全局安全边界。
 9. 检查与被测执行全链路 Docker 化：统一镜像 `skill-checker:local`，唯一入口 `scripts/check_in_docker.sh`，网关通过 `SKILL_API_BASE`/`SKILL_API_KEY` 配置。
 
 ## 命令（Docker 入口）
