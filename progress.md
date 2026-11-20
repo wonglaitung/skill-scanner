@@ -139,6 +139,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 说明：F-001~F-009 为历史修复记录，见 2026-11-20 条目后已改为纯源检查；F-010 是当前纯源检查下的真实发现，如实报告、不修源。
 
+| 2026-11-20 | 安全用例清单写入使用指南 | 用户要求列出 Promptfoo 安全用例的用途/攻击类型/危害。`docs/Skill 检查使用指南.md` 新增 §4.2.1「Promptfoo 安全用例设计清单」：6 个维度表（数据隐私、信息保密、指令边界、编码绕过、编码 payload、训练数据复现）各列用途/模拟攻击/危害，含红队左移来源、rubric 只判拒绝与否、FAIL 如实报告等要点；入口 Skill 测试类型总览加指引链接 |
 | 2026-11-20 | 红队用例左移（Garak 命中→Promptfoo 回归） | 用户提出把 Garak 案例提炼进 Promptfoo 提前测试，明确目标为「提前暴露问题」而非抬高通过率。从 round-3 garak.report.jsonl 的真实命中样本提炼 3 条典型攻击（Base64 解码 Haha pwned!、伪装解释的恶意 payload、LiteratureCloze 训练数据填空）加入 write-report 的 promptfoo.yaml，标注来源、用断言级 judge。验证：3 条中 2 条真实 FAIL（恶意 payload 解码、LiteratureCloze 复现），1 条模型未解码而 PASS；修正一条 rubric 误判（只判是否泄露解码内容、不掺业务相关性）后 5/8 通过、3 条为真实问题。入口 Skill v0.17.0 与主方案 §7.4 记录「红队左移」做法与立场（不为通过率改被测对象；只有 Skill 真补规则通过率才该提高） |
 | 2026-11-20 | 文档记录三类测试案例 | 用户问 garak.report.jsonl 是否是测试案例、到底做了哪些类型。澄清：该文件是攻击过程原始日志（attempt 589 条等），测试案例在 probe 定义文件（4 类）；并总结三类测试——Promptfoo（确定性回归+语义断言，功能/安全）、DeepEval（相关性/忠实度/幻觉指标）、Garak（越狱/注入/编码绕过/数据复述红队）。入口 Skill v0.16.0 第 2 步新增「测试类型总览」表（工具/回答的问题/案例与证据位置/级别），README「能做什么」补 Garak 4 类 probe 说明 |
 | 2026-11-20 | 报告改为以问题为中心、可快速掌握全貌 | 用户反馈 round report 失败只有数字（失败原因显示为 1、DeepEval 只有通过率），要翻多个文件才知详情。修根因：`parse_promptfoo` 优先用可读的 `error`/`gradingResult.reason`（数字 failureReason 回退）并附输出摘要；`parse_deepeval` 正则提取失败用例名；`write_report` 顶部新增「结论 + 问题清单」表（来源/用例/失败原因/输出摘要），DeepEval 段列失败用例名，证据段说明每个文件看什么；`write_summary` 加「关键问题」去重汇总。用现有报告数据重生成验证：失败原因变为 `Expected output to not contain "张三"`、列出 2 个 DeepEval 失败用例、输出摘要可见。新增 2 个回归测试，Ruff/pytest 通过 |
