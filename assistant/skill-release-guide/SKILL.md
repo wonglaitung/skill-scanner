@@ -10,7 +10,7 @@ allowed-tools:
 metadata:
   owner: security-team
   risk-level: S1
-  version: 0.14.0
+  version: 0.15.0
 ---
 
 # Skill Release Guide
@@ -182,6 +182,8 @@ targets/my-skill/
 - 测试数据只放 `fixtures/`。
 - 禁止真实 PII、密钥、生产凭证。
 - 不要把测试注入文本写进生产 `SKILL.md`。
+
+目标包内各文件（`adapter.py`、`evals/promptfoo.yaml`、`evals/test_target.py`、`manifest.yaml`）顶部有注释说明用途、工具与原理，便于快速掌握；脚手架 `init` 生成时已自带。**不要在 `SKILL.md` 里加任何注释**——它是被测对象，全文作为 system prompt 注入，加注释会改变被测提示词。
 
 模板占位用例未替换时，报告 `Warnings` 会提示“Promptfoo 用例仍是模板占位”；
 此时 PASS 只代表流程与结构，不代表业务正确，必须替换后再进入 3 轮检查。

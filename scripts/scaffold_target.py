@@ -11,7 +11,13 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
-PROMPT_ADAPTER_TEMPLATE = '''from __future__ import annotations
+PROMPT_ADAPTER_TEMPLATE = '''# adapter.py — 被测 Skill 的执行适配层
+# 用途：把 SKILL.md 包装成可调用的 HTTP 端点，供检查工具（Promptfoo/DeepEval）驱动。
+# 原理：SYSTEM_PROMPT 只取 SKILL.md 全文（不注入安全补丁，检查针对纯源 Skill），
+#       经 httpx 调用 OpenAI-compatible 网关（SKILL_API_BASE/SKILL_MODEL）。
+# 入口：call_api() 供 Promptfoo（file://./adapter.py:call_api）；
+#       run() 供 DeepEval；run_prompt() 为底层实现。
+from __future__ import annotations
 
 import json
 import os
@@ -175,7 +181,12 @@ def main() -> int:
         shutil.copy2(skill_md, target_dir / "SKILL.md")
 
     (target_dir / "manifest.yaml").write_text(
-        f'''name: {name}
+        f'''# manifest.yaml — 目标包清单
+# 用途：声明被测 Skill 的定级与检查配置，驱动 preflight 与检查手段。
+# 关键字段：risk/level/type/agent 决定最低检查；skill/adapter/promptfoo/deepeval/baseline
+#           指向各文件路径；type=tool 时另有 tools.yaml。
+# 由 init 脚手架生成，由 skill_lock.py 做完整性校验。
+name: {name}
 owner: {args.owner}
 risk: {args.risk}
 type: {args.type}
@@ -201,7 +212,13 @@ adapter: adapter.py
         "只放合成测试数据。\n", encoding="utf-8"
     )
     (target_dir / "evals" / "promptfoo.yaml").write_text(
-        '''# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+        '''# promptfoo.yaml — Promptfoo 回归与红队用例
+# 用途：对被测 Skill 做确定性回归（断言具体输出）+ 语义断言（llm-rubric）。
+# 工具：Promptfoo，通过 providers 的 file://./adapter.py:call_api 驱动被测 Skill。
+# 原理：每条用例给 user_input，断言期望的输出特征；llm-rubric 用本地 judge 评分，
+#       judge 配置写在每条断言的 provider 上（勿用全局 defaultTest，会污染字符串断言）。
+# 立场：FAIL 如实反映源 Skill 问题，只报告与建议，不改被测 Skill。
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
 description: TODO
 basePath: ..
 prompts:
@@ -220,7 +237,15 @@ tests:
     )
     if args.level in {"L2", "L3"} and args.type != "script":
         (target_dir / "evals" / "test_target.py").write_text(
-            '''from __future__ import annotations
+            '''# test_target.py — DeepEval 用例
+# 用途：对被测 Skill 做确定性断言 + 指标化语义评分，结果被 manual_check 采集进 baseline。
+# 工具：由 DeepEval 虚拟环境执行（RUN_LLM_EVALS=1 才运行），pytest 框架。
+# 原理：调 adapter.run() 取得输出，分两类验证——
+#       ① 确定性断言：业务数字、PII 拒绝、提示词泄露（具体事实）；
+#       ② 指标评分：AnswerRelevancy（切题）、Faithfulness（忠实于已知事实，开严格模式）、
+#          Hallucination（幻觉），均由本地 judge（LocalModel→qwen3 网关）按 QAG 范式评分。
+# 立场：FAIL 是被测 Skill 的真实问题，只报告与建议，不改被测 Skill 让它通过。
+from __future__ import annotations
 
 import importlib.util
 import os

@@ -139,6 +139,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 说明：F-001~F-009 为历史修复记录，见 2026-11-20 条目后已改为纯源检查；F-010 是当前纯源检查下的真实发现，如实报告、不修源。
 
+| 2026-11-20 | 目标包文件加用途注释 | 用户建议在目标包文件顶部用注释说明用途/工具/原理。给 `adapter.py`、`evals/test_target.py`、`evals/promptfoo.yaml`、`manifest.yaml` 加文件头注释，并同步到 `scripts/scaffold_target.py` 模板（后续 init 自带）。`SKILL.md` 不加注释（被测对象，全文注入 system prompt，加注释会改变被测提示词）；JSON（baseline/skills.lock）不支持注释。注释改了文件哈希，已重新生成 skills.lock.json；preflight 通过。入口 Skill v0.15.0 记录该约定 |
 | 2026-11-20 | 忠实度指标改严格模式并解释内部机制 | 用户问「拆解→裁决→算比例→写理由」具体怎么做：用真实运行在容器内演示三指标中间产物（statements/truths/claims/verdicts/reason）。发现默认 `FaithfulnessMetric` 把「无依据的声称」判 borderline 且算通过，编造内容仍得 1.0；改 `penalize_ambiguous_claims=True` 后实测同样输入降到 0.6、success=False。目标包用例已改，入口 Skill v0.14.0 补齐 Faithfulness 范式（含严格模式必要性）与 QAG 机制说明。当前 6 个测试 4/5 通过（严格忠实度对真实输出得 0.073，因生成内容大量编造细节——作为真实发现，不改被测 Skill） |
 | 2026-11-20 | DeepEval 指标用例落地并写入技能 | 用户指出文档宣称 DeepEval 做相关性/忠实度/幻觉评分，但实际 `test_target.py` 只用普通 assert。修正：目标包用例新增真正的 `AnswerRelevancyMetric`、`HallucinationMetric`（本地 `LocalModel` judge 走 qwen3 网关，阈值 0.7）；修掉幻觉指标方向 bug（deepeval 4.3+ 统一 1=通过、threshold 为最低通过分）。验证：相关性 1.0、幻觉 1.0、4/5 通过（唯一失败 PII=F-010 真实问题）。入口 Skill v0.13.0 新增「DeepEval 指标用例」范式（含 LocalModel 配置、分数方向、判定原则），明确指标 FAIL 只报告不改被测 Skill |
 | 2026-11-20 | 明确项目定位（AGENTS.md） | 用户指出 AGENTS.md 未说清定位：这是**评测工具**，目的是找出被评测 Skill 的真实问题、给出建议，而非为通过测试而改被测 Skill。AGENTS.md「项目」段补核心立场：源 Skill 只读、不注入安全补丁、被测 Skill 的 FAIL 是有效结果只报告与建议；「FAIL 处理原则」明确只针对流程/工具自身错误，被测 Skill 的 FAIL 不适用 |
