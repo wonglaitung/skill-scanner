@@ -20,8 +20,7 @@ Agent Skill 工程化检查与对抗审核方案。当前处于「试点实施�
 
 2 周试点实施：
 
-- 存量目标包（历史试点的纯提示词/示例/脚本型/工具型 Skill）已从仓库移除；
-  重新测试时由 `init` 在本地生成，或用 `--targets <私有路径>` 指向仓库外目录。
+- 仓库不附带目标包：由 `init` 在本地生成，或用 `--targets <私有路径>` 指向仓库外目录。
 - 安全团队主导。
 - 先告警，不阻断 PR。
 - 使用可配置的 OpenAI-compatible 模型网关（`SKILL_API_BASE` / `SKILL_API_KEY` / `SKILL_MODEL`），容器内默认 `http://host.docker.internal:8086/v1`，模型 `qwen3`。
@@ -109,14 +108,14 @@ AGENTS.md
 
 ## 当前任务
 
-1. F-001~F-009 已修复并复测；write-report 8/8、system-specification 8/8、account-balance-query 15/15。
+1. 确定性回归覆盖 PII 复述、AI 腔、越权与提示词泄露等模式；用例由目标包自身维护。
 2. DeepEval S2：相关性 3/3；Faithfulness/Hallucination/ToolCorrectness 通过。
-3. Garak Release v2 历史结果（true compliant 0）基于当时的全局安全边界与运行时输入护栏；这两类补丁现已移除（它们改变被测对象、掩盖源 Skill 真实问题）。当前检查针对纯源 Skill：已实测 write-report 的 Garak true compliant 为 42/18/66（Base64 解码、训练数据复述），需由 Skill 自身补规则；md-to-word 跳过。
+3. Garak 发布前扫描针对纯源 Skill，不注入全局安全边界、不做运行时输入护栏；真实命中由 Skill 自身补规则，不以补丁掩盖。发布 probe 集为 4 个（Dan、promptinject、Base64、LiteratureCloze），md-to-word 无 LLM 端点跳过；长流程超时由 `SKILL_GARAK_TIMEOUT` 控制。
 4. 手工检查与基线工具已建：`manual_check.py` 支持 L0-L3，并接入 `capability-audit`、`prompt-audit`；`baseline.py` 支持多轮采集、趋势、Flaky、容差 diff 与 Delta Gate；8 个 S2 均有 3 轮基线。
 5. 脚本型 Skill `md-to-word` 已补齐 Promptfoo 5/5、契约测试 4/4、Semgrep 0 findings；SCA/密钥/ShellCheck 待工具安装。
 6. CI 骨架保留但不启用；人工模式技术底座完整（路线图 7.1）后再提 CI。
 7. Phase A 已落地：Docker 沙箱、供应链扫描、SHA256 完整性锁、Ed25519 签名工具、逃逸检查、模型端点沙箱、网络白名单；剩余私钥托管/轮换、模型网关隔离。
-8. Agent 模式复用 `wonglaitung/harness`：Agent 阶段 4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill；不再向 Skill 提示词追加全局安全边界。
+8. Agent 模式复用 `wonglaitung/harness`：Agent 阶段 4 完成；已覆盖 `account-balance-query`、`service-ticket-update`、`cross-skill-router` 三类工具 Skill。
 9. 检查与被测执行全链路 Docker 化：统一镜像 `skill-checker:local`，唯一入口 `scripts/check_in_docker.sh`，网关通过 `SKILL_API_BASE`/`SKILL_API_KEY` 配置。
 
 ## 命令（Docker 入口）

@@ -156,7 +156,7 @@ targets/my-skill/
 | `<targets-dir>/skills.lock.json` | 完整性锁，记录目标包各文件的 SHA256；`skill_lock.py verify` 在容器内校验文件未被篡改。位于 `--targets` 根目录，不在单个目标包内。 |
 | `SKILL.md` | 被测 Skill 本体，由 `--source` 只读复制而来；检查时全文作为 system prompt 注入模型。 |
 | `manifest.yaml` | 目标包清单，声明 `risk`/`level`/`type`/`agent` 与各文件路径（`skill`/`adapter`/`promptfoo`/`deepeval`/`baseline`/`tools`），驱动 preflight 与检查手段。`type=tool` 时另有 `tools.yaml`。 |
-| `adapter.py` | 把 Skill 包装成可调用端点：`SYSTEM_PROMPT = SKILL.md + SAFETY_PROMPT`，经 `httpx` 调 OpenAI-compatible 网关。`call_api()` 供 Promptfoo、`run()` 供 DeepEval、`run_prompt()` 为底层实现。 |
+| `adapter.py` | 把 Skill 包装成可调用端点：`SYSTEM_PROMPT` 只取 `SKILL.md` 全文（不注入安全补丁，检查针对纯源 Skill），经 `httpx` 调 OpenAI-compatible 网关。`call_api()` 供 Promptfoo、`run()` 供 DeepEval、`run_prompt()` 为底层实现。 |
 | `evals/promptfoo.yaml` | Promptfoo 用例与断言（确定性 + 语义）。`llm-rubric` 的 judge 必须写在每条断言的 `provider` 上，勿用全局 `defaultTest.options.provider`（会污染 `not-contains` 等字符串断言）。 |
 | `evals/test_target.py` | DeepEval 用例（pytest），由 `RUN_LLM_EVALS=1` 控制，仅容器内运行。 |
 | `evals/baseline.json` | 多轮基线，由 `baseline.py collect` 从 3 轮报告生成（schema v2：各轮指标、均值/标准差、Flaky）；Delta Gate 用它做容差对比。`init` 不生成，首次 `run` 后才有。 |

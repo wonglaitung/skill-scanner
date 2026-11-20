@@ -116,27 +116,9 @@ python scripts/sign_skills.py verify --public evals/keys/public.pem
   定义与例子见 [`docs/Skill 检查使用指南.md` §0](docs/Skill%20检查使用指南.md)。
 - 最低检查由**类型 × 风险**共同决定：类型定手段、风险定深度。例如 S2 纯提示词 L2、
   工具型 L2 + Agent、脚本型 L1；S3 纯提示词与高风险工具发布前 L3。二维速查见指南 §4。
-- 工具型示例：`./scripts/check_in_docker.sh check --targets targets --skill account-balance-query`
-
 完整定义、最低检查矩阵、运行前置、报告解读与排障见
 [`docs/Skill 检查使用指南.md`](docs/Skill%20检查使用指南.md)；流程入口见
 [`assistant/skill-release-guide`](assistant/skill-release-guide/SKILL.md)。
-
-## 已有 Skill（历史试点，目标包已从仓库移除）
-
-以下为历史试点清单，仅作参考；当前仓库不附带任何目标包。重新测试时由 `init` 生成，
-或用 `--targets <私有路径>` 指向你自己的目标包目录。
-
-| Skill | 类型 | 说明 |
-|---|---|---|
-| `write-report` | 纯提示词 | 银行管理层汇报 |
-| `system-specification` | 纯提示词 | 金融系统规格书 |
-| `manager-report` | 纯提示词 | 算力申请汇报 |
-| `expense-policy-qa` | 纯提示词 | 费用报销问答（示例） |
-| `md-to-word` | 提示词 + 脚本 | Markdown 转 Word |
-| `account-balance-query` | 提示词 + 工具 | Agent 工具调用测试 Skill |
-| `service-ticket-update` | 提示词 + 工具 | 服务工单状态与备注更新（写操作、含权限边界） |
-| `cross-skill-router` | 提示词 + 工具 | 跨 Skill 只读路由与委托（含提权防护） |
 
 ## 目录结构
 
@@ -155,31 +137,15 @@ AGENTS.md                   Agent 工作约定
 ```
 
 `targets/` 不是仓库的固定内容：它由 `init` 在本地生成，或用 `--targets <私有路径>`
-指向仓库外的目标包目录。存量目标包已从仓库移除，你可拿它们重新测试。
-
-## 当前结果（历史验证记录，存量目标包已移除）
-
-| 检查 | 结果 |
-|---|---|
-| Docker 全链路 | 自定义 Skill `init/check/run` 3 轮通过，Gate PASS |
-| SKILL.md 结构校验 | 8 个全部通过 |
-| 多轮基线 | 8 个 S2 各 3 轮，Delta Gate 全部 PASS |
-| Promptfoo | write 8/8、system 8/8、manager 8/8、expense 5/5、md 5/5、account 15/15、ticket 10/10、cross 9/9 |
-| DeepEval | account 7/7；write/system/ticket/cross 均通过 |
-| Garak Release v2 | 7 个 LLM Skill，4 个 probe，true compliant 0 |
-| Judge 校准 | 20 条，一致率 95% |
-| Semgrep / Ruff | 0 findings / 0 errors |
-| gitleaks / Trivy / SBOM | 容器内完成；SBOM 622 components |
-| Skill 完整性锁 | 8 个全部匹配 |
-| 密码学签名 | Ed25519 签名/验签通过，篡改检测符合预期 |
+指向仓库外的目标包目录。
 
 ## 已知限制
 
-- Garak Release v2 仍是约定的 4 个 probe，不是全部 Garak probe。
+- Garak 发布前扫描使用约定的 4 个 probe，不是全部 Garak probe。
 - 每个 S2 只有 3 轮基线，尚未累计 2-4 周稳定性数据。
 - Agent 模式使用 Mock 工具，真实工具权限、副作用、回滚尚未验证。
 - 网页/文件/RAG/记忆注入尚未覆盖。
-- 检查针对纯源 Skill：已移除全局安全边界提示词与运行时输入护栏（它们会改变被测对象、掩盖源 Skill 的真实问题）；因此 Garak 对编码/解码、训练数据复述会暴露源 Skill 的真实命中，需由 Skill 自身补规则，不以补丁 form 掩盖。
+- 检查针对纯源 Skill：不注入全局安全边界提示词、不做运行时输入护栏；Garak 会如实暴露源 Skill 在编码/解码、训练数据复述等 probe 上的真实命中，需由 Skill 自身补规则。
 - 私钥托管/轮换、模型网关按 Skill 隔离、可观测性、报告签名/归档仍未闭环。
 - Trivy 发现的问题按告警处理，不阻断 PR。
 - 目前是人工/半自动检查，不单独作为自动发布审批依据。
