@@ -179,6 +179,30 @@ def deepeval_target(skill: str, agent: bool = False) -> tuple[Path, str | None] 
     return None
 
 
+def _build_finding(item: dict, input_text: str | None, raw_error: str | None) -> dict:
+    grading = item.get("gradingResult") or {}
+    reason = (
+        raw_error
+        or item.get("error")
+        or grading.get("reason")
+        or item.get("failureReason")
+    )
+    if isinstance(reason, (int, float)):
+        reason = f"断言失败（索引 {reason}）"
+    reason = str(reason or "未说明")
+
+    response = item.get("response")
+    output = response.get("output") if isinstance(response, dict) else response
+    snippet = " ".join(str(output or "").split())[:120]
+
+    return {
+        "input": input_text,
+        "reason": reason,
+        "output_excerpt": snippet,
+        "source": "promptfoo",
+    }
+
+
 def parse_promptfoo(path: Path, quarantine: list[dict] | None = None) -> dict:
     if not path.exists():
         return {}
@@ -217,12 +241,7 @@ def parse_promptfoo(path: Path, quarantine: list[dict] | None = None) -> dict:
         elif item.get("success") is False:
             failed += 1
         if is_failure:
-            findings.append(
-                {
-                    "input": input_text,
-                    "reason": item.get("failureReason") or raw_error,
-                }
-            )
+            findings.append(_build_finding(item, input_text, raw_error))
 
     effective_passed = passed + len(quarantined)
     total = len(results)
@@ -255,10 +274,12 @@ def parse_deepeval(text: str, returncode: int) -> dict:
         passed = int(pytest_passed.group(1)) if pytest_passed else 0
         failed = int(pytest_failed.group(1)) if pytest_failed else 0
         total = passed + failed
+        failed_cases = re.findall(r"FAILED\s+\S+?::(test_\w+)", text)
         return {
             "pass_rate": round(passed / total, 4) if total else 0.0,
             "passed": passed,
             "failed": failed,
+            "failed_cases": failed_cases,
         }
 
     return {"pass_rate": 1.0 if returncode == 0 else 0.0, "raw_exit_code": returncode}
@@ -344,6 +365,33 @@ def write_report(
     steps: list[dict],
     baseline_path: Path | None = None,
 ) -> None:
+    promptfoo = summary.get("metrics", {}).get("promptfoo")
+    deepeval = summary.get("metrics", {}).get("deepeval")
+    garak = summary.get("metrics", {}).get("garak")
+
+    findings: list[dict] = []
+    if promptfoo:
+        for item in promptfoo.get("findings", []):
+            findings.append(
+                {
+                    "source": "Promptfoo",
+                    "case": item.get("input", "-"),
+                    "reason": item.get("reason", "-"),
+                    "excerpt": item.get("output_excerpt", ""),
+                }
+            )
+    if deepeval:
+        for name in deepeval.get("failed_cases", []):
+            findings.append(
+                {
+                    "source": "DeepEval",
+                    "case": name,
+                    "reason": "指标/断言未达阈值；详见 run.log 中的 pytest 输出",
+                    "excerpt": "",
+                }
+            )
+    blocking_steps = hard_failures(steps)
+
     lines = [
         f"# Skill 手工检查报告：{skill}",
         "",
@@ -352,25 +400,59 @@ def write_report(
         f"- 模型：{summary['model']}",
         f"- 网关：{summary['api_base']}",
         "",
-        "## 步骤结果",
+        "## 结论",
         "",
-        "| 步骤 | 状态 | 耗时(s) |",
-        "|---|---|---|",
+        f"- 阻断步骤：{', '.join(s['name'] + '(' + s['status'] + ')' for s in blocking_steps) or '无'}",
+        f"- 问题数：{len(findings)}（Promptfoo {sum(1 for f in findings if f['source'] == 'Promptfoo')} / "
+        f"DeepEval {sum(1 for f in findings if f['source'] == 'DeepEval')}）",
     ]
+    for item in findings[:5]:
+        excerpt = f"；输出摘要：{item['excerpt']}" if item["excerpt"] else ""
+        lines.append(f"- [{item['source']}] {item['case']} —— {item['reason']}{excerpt}")
+    if len(findings) > 5:
+        lines.append(f"- 另有 {len(findings) - 5} 项，见「问题清单」")
+    if not findings and not blocking_steps:
+        lines.append("- 未发现问题")
+
+    lines.extend(
+        [
+            "",
+            "## 问题清单",
+            "",
+            "| 来源 | 用例 | 失败原因 | 输出摘要 |",
+            "|---|---|---|---|",
+        ]
+    )
+    if findings:
+        for item in findings:
+            excerpt = item["excerpt"].replace("|", "\\|") or "-"
+            case = str(item["case"]).replace("|", "\\|")
+            reason = str(item["reason"]).replace("|", "\\|")
+            lines.append(f"| {item['source']} | {case} | {reason} | {excerpt} |")
+    else:
+        lines.append("| 无 | - | - | - |")
+
+    lines.extend(
+        [
+            "",
+            "## 步骤结果",
+            "",
+            "| 步骤 | 状态 | 耗时(s) |",
+            "|---|---|---|",
+        ]
+    )
     for step in steps:
         lines.append(
             f"| {step['name']} | {step['status']} | {step.get('elapsed_seconds', '-')} |"
         )
 
-    blocking = hard_failures(steps)
-    if blocking:
+    if blocking_steps:
         lines.extend(["", "## 阻断项", ""])
-        for step in blocking:
+        for step in blocking_steps:
             reason = step.get("reason") or ""
             suffix = f"（{reason}）" if reason else ""
             lines.append(f"- {step['name']}：{step['status']}{suffix}")
 
-    promptfoo = summary.get("metrics", {}).get("promptfoo")
     if promptfoo:
         lines.extend(
             [
@@ -393,7 +475,6 @@ def write_report(
                 f"（owner {item.get('owner', '-')}，到期 {item.get('expires', '-')}）"
             )
 
-    deepeval = summary.get("metrics", {}).get("deepeval")
     if deepeval:
         lines.extend(
             [
@@ -405,6 +486,8 @@ def write_report(
                 f"- 失败：{deepeval.get('failed', '-')}",
             ]
         )
+        for name in deepeval.get("failed_cases", []):
+            lines.append(f"- 失败用例：{name}")
 
     baseline = (
         json.loads(baseline_path.read_text(encoding="utf-8"))
@@ -466,7 +549,6 @@ def write_report(
             ]
         )
 
-    garak = summary.get("metrics", {}).get("garak")
     if garak:
         lines.extend(
             [
@@ -481,18 +563,23 @@ def write_report(
     lines.extend(
         [
             "",
-            "## 证据",
+            "## 证据（想深入某个问题时看这里）",
             "",
-            f"- summary.json：{out / 'summary.json'}",
-            f"- 运行日志：{out / 'run.log'}",
+            f"- `summary.json`：{out / 'summary.json'} — 全部指标与 findings 的机器可读数据",
+            f"- `run.log`：{out / 'run.log'} — 各步骤原始输出；DeepEval 的 pytest 失败详情、Garak 各 probe 的 ASR 在这里",
         ]
     )
     if (out / "promptfoo.json").exists():
-        lines.append(f"- Promptfoo：{out / 'promptfoo.json'}")
+        lines.append(
+            f"- `promptfoo.json`：{out / 'promptfoo.json'} — 每条用例的模型完整回答与断言结果"
+        )
     if (out / "garak.report.jsonl").exists():
-        lines.append(f"- Garak：{out / 'garak.report.jsonl'}")
+        lines.append(
+            f"- `garak.report.jsonl`：{out / 'garak.report.jsonl'} — 每条攻击样本；"
+            "用 `python scripts/garak_summary.py --report <此文件>` 归类看真实命中"
+        )
     if (out / "trivy.sarif").exists():
-        lines.append(f"- Trivy：{out / 'trivy.sarif'}")
+        lines.append(f"- `trivy.sarif`：{out / 'trivy.sarif'} — 依赖/CVE 明细")
 
     lines.extend(
         [
@@ -511,25 +598,26 @@ def write_report(
         [
             "## 发现处理",
             "",
-            "| 用例 | 失败原因 | 建议级别 | Owner | 状态 |",
-            "|---|---|---|---|---|",
+            "| 用例 | 失败原因 | 输出摘要 | 建议级别 | Owner | 状态 |",
+            "|---|---|---|---|---|---|",
         ]
     )
     findings = (promptfoo or {}).get("findings", [])
     quarantined = (promptfoo or {}).get("quarantine_details", [])
     if findings:
         for item in findings:
+            excerpt = item.get("output_excerpt", "-").replace("|", "\\|") or "-"
             lines.append(
-                f"| {item.get('input', '-')} | {item.get('reason', '-')} | "
+                f"| {item.get('input', '-')} | {item.get('reason', '-')} | {excerpt} | "
                 "待定 | 待定 | 待处理 |"
             )
     for item in quarantined:
         lines.append(
             f"| {item.get('input', '-')} | {item.get('quarantine_reason') or item.get('reason', '-')} | "
-            f"隔离 | {item.get('owner', '-')} | 已隔离至 {item.get('expires', '-')} |"
+            f"- | 隔离 | {item.get('owner', '-')} | 已隔离至 {item.get('expires', '-')} |"
         )
     if not findings and not quarantined:
-        lines.append("| 无 | - | - | - | - |")
+        lines.append("| 无 | - | - | - | - | - |")
     lines.append("")
 
     (out / "report.md").write_text("\n".join(lines), encoding="utf-8")

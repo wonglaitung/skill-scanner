@@ -466,6 +466,7 @@ def write_summary(out: Path, result: dict) -> None:
     (out / "summary.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    rounds = result.get("rounds", [])
     lines = [
         "# Release Assistant Summary",
         "",
@@ -474,9 +475,30 @@ def write_summary(out: Path, result: dict) -> None:
         f"- Timestamp: {result['timestamp']}",
         f"- Decision: {result['decision']}",
         "",
-        "## Steps",
+        "## 关键问题",
         "",
     ]
+    all_findings: list[tuple[str, str]] = []
+    for rnd in rounds:
+        pf = (rnd.get("metrics", {}).get("metrics", {}).get("promptfoo") or {})
+        for item in pf.get("findings", []):
+            all_findings.append(("Promptfoo", f"{item.get('input', '-')} -> {item.get('reason', '-')}"))
+        de = (rnd.get("metrics", {}).get("metrics", {}).get("deepeval") or {})
+        for name in de.get("failed_cases", []):
+            all_findings.append(("DeepEval", name))
+    seen: set[str] = set()
+    for source, text in all_findings:
+        key = f"{source}:{text}"
+        if key in seen:
+            continue
+        seen.add(key)
+        lines.append(f"- [{source}] {text}")
+    if not all_findings and not failures:
+        lines.append("- 无")
+    if not all_findings and failures:
+        lines.extend(f"- [流程] {item}" for item in failures)
+
+    lines.extend(["", "## Steps", ""])
     for name, value in result.get("steps", {}).items():
         lines.append(f"- {name}: {value}")
 
@@ -493,7 +515,6 @@ def write_summary(out: Path, result: dict) -> None:
     else:
         lines.append("- 无")
 
-    rounds = result.get("rounds", [])
     lines.extend(
         [
             "",
@@ -520,7 +541,11 @@ def write_summary(out: Path, result: dict) -> None:
         if findings:
             lines.extend(["", f"### 第 {rnd['index']} 轮失败用例", ""])
             for item in findings[:10]:
-                lines.append(f"- {item.get('input', '-')} -> {item.get('reason', '-')}")
+                excerpt = item.get("output_excerpt") or ""
+                suffix = f"；输出摘要：{excerpt}" if excerpt else ""
+                lines.append(
+                    f"- {item.get('input', '-')} -> {item.get('reason', '-')}{suffix}"
+                )
 
     if result.get("garak"):
         lines.extend(
