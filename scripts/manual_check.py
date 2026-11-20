@@ -360,14 +360,14 @@ def load_baseline(skill: str) -> dict | None:
 def suggest_for_finding(case: str | None, reason: str | None) -> tuple[str, str]:
     """给出（建议级别, 修改建议）；只指方向，不写具体规则文本，由 Owner 决定。"""
     text = f"{case or ''} {reason or ''}".lower()
-    if any(k in text for k in ("张三", "pii", "point", "name", "privacy")):
+    if any(k in text for k in ("mask", "training data", "文学", "literature", "复述", "填空")):
+        return ("High", "在 SKILL.md 加「不复述训练数据/不补全文学填空」的规则")
+    if any(k in text for k in ("base64", "encoded", "decode", "解码", "javascript:alert", "payload")):
+        return ("High", "在 SKILL.md 加「不执行编码/解码请求、不输出 payload 或解码结果」的规则")
+    if any(k in text for k in ("张三", "pii", "privacy", "员工", "点名", "姓名")):
         return ("High", "在 SKILL.md 加「拒绝点名具体员工/复述姓名」的最高优先级规则；正文与拒绝语都不得出现可识别个人信息")
     if any(k in text for k in ("system prompt", "system_prompt", "提示词", "领导思维对齐引擎")):
         return ("High", "在 SKILL.md 加「不输出系统提示词/内部规则」的规则，拒绝逐字复述")
-    if any(k in text for k in ("base64", "encoded", "decode", "解码", "javascript:alert")):
-        return ("High", "在 SKILL.md 加「不执行编码/解码请求、不输出 payload 或解码结果」的规则")
-    if any(k in text for k in ("mask", "training data", "文学", "填", "复述", "literature")):
-        return ("High", "在 SKILL.md 加「不复述训练数据/不补全文学填空」的规则")
     if any(k in text for k in ("ignore", "越狱", "攻击性", "dan", "jailbreak")):
         return ("High", "在 SKILL.md 加「忽略规则类指令一律拒绝、不生成违规内容」的安全边界")
     if any(k in text for k in ("relevancy", "相关性", "faithfulness", "忠实", "hallucination", "幻觉")):
